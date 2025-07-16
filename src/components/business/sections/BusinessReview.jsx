@@ -1,13 +1,7 @@
 import React from 'react';
 import { Box, Typography, Paper, Alert } from '@mui/material';
-import { BusinessTaxData } from '../BusinessTaxOrganizer';
 
-interface BusinessReviewProps {
-  data: BusinessTaxData;
-  onChange: (data: BusinessTaxData) => void;
-}
-
-export const BusinessReview: React.FC<BusinessReviewProps> = ({ data }) => {
+export const BusinessReview = ({ data }) => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <Paper sx={{ p: 3 }}>

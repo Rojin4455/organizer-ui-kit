@@ -3,13 +3,8 @@ import { Box, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/
 import { SecureTextField } from '../../shared/SecureTextField';
 import { FormSection } from '../../shared/FormSection';
 
-interface BusinessBasicInfoProps {
-  data: any;
-  onChange: (data: any) => void;
-}
-
-export const BusinessBasicInfo: React.FC<BusinessBasicInfoProps> = ({ data, onChange }) => {
-  const handleChange = (field: string, value: any) => {
+export const BusinessBasicInfo = ({ data, onChange }) => {
+  const handleChange = (field, value) => {
     onChange({ ...data, [field]: value });
   };
 

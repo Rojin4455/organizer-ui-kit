@@ -2,13 +2,8 @@ import React from 'react';
 import { Box, TextField, FormControlLabel, Switch } from '@mui/material';
 import { FormSection } from '../../shared/FormSection';
 
-interface BusinessAssetsProps {
-  data: any;
-  onChange: (data: any) => void;
-}
-
-export const BusinessAssets: React.FC<BusinessAssetsProps> = ({ data, onChange }) => {
-  const handleChange = (field: string, value: any) => {
+export const BusinessAssets = ({ data, onChange }) => {
+  const handleChange = (field, value) => {
     onChange({ ...data, [field]: value });
   };
 

@@ -10,13 +10,8 @@ import {
 } from '@mui/material';
 import { FormSection } from '../../shared/FormSection';
 
-interface IncomeInfoProps {
-  data: any;
-  onChange: (data: any) => void;
-}
-
-export const IncomeInfo: React.FC<IncomeInfoProps> = ({ data, onChange }) => {
-  const handleChange = (field: string, value: any) => {
+export const IncomeInfo = ({ data, onChange }) => {
+  const handleChange = (field, value) => {
     onChange({ ...data, [field]: value });
   };
 

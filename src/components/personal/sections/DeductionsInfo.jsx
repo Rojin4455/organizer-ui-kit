@@ -8,13 +8,8 @@ import {
 } from '@mui/material';
 import { FormSection } from '../../shared/FormSection';
 
-interface DeductionsInfoProps {
-  data: any;
-  onChange: (data: any) => void;
-}
-
-export const DeductionsInfo: React.FC<DeductionsInfoProps> = ({ data, onChange }) => {
-  const handleChange = (field: string, value: any) => {
+export const DeductionsInfo = ({ data, onChange }) => {
+  const handleChange = (field, value) => {
     onChange({ ...data, [field]: value });
   };
 

@@ -14,26 +14,13 @@ import {
   Save as SaveIcon,
   Business as BusinessIcon,
 } from '@mui/icons-material';
-import { FormStepper, FormStep } from '../shared/FormStepper';
+import { FormStepper } from '../shared/FormStepper';
 import { BusinessBasicInfo } from './sections/BusinessBasicInfo';
 import { BusinessIncomeExpenses } from './sections/BusinessIncomeExpenses';
 import { BusinessAssets } from './sections/BusinessAssets';
 import { BusinessReview } from './sections/BusinessReview';
 
-export interface BusinessTaxData {
-  basicInfo: any;
-  incomeExpenses: any;
-  assets: any;
-  homeOffice: any;
-}
-
-interface BusinessTaxOrganizerProps {
-  onSave: (data: BusinessTaxData) => void;
-  onBack: () => void;
-  initialData?: Partial<BusinessTaxData>;
-}
-
-export const BusinessTaxOrganizer: React.FC<BusinessTaxOrganizerProps> = ({
+export const BusinessTaxOrganizer = ({
   onSave,
   onBack,
   initialData = {},
@@ -41,7 +28,7 @@ export const BusinessTaxOrganizer: React.FC<BusinessTaxOrganizerProps> = ({
   const [activeStep, setActiveStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [useVerticalStepper, setUseVerticalStepper] = useState(true);
-  const [formData, setFormData] = useState<BusinessTaxData>({
+  const [formData, setFormData] = useState({
     basicInfo: initialData.basicInfo || {},
     incomeExpenses: initialData.incomeExpenses || {},
     assets: initialData.assets || {},
@@ -56,14 +43,14 @@ export const BusinessTaxOrganizer: React.FC<BusinessTaxOrganizerProps> = ({
     return () => clearTimeout(timeout);
   }, [formData]);
 
-  const updateFormData = (section: keyof BusinessTaxData, data: any) => {
+  const updateFormData = (section, data) => {
     setFormData(prev => ({
       ...prev,
       [section]: data,
     }));
   };
 
-  const steps: FormStep[] = [
+  const steps = [
     {
       id: 'basic-info',
       label: 'Business Information',

@@ -20,14 +20,8 @@ import {
   Business as BusinessIcon,
   Security as SecurityIcon,
 } from '@mui/icons-material';
-import { PersonalTaxData } from '../PersonalTaxOrganizer';
 
-interface ReviewSubmitProps {
-  data: PersonalTaxData;
-  onChange: (data: PersonalTaxData) => void;
-}
-
-export const ReviewSubmit: React.FC<ReviewSubmitProps> = ({ data }) => {
+export const ReviewSubmit = ({ data }) => {
   const getSummaryData = () => {
     const summary = {
       taxpayerName: `${data.basicInfo?.firstName || ''} ${data.basicInfo?.lastName || ''}`.trim(),

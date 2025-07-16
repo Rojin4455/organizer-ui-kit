@@ -16,7 +16,7 @@ import {
   Save as SaveIcon,
   Person as PersonIcon,
 } from '@mui/icons-material';
-import { FormStepper, FormStep } from '../shared/FormStepper';
+import { FormStepper } from '../shared/FormStepper';
 import { BasicTaxpayerInfo } from './sections/BasicTaxpayerInfo';
 import { DependentInfo } from './sections/DependentInfo';
 import { IncomeInfo } from './sections/IncomeInfo';
@@ -24,21 +24,7 @@ import { DeductionsInfo } from './sections/DeductionsInfo';
 import { TaxPaymentsInfo } from './sections/TaxPaymentsInfo';
 import { ReviewSubmit } from './sections/ReviewSubmit';
 
-export interface PersonalTaxData {
-  basicInfo: any;
-  dependents: any[];
-  income: any;
-  deductions: any;
-  taxPayments: any;
-}
-
-interface PersonalTaxOrganizerProps {
-  onSave: (data: PersonalTaxData) => void;
-  onBack: () => void;
-  initialData?: Partial<PersonalTaxData>;
-}
-
-export const PersonalTaxOrganizer: React.FC<PersonalTaxOrganizerProps> = ({
+export const PersonalTaxOrganizer = ({
   onSave,
   onBack,
   initialData = {},
@@ -46,7 +32,7 @@ export const PersonalTaxOrganizer: React.FC<PersonalTaxOrganizerProps> = ({
   const [activeStep, setActiveStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [useVerticalStepper, setUseVerticalStepper] = useState(true);
-  const [formData, setFormData] = useState<PersonalTaxData>({
+  const [formData, setFormData] = useState({
     basicInfo: initialData.basicInfo || {},
     dependents: initialData.dependents || [],
     income: initialData.income || {},
@@ -62,14 +48,14 @@ export const PersonalTaxOrganizer: React.FC<PersonalTaxOrganizerProps> = ({
     return () => clearTimeout(timeout);
   }, [formData]);
 
-  const updateFormData = (section: keyof PersonalTaxData, data: any) => {
+  const updateFormData = (section, data) => {
     setFormData(prev => ({
       ...prev,
       [section]: data,
     }));
   };
 
-  const steps: FormStep[] = [
+  const steps = [
     {
       id: 'basic-info',
       label: 'Basic Information',

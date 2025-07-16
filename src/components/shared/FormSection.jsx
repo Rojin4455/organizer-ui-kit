@@ -13,19 +13,7 @@ import {
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 
-interface FormSectionProps {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-  isExpanded?: boolean;
-  onToggle?: () => void;
-  isSecure?: boolean;
-  isCompleted?: boolean;
-  isRequired?: boolean;
-  errorCount?: number;
-}
-
-export const FormSection: React.FC<FormSectionProps> = ({
+export const FormSection = ({
   title,
   description,
   children,

@@ -17,30 +17,7 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material';
 
-export interface FormStep {
-  id: string;
-  label: string;
-  description?: string;
-  content: React.ReactNode;
-  isCompleted?: boolean;
-  hasErrors?: boolean;
-  isRequired?: boolean;
-  errorCount?: number;
-}
-
-interface FormStepperProps {
-  steps: FormStep[];
-  activeStep: number;
-  onStepChange: (step: number) => void;
-  onNext: () => void;
-  onBack: () => void;
-  onSubmit: () => void;
-  isSubmitting?: boolean;
-  submitLabel?: string;
-  orientation?: 'horizontal' | 'vertical';
-}
-
-export const FormStepper: React.FC<FormStepperProps> = ({
+export const FormStepper = ({
   steps,
   activeStep,
   onStepChange,
@@ -57,7 +34,7 @@ export const FormStepper: React.FC<FormStepperProps> = ({
   const totalSteps = steps.length;
   const progress = (completedSteps / totalSteps) * 100;
 
-  const getStepIcon = (step: FormStep, stepIndex: number) => {
+  const getStepIcon = (step, stepIndex) => {
     if (step.hasErrors) {
       return <ErrorIcon sx={{ color: '#ef4444' }} />;
     }

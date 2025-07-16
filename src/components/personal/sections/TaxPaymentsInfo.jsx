@@ -9,13 +9,8 @@ import {
 import { SecureTextField } from '../../shared/SecureTextField';
 import { FormSection } from '../../shared/FormSection';
 
-interface TaxPaymentsInfoProps {
-  data: any;
-  onChange: (data: any) => void;
-}
-
-export const TaxPaymentsInfo: React.FC<TaxPaymentsInfoProps> = ({ data, onChange }) => {
-  const handleChange = (field: string, value: any) => {
+export const TaxPaymentsInfo = ({ data, onChange }) => {
+  const handleChange = (field, value) => {
     onChange({ ...data, [field]: value });
   };
 

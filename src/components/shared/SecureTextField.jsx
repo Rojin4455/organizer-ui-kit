@@ -13,20 +13,7 @@ import {
   Security as SecurityIcon,
 } from '@mui/icons-material';
 
-interface SecureTextFieldProps {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  helperText?: string;
-  required?: boolean;
-  error?: boolean;
-  type?: 'ssn' | 'ein' | 'account' | 'routing' | 'text';
-  fullWidth?: boolean;
-  size?: 'small' | 'medium';
-}
-
-export const SecureTextField: React.FC<SecureTextFieldProps> = ({
+export const SecureTextField = ({
   label,
   value,
   onChange,
@@ -43,7 +30,7 @@ export const SecureTextField: React.FC<SecureTextFieldProps> = ({
 
   const isSecureField = ['ssn', 'ein', 'account', 'routing'].includes(type);
 
-  const formatValue = (val: string) => {
+  const formatValue = (val) => {
     if (!val) return '';
     
     switch (type) {
@@ -74,7 +61,7 @@ export const SecureTextField: React.FC<SecureTextFieldProps> = ({
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e) => {
     const formatted = formatValue(e.target.value);
     onChange(formatted);
   };

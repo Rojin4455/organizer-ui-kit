@@ -112,21 +112,14 @@ const theme = createTheme({
   },
 });
 
-export type OrganizerType = 'personal' | 'business' | null;
-
-interface TaxOrganizerAppProps {
-  onSave?: (data: any) => void;
-  initialData?: any;
-}
-
-export const TaxOrganizerApp: React.FC<TaxOrganizerAppProps> = ({
+export const TaxOrganizerApp = ({
   onSave,
   initialData = {},
 }) => {
-  const [selectedOrganizer, setSelectedOrganizer] = useState<OrganizerType>(null);
+  const [selectedOrganizer, setSelectedOrganizer] = useState(null);
   const [savedData, setSavedData] = useState(initialData);
 
-  const handleSave = (data: any) => {
+  const handleSave = (data) => {
     setSavedData(data);
     onSave?.(data);
     

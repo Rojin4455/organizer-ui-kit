@@ -16,12 +16,7 @@ import {
 import { SecureTextField } from '../../shared/SecureTextField';
 import { FormSection } from '../../shared/FormSection';
 
-interface DependentInfoProps {
-  data: any[];
-  onChange: (data: any[]) => void;
-}
-
-export const DependentInfo: React.FC<DependentInfoProps> = ({ data = [], onChange }) => {
+export const DependentInfo = ({ data = [], onChange }) => {
   const addDependent = () => {
     onChange([...data, {
       id: Date.now(),
@@ -36,11 +31,11 @@ export const DependentInfo: React.FC<DependentInfoProps> = ({ data = [], onChang
     }]);
   };
 
-  const removeDependent = (id: number) => {
+  const removeDependent = (id) => {
     onChange(data.filter(dep => dep.id !== id));
   };
 
-  const updateDependent = (id: number, field: string, value: any) => {
+  const updateDependent = (id, field, value) => {
     onChange(data.map(dep => 
       dep.id === id ? { ...dep, [field]: value } : dep
     ));
