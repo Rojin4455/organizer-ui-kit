@@ -17,8 +17,8 @@ import {
 import { FormSection } from '../../shared/FormSection';
 
 export const DeductionsInfo = ({ data, onChange }) => {
-  const [charitableTableRows, setCharitableTableRows] = useState(6);
-  const [nonCashOrganizations, setNonCashOrganizations] = useState(3);
+  const [charitableTableRows, setCharitableTableRows] = useState(1);
+  const [nonCashOrganizations, setNonCashOrganizations] = useState(1);
   const handleChange = (field, value) => {
     onChange({ ...data, [field]: value });
   };
