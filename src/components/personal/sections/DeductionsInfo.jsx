@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   TextField,
@@ -12,10 +12,13 @@ import {
   TableRow,
   Paper,
   TableContainer,
+  Button,
 } from '@mui/material';
 import { FormSection } from '../../shared/FormSection';
 
 export const DeductionsInfo = ({ data, onChange }) => {
+  const [charitableTableRows, setCharitableTableRows] = useState(6);
+  const [nonCashOrganizations, setNonCashOrganizations] = useState(3);
   const handleChange = (field, value) => {
     onChange({ ...data, [field]: value });
   };
@@ -44,9 +47,19 @@ export const DeductionsInfo = ({ data, onChange }) => {
         />
         
         <Box sx={{ mt: 2 }}>
-          <Typography variant="h6" sx={{ mb: 1 }}>
-            Charitable Contributions Table
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography variant="h6">
+              Charitable Contributions Table
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setCharitableTableRows(prev => prev + 1)}
+              sx={{ ml: 2 }}
+            >
+              Add Record
+            </Button>
+          </Box>
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
@@ -58,7 +71,7 @@ export const DeductionsInfo = ({ data, onChange }) => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {[0, 1, 2, 3, 4, 5].map((row) => (
+                {Array.from({ length: charitableTableRows }, (_, row) => (
                   <TableRow key={row}>
                     <TableCell>
                       <TextField
@@ -123,11 +136,21 @@ export const DeductionsInfo = ({ data, onChange }) => {
       </FormSection>
 
       <FormSection title="Non-Cash Contributions">
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Donee Organization Information
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6">
+            Donee Organization Information
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => setNonCashOrganizations(prev => prev + 1)}
+            sx={{ ml: 2 }}
+          >
+            Add Record
+          </Button>
+        </Box>
         
-        {[0, 1, 2].map((index) => (
+        {Array.from({ length: nonCashOrganizations }, (_, index) => (
           <Box key={index} sx={{ mb: 3, p: 2, border: '1px solid #ddd', borderRadius: 1 }}>
             <Typography variant="subtitle1" sx={{ mb: 2 }}>
               Organization {index + 1}
