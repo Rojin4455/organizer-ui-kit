@@ -93,13 +93,13 @@ export const BusinessTaxOrganizer = ({
       isRequired: true,
     },
     {
-      id: 'assets',
-      label: 'Assets & Depreciation',
-      description: 'Business assets, depreciation, and Section 179 deductions',
+      id: 'home-office',
+      label: 'Business Use of Home',
+      description: 'Home office expenses and business use deductions',
       content: (
         <BusinessAssets
-          data={formData.assets}
-          onChange={(data) => updateFormData('assets', data)}
+          data={formData.homeOffice}
+          onChange={(data) => updateFormData('homeOffice', data)}
         />
       ),
       isCompleted: true, // Optional section

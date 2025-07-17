@@ -7,13 +7,10 @@ export const BusinessAssets = ({ data, onChange }) => {
     onChange({ ...data, [field]: value });
   };
 
-  const handleAssetChange = (index, field, value) => {
-    const assets = [...(data.assets || [])];
-    if (!assets[index]) {
-      assets[index] = {};
-    }
-    assets[index][field] = value;
-    handleChange('assets', assets);
+  const handleOtherExpenseChange = (index, value) => {
+    const otherExpenses = [...(data.otherExpenses || ['', '', '', ''])];
+    otherExpenses[index] = value;
+    handleChange('otherExpenses', otherExpenses);
   };
 
   const handleSignatureChange = (field, value) => {
@@ -24,123 +21,123 @@ export const BusinessAssets = ({ data, onChange }) => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <FormSection title="Assets and Depreciation">
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          List all business assets purchased during the year and existing assets being depreciated.
+      <FormSection title="Business Use of Home">
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          A business must be profitable to take a business use of home deduction. Otherwise, any expense calculated will be suspended.
         </Typography>
-
-        {/* Asset Entry Table */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>Business Assets</Typography>
-          {[0, 1, 2, 3, 4].map((index) => (
-            <Box key={index} sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '2fr 1fr 1fr 1fr' }, gap: 2, mb: 2 }}>
+        
+        <FormControlLabel
+          control={
+            <Switch
+              checked={data.hasHomeOffice || false}
+              onChange={(e) => handleChange('hasHomeOffice', e.target.checked)}
+            />
+          }
+          label="Check if you had a home office during the year."
+        />
+        
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
+          *Note: home office must be used exclusively and regularly for the business.
+        </Typography>
+        
+        {data.hasHomeOffice && (
+          <Box sx={{ mt: 3 }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' }, gap: 2, mb: 2 }}>
               <TextField
-                label={`Asset ${index + 1} - Description`}
-                value={data.assets?.[index]?.description || ''}
-                onChange={(e) => handleAssetChange(index, 'description', e.target.value)}
-                placeholder="e.g., Office equipment, vehicle, furniture"
-                fullWidth
-              />
-              <TextField
-                label="Date Purchased"
-                type="date"
-                value={data.assets?.[index]?.datePurchased || ''}
-                onChange={(e) => handleAssetChange(index, 'datePurchased', e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-              />
-              <TextField
-                label="Cost"
+                label="Rent"
                 type="number"
-                value={data.assets?.[index]?.cost || ''}
-                onChange={(e) => handleAssetChange(index, 'cost', e.target.value)}
+                value={data.rent || ''}
+                onChange={(e) => handleChange('rent', e.target.value)}
                 InputProps={{ startAdornment: '$' }}
                 fullWidth
               />
               <TextField
-                label="Business Use %"
+                label="Utilities"
                 type="number"
-                value={data.assets?.[index]?.businessUse || ''}
-                onChange={(e) => handleAssetChange(index, 'businessUse', e.target.value)}
+                value={data.utilities || ''}
+                onChange={(e) => handleChange('utilities', e.target.value)}
+                InputProps={{ startAdornment: '$' }}
+                fullWidth
+              />
+              <TextField
+                label="Insurance"
+                type="number"
+                value={data.insurance || ''}
+                onChange={(e) => handleChange('insurance', e.target.value)}
+                InputProps={{ startAdornment: '$' }}
+                fullWidth
+              />
+            </Box>
+            
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' }, gap: 2, mb: 2 }}>
+              <TextField
+                label="Janitorial"
+                type="number"
+                value={data.janitorial || ''}
+                onChange={(e) => handleChange('janitorial', e.target.value)}
+                InputProps={{ startAdornment: '$' }}
+                fullWidth
+              />
+              <TextField
+                label="Miscellaneous"
+                type="number"
+                value={data.miscellaneous || ''}
+                onChange={(e) => handleChange('miscellaneous', e.target.value)}
+                InputProps={{ startAdornment: '$' }}
+                fullWidth
+              />
+              <TextField
+                label="% of Exclusive Business use"
+                type="number"
+                value={data.exclusiveBusinessUse || ''}
+                onChange={(e) => handleChange('exclusiveBusinessUse', e.target.value)}
                 InputProps={{ endAdornment: '%' }}
                 fullWidth
               />
             </Box>
-          ))}
-        </Box>
-
-        {/* Section 179 Deduction */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>Section 179 Deduction</Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-            <TextField
-              label="Section 179 Deduction Amount"
-              type="number"
-              value={data.section179Amount || ''}
-              onChange={(e) => handleChange('section179Amount', e.target.value)}
-              InputProps={{ startAdornment: '$' }}
-              fullWidth
-            />
-            <TextField
-              label="Carryover from Prior Year"
-              type="number"
-              value={data.section179Carryover || ''}
-              onChange={(e) => handleChange('section179Carryover', e.target.value)}
-              InputProps={{ startAdornment: '$' }}
-              fullWidth
-            />
-          </Box>
-        </Box>
-
-        {/* Depreciation Information */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>Depreciation Information</Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-            <TextField
-              label="Prior Year Depreciation"
-              type="number"
-              value={data.priorDepreciation || ''}
-              onChange={(e) => handleChange('priorDepreciation', e.target.value)}
-              InputProps={{ startAdornment: '$' }}
-              fullWidth
-            />
-            <TextField
-              label="Current Year Depreciation"
-              type="number"
-              value={data.currentDepreciation || ''}
-              onChange={(e) => handleChange('currentDepreciation', e.target.value)}
-              InputProps={{ startAdornment: '$' }}
-              fullWidth
-            />
-          </Box>
-        </Box>
-
-        {/* Listed Property */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>Listed Property (Vehicles, Computers, etc.)</Typography>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={data.hasListedProperty || false}
-                onChange={(e) => handleChange('hasListedProperty', e.target.checked)}
-              />
-            }
-            label="Check if you have listed property"
-          />
-          {data.hasListedProperty && (
-            <Box sx={{ mt: 2 }}>
+            
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mb: 2 }}>
               <TextField
-                label="Listed Property Details"
-                multiline
-                rows={3}
-                value={data.listedPropertyDetails || ''}
-                onChange={(e) => handleChange('listedPropertyDetails', e.target.value)}
-                placeholder="Describe listed property, business use percentage, and depreciation method"
+                label="Size of Home"
+                value={data.sizeOfHome || ''}
+                onChange={(e) => handleChange('sizeOfHome', e.target.value)}
+                placeholder="sq ft"
+                fullWidth
+              />
+              <TextField
+                label="Size of Home Office"
+                value={data.sizeOfHomeOffice || ''}
+                onChange={(e) => handleChange('sizeOfHomeOffice', e.target.value)}
+                placeholder="sq ft"
                 fullWidth
               />
             </Box>
-          )}
-        </Box>
+            
+            <TextField
+              label="Repairs & Maintenance"
+              type="number"
+              value={data.repairsMaintenance || ''}
+              onChange={(e) => handleChange('repairsMaintenance', e.target.value)}
+              InputProps={{ startAdornment: '$' }}
+              fullWidth
+              sx={{ mb: 2 }}
+            />
+            
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              Other Expenses (e.g., rent):
+            </Typography>
+            {[0, 1, 2, 3].map((index) => (
+              <TextField
+                key={index}
+                value={(data.otherExpenses && data.otherExpenses[index]) || ''}
+                onChange={(e) => handleOtherExpenseChange(index, e.target.value)}
+                placeholder="Enter other expense description and amount"
+                fullWidth
+                sx={{ mb: 1 }}
+              />
+            ))}
+          </Box>
+        )}
       </FormSection>
 
       {/* Taxpayer and Partner Representation */}
