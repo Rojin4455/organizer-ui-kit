@@ -456,7 +456,7 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
           NOTES: (additional information)
         </Typography>
         
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 4 }}>
           {[...Array(10)].map((_, index) => (
             <TextField
               key={index}
@@ -472,6 +472,131 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
               }}
             />
           ))}
+        </Box>
+
+        <Divider sx={{ my: 3 }} />
+
+        <Box sx={{ 
+          backgroundColor: '#f5f5f5', 
+          padding: 3, 
+          borderRadius: 2,
+          border: '1px solid #ddd'
+        }}>
+          <Typography variant="h6" sx={{ 
+            mb: 2, 
+            fontWeight: 'bold', 
+            textAlign: 'center',
+            backgroundColor: '#e0e0e0',
+            padding: 2,
+            borderRadius: 1,
+            textTransform: 'uppercase'
+          }}>
+            TAXPAYER AND SPOUSE (IF REQUIRED) REPRESENTATION
+          </Typography>
+          
+          <Typography variant="body2" sx={{ mb: 3, lineHeight: 1.6 }}>
+            To the best of my knowledge the information enclosed in this client tax organizer is correct and includes all income, 
+            deductions and other information necessary for the preparation of this year's income tax returns for which 
+            I have adequate records.
+          </Typography>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'end' }}>
+              <Box sx={{ flex: 2 }}>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
+                  Taxpayer Signature
+                </Typography>
+                <TextField
+                  value={data.taxpayerSignature || ''}
+                  onChange={(e) => handleChange('taxpayerSignature', e.target.value)}
+                  fullWidth
+                  variant="standard"
+                  placeholder="Taxpayer Signature"
+                  sx={{
+                    '& .MuiInput-underline:before': {
+                      borderBottomColor: 'rgba(0, 0, 0, 0.7)',
+                      borderBottomWidth: '2px'
+                    },
+                    '& .MuiInput-underline:after': {
+                      borderBottomColor: '#1976d2',
+                      borderBottomWidth: '2px'
+                    }
+                  }}
+                />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
+                  Date
+                </Typography>
+                <TextField
+                  type="date"
+                  value={data.taxpayerSignatureDate || ''}
+                  onChange={(e) => handleChange('taxpayerSignatureDate', e.target.value)}
+                  fullWidth
+                  variant="standard"
+                  InputLabelProps={{ shrink: true }}
+                  sx={{
+                    '& .MuiInput-underline:before': {
+                      borderBottomColor: 'rgba(0, 0, 0, 0.7)',
+                      borderBottomWidth: '2px'
+                    },
+                    '& .MuiInput-underline:after': {
+                      borderBottomColor: '#1976d2',
+                      borderBottomWidth: '2px'
+                    }
+                  }}
+                />
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'end' }}>
+              <Box sx={{ flex: 2 }}>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
+                  Spouse Signature
+                </Typography>
+                <TextField
+                  value={data.spouseSignature || ''}
+                  onChange={(e) => handleChange('spouseSignature', e.target.value)}
+                  fullWidth
+                  variant="standard"
+                  placeholder="Spouse Signature"
+                  sx={{
+                    '& .MuiInput-underline:before': {
+                      borderBottomColor: 'rgba(0, 0, 0, 0.7)',
+                      borderBottomWidth: '2px'
+                    },
+                    '& .MuiInput-underline:after': {
+                      borderBottomColor: '#1976d2',
+                      borderBottomWidth: '2px'
+                    }
+                  }}
+                />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
+                  Date
+                </Typography>
+                <TextField
+                  type="date"
+                  value={data.spouseSignatureDate || ''}
+                  onChange={(e) => handleChange('spouseSignatureDate', e.target.value)}
+                  fullWidth
+                  variant="standard"
+                  InputLabelProps={{ shrink: true }}
+                  sx={{
+                    '& .MuiInput-underline:before': {
+                      borderBottomColor: 'rgba(0, 0, 0, 0.7)',
+                      borderBottomWidth: '2px'
+                    },
+                    '& .MuiInput-underline:after': {
+                      borderBottomColor: '#1976d2',
+                      borderBottomWidth: '2px'
+                    }
+                  }}
+                />
+              </Box>
+            </Box>
+          </Box>
         </Box>
       </FormSection>
     </Box>
