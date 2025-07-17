@@ -16,6 +16,7 @@ import {
 } from '@mui/icons-material';
 import { FormStepper } from '../shared/FormStepper';
 import { BusinessBasicInfo } from './sections/BusinessBasicInfo';
+import { OwnerInfo } from './sections/OwnerInfo';
 import { BusinessIncomeExpenses } from './sections/BusinessIncomeExpenses';
 import { BusinessAssets } from './sections/BusinessAssets';
 import { BusinessReview } from './sections/BusinessReview';
@@ -30,6 +31,7 @@ export const BusinessTaxOrganizer = ({
   const [useVerticalStepper, setUseVerticalStepper] = useState(true);
   const [formData, setFormData] = useState({
     basicInfo: initialData.basicInfo || {},
+    ownerInfo: initialData.ownerInfo || {},
     incomeExpenses: initialData.incomeExpenses || {},
     assets: initialData.assets || {},
     homeOffice: initialData.homeOffice || {},
@@ -62,6 +64,19 @@ export const BusinessTaxOrganizer = ({
         />
       ),
       isCompleted: Boolean(formData.basicInfo.businessName && formData.basicInfo.ein),
+      isRequired: true,
+    },
+    {
+      id: 'owner-info',
+      label: 'Owner Information',
+      description: 'Details for all business owners',
+      content: (
+        <OwnerInfo
+          data={formData.ownerInfo}
+          onChange={(data) => updateFormData('ownerInfo', data)}
+        />
+      ),
+      isCompleted: Boolean(formData.ownerInfo.owners && formData.ownerInfo.owners[0]?.firstName),
       isRequired: true,
     },
     {
