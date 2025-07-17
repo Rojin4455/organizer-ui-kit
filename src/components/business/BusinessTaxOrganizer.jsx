@@ -18,7 +18,7 @@ import { FormStepper } from '../shared/FormStepper';
 import { BusinessBasicInfo } from './sections/BusinessBasicInfo';
 import { OwnerInfo } from './sections/OwnerInfo';
 import { BusinessIncomeExpenses } from './sections/BusinessIncomeExpenses';
-import { BusinessAssets } from './sections/BusinessAssets';
+import { BusinessUseOfHome } from './sections/BusinessUseOfHome';
 import { BusinessReview } from './sections/BusinessReview';
 
 export const BusinessTaxOrganizer = ({
@@ -93,13 +93,13 @@ export const BusinessTaxOrganizer = ({
       isRequired: true,
     },
     {
-      id: 'assets',
-      label: 'Assets & Depreciation',
-      description: 'Business assets, vehicles, and equipment',
+      id: 'home-office',
+      label: 'Business Use of Home',
+      description: 'Home office expenses and business use deductions',
       content: (
-        <BusinessAssets
-          data={formData.assets}
-          onChange={(data) => updateFormData('assets', data)}
+        <BusinessUseOfHome
+          data={formData.homeOffice}
+          onChange={(data) => updateFormData('homeOffice', data)}
         />
       ),
       isCompleted: true, // Optional section
