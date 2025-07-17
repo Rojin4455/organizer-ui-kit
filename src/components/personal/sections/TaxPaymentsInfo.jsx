@@ -145,15 +145,16 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
           CURRENT YEAR ESTIMATED TAX PAYMENT
         </Typography>
 
-        <TableContainer component={Paper} sx={{ mb: 3 }}>
-          <Table sx={{ tableLayout: 'fixed' }}>
-            <TableHead>
+        <TableContainer component={Paper} sx={{ mb: 4, boxShadow: 2 }}>
+          <Table sx={{ tableLayout: 'fixed', minWidth: '100%' }}>
+            <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
               <TableRow>
                 <TableCell sx={{ 
-                  width: '30%', 
+                  width: '28%', 
                   fontWeight: 'bold', 
-                  padding: '16px 12px',
-                  fontSize: '14px'
+                  padding: '20px 16px',
+                  fontSize: '14px',
+                  borderBottom: '2px solid #e0e0e0'
                 }}>
                   Quarter
                 </TableCell>
@@ -161,9 +162,10 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
                   width: '12%', 
                   fontWeight: 'bold', 
                   textAlign: 'center',
-                  padding: '16px 8px',
-                  fontSize: '12px',
-                  lineHeight: '1.2'
+                  padding: '20px 12px',
+                  fontSize: '13px',
+                  lineHeight: '1.3',
+                  borderBottom: '2px solid #e0e0e0'
                 }}>
                   FEDERAL<br />DATE
                 </TableCell>
@@ -171,9 +173,10 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
                   width: '12%', 
                   fontWeight: 'bold', 
                   textAlign: 'center',
-                  padding: '16px 8px',
-                  fontSize: '12px',
-                  lineHeight: '1.2'
+                  padding: '20px 12px',
+                  fontSize: '13px',
+                  lineHeight: '1.3',
+                  borderBottom: '2px solid #e0e0e0'
                 }}>
                   FEDERAL<br />AMOUNT
                 </TableCell>
@@ -181,9 +184,10 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
                   width: '12%', 
                   fontWeight: 'bold', 
                   textAlign: 'center',
-                  padding: '16px 8px',
-                  fontSize: '12px',
-                  lineHeight: '1.2'
+                  padding: '20px 12px',
+                  fontSize: '13px',
+                  lineHeight: '1.3',
+                  borderBottom: '2px solid #e0e0e0'
                 }}>
                   STATE<br />DATE
                 </TableCell>
@@ -191,9 +195,10 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
                   width: '12%', 
                   fontWeight: 'bold', 
                   textAlign: 'center',
-                  padding: '16px 8px',
-                  fontSize: '12px',
-                  lineHeight: '1.2'
+                  padding: '20px 12px',
+                  fontSize: '13px',
+                  lineHeight: '1.3',
+                  borderBottom: '2px solid #e0e0e0'
                 }}>
                   STATE<br />AMOUNT
                 </TableCell>
@@ -201,37 +206,41 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
                   width: '6%', 
                   fontWeight: 'bold', 
                   textAlign: 'center',
-                  padding: '16px 4px',
-                  fontSize: '12px'
+                  padding: '20px 8px',
+                  fontSize: '13px',
+                  borderBottom: '2px solid #e0e0e0'
                 }}>
                   ID
                 </TableCell>
                 <TableCell sx={{ 
-                  width: '10%', 
+                  width: '9%', 
                   fontWeight: 'bold', 
                   textAlign: 'center',
-                  padding: '16px 8px',
-                  fontSize: '12px',
-                  lineHeight: '1.2'
+                  padding: '20px 12px',
+                  fontSize: '13px',
+                  lineHeight: '1.3',
+                  borderBottom: '2px solid #e0e0e0'
                 }}>
                   LOCAL<br />DATE
                 </TableCell>
                 <TableCell sx={{ 
-                  width: '10%', 
+                  width: '9%', 
                   fontWeight: 'bold', 
                   textAlign: 'center',
-                  padding: '16px 8px',
-                  fontSize: '12px',
-                  lineHeight: '1.2'
+                  padding: '20px 12px',
+                  fontSize: '13px',
+                  lineHeight: '1.3',
+                  borderBottom: '2px solid #e0e0e0'
                 }}>
                   LOCAL<br />AMOUNT
                 </TableCell>
                 <TableCell sx={{ 
-                  width: '6%', 
+                  width: '8%', 
                   fontWeight: 'bold', 
                   textAlign: 'center',
-                  padding: '16px 4px',
-                  fontSize: '12px'
+                  padding: '20px 8px',
+                  fontSize: '13px',
+                  borderBottom: '2px solid #e0e0e0'
                 }}>
                   ID
                 </TableCell>
@@ -247,11 +256,23 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
                 'b. Additional payments',
                 '11. Prior year overpayment applied to current year',
               ].map((quarter, index) => (
-                <TableRow key={index} sx={{ '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.02)' } }}>
-                  <TableCell sx={{ padding: '20px 12px', fontSize: '13px' }}>
+                <TableRow 
+                  key={index} 
+                  sx={{ 
+                    '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.02)' },
+                    '&:nth-of-type(even)': { backgroundColor: 'rgba(0, 0, 0, 0.01)' },
+                    height: '80px'
+                  }}
+                >
+                  <TableCell sx={{ 
+                    padding: '24px 16px', 
+                    fontSize: '14px',
+                    verticalAlign: 'middle',
+                    borderBottom: '1px solid #e8e8e8'
+                  }}>
                     {quarter}
                   </TableCell>
-                  <TableCell sx={{ padding: '16px 8px' }}>
+                  <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
                     <TextField
                       type="date"
                       value={data[`federalDate${index + 1}`] || ''}
@@ -260,13 +281,20 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
                       InputLabelProps={{ shrink: true }}
                       sx={{
                         '& .MuiInputBase-root': {
-                          height: '40px',
-                          fontSize: '12px'
+                          height: '48px',
+                          fontSize: '13px',
+                          backgroundColor: 'white',
+                          borderRadius: '6px'
+                        },
+                        '& .MuiOutlinedInput-root': {
+                          '&:hover fieldset': {
+                            borderColor: '#1976d2'
+                          }
                         }
                       }}
                     />
                   </TableCell>
-                  <TableCell sx={{ padding: '16px 8px' }}>
+                  <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
                     <TextField
                       type="number"
                       value={data[`federalAmount${index + 1}`] || ''}
@@ -275,13 +303,20 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
                       fullWidth
                       sx={{
                         '& .MuiInputBase-root': {
-                          height: '40px',
-                          fontSize: '12px'
+                          height: '48px',
+                          fontSize: '13px',
+                          backgroundColor: 'white',
+                          borderRadius: '6px'
+                        },
+                        '& .MuiOutlinedInput-root': {
+                          '&:hover fieldset': {
+                            borderColor: '#1976d2'
+                          }
                         }
                       }}
                     />
                   </TableCell>
-                  <TableCell sx={{ padding: '16px 8px' }}>
+                  <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
                     <TextField
                       type="date"
                       value={data[`stateDate${index + 1}`] || ''}
@@ -290,13 +325,20 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
                       InputLabelProps={{ shrink: true }}
                       sx={{
                         '& .MuiInputBase-root': {
-                          height: '40px',
-                          fontSize: '12px'
+                          height: '48px',
+                          fontSize: '13px',
+                          backgroundColor: 'white',
+                          borderRadius: '6px'
+                        },
+                        '& .MuiOutlinedInput-root': {
+                          '&:hover fieldset': {
+                            borderColor: '#1976d2'
+                          }
                         }
                       }}
                     />
                   </TableCell>
-                  <TableCell sx={{ padding: '16px 8px' }}>
+                  <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
                     <TextField
                       type="number"
                       value={data[`stateAmount${index + 1}`] || ''}
@@ -305,26 +347,40 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
                       fullWidth
                       sx={{
                         '& .MuiInputBase-root': {
-                          height: '40px',
-                          fontSize: '12px'
+                          height: '48px',
+                          fontSize: '13px',
+                          backgroundColor: 'white',
+                          borderRadius: '6px'
+                        },
+                        '& .MuiOutlinedInput-root': {
+                          '&:hover fieldset': {
+                            borderColor: '#1976d2'
+                          }
                         }
                       }}
                     />
                   </TableCell>
-                  <TableCell sx={{ padding: '16px 4px' }}>
+                  <TableCell sx={{ padding: '20px 8px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
                     <TextField
                       value={data[`stateId${index + 1}`] || ''}
                       onChange={(e) => handleChange(`stateId${index + 1}`, e.target.value)}
                       fullWidth
                       sx={{
                         '& .MuiInputBase-root': {
-                          height: '40px',
-                          fontSize: '12px'
+                          height: '48px',
+                          fontSize: '13px',
+                          backgroundColor: 'white',
+                          borderRadius: '6px'
+                        },
+                        '& .MuiOutlinedInput-root': {
+                          '&:hover fieldset': {
+                            borderColor: '#1976d2'
+                          }
                         }
                       }}
                     />
                   </TableCell>
-                  <TableCell sx={{ padding: '16px 8px' }}>
+                  <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
                     <TextField
                       type="date"
                       value={data[`localDate${index + 1}`] || ''}
@@ -333,13 +389,20 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
                       InputLabelProps={{ shrink: true }}
                       sx={{
                         '& .MuiInputBase-root': {
-                          height: '40px',
-                          fontSize: '12px'
+                          height: '48px',
+                          fontSize: '13px',
+                          backgroundColor: 'white',
+                          borderRadius: '6px'
+                        },
+                        '& .MuiOutlinedInput-root': {
+                          '&:hover fieldset': {
+                            borderColor: '#1976d2'
+                          }
                         }
                       }}
                     />
                   </TableCell>
-                  <TableCell sx={{ padding: '16px 8px' }}>
+                  <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
                     <TextField
                       type="number"
                       value={data[`localAmount${index + 1}`] || ''}
@@ -348,21 +411,35 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
                       fullWidth
                       sx={{
                         '& .MuiInputBase-root': {
-                          height: '40px',
-                          fontSize: '12px'
+                          height: '48px',
+                          fontSize: '13px',
+                          backgroundColor: 'white',
+                          borderRadius: '6px'
+                        },
+                        '& .MuiOutlinedInput-root': {
+                          '&:hover fieldset': {
+                            borderColor: '#1976d2'
+                          }
                         }
                       }}
                     />
                   </TableCell>
-                  <TableCell sx={{ padding: '16px 4px' }}>
+                  <TableCell sx={{ padding: '20px 8px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
                     <TextField
                       value={data[`localId${index + 1}`] || ''}
                       onChange={(e) => handleChange(`localId${index + 1}`, e.target.value)}
                       fullWidth
                       sx={{
                         '& .MuiInputBase-root': {
-                          height: '40px',
-                          fontSize: '12px'
+                          height: '48px',
+                          fontSize: '13px',
+                          backgroundColor: 'white',
+                          borderRadius: '6px'
+                        },
+                        '& .MuiOutlinedInput-root': {
+                          '&:hover fieldset': {
+                            borderColor: '#1976d2'
+                          }
                         }
                       }}
                     />
