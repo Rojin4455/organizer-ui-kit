@@ -146,32 +146,93 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
         </Typography>
 
         <TableContainer component={Paper} sx={{ mb: 3 }}>
-          <Table size="small">
+          <Table sx={{ tableLayout: 'fixed' }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ width: '35%', fontWeight: 'bold' }}>Quarter</TableCell>
-                <TableCell sx={{ width: '15%', fontWeight: 'bold', textAlign: 'center' }}>
+                <TableCell sx={{ 
+                  width: '30%', 
+                  fontWeight: 'bold', 
+                  padding: '16px 12px',
+                  fontSize: '14px'
+                }}>
+                  Quarter
+                </TableCell>
+                <TableCell sx={{ 
+                  width: '12%', 
+                  fontWeight: 'bold', 
+                  textAlign: 'center',
+                  padding: '16px 8px',
+                  fontSize: '12px',
+                  lineHeight: '1.2'
+                }}>
                   FEDERAL<br />DATE
                 </TableCell>
-                <TableCell sx={{ width: '15%', fontWeight: 'bold', textAlign: 'center' }}>
+                <TableCell sx={{ 
+                  width: '12%', 
+                  fontWeight: 'bold', 
+                  textAlign: 'center',
+                  padding: '16px 8px',
+                  fontSize: '12px',
+                  lineHeight: '1.2'
+                }}>
                   FEDERAL<br />AMOUNT
                 </TableCell>
-                <TableCell sx={{ width: '10%', fontWeight: 'bold', textAlign: 'center' }}>
+                <TableCell sx={{ 
+                  width: '12%', 
+                  fontWeight: 'bold', 
+                  textAlign: 'center',
+                  padding: '16px 8px',
+                  fontSize: '12px',
+                  lineHeight: '1.2'
+                }}>
                   STATE<br />DATE
                 </TableCell>
-                <TableCell sx={{ width: '15%', fontWeight: 'bold', textAlign: 'center' }}>
+                <TableCell sx={{ 
+                  width: '12%', 
+                  fontWeight: 'bold', 
+                  textAlign: 'center',
+                  padding: '16px 8px',
+                  fontSize: '12px',
+                  lineHeight: '1.2'
+                }}>
                   STATE<br />AMOUNT
                 </TableCell>
-                <TableCell sx={{ width: '5%', fontWeight: 'bold', textAlign: 'center' }}>
+                <TableCell sx={{ 
+                  width: '6%', 
+                  fontWeight: 'bold', 
+                  textAlign: 'center',
+                  padding: '16px 4px',
+                  fontSize: '12px'
+                }}>
                   ID
                 </TableCell>
-                <TableCell sx={{ width: '10%', fontWeight: 'bold', textAlign: 'center' }}>
+                <TableCell sx={{ 
+                  width: '10%', 
+                  fontWeight: 'bold', 
+                  textAlign: 'center',
+                  padding: '16px 8px',
+                  fontSize: '12px',
+                  lineHeight: '1.2'
+                }}>
                   LOCAL<br />DATE
                 </TableCell>
-                <TableCell sx={{ width: '15%', fontWeight: 'bold', textAlign: 'center' }}>
+                <TableCell sx={{ 
+                  width: '10%', 
+                  fontWeight: 'bold', 
+                  textAlign: 'center',
+                  padding: '16px 8px',
+                  fontSize: '12px',
+                  lineHeight: '1.2'
+                }}>
                   LOCAL<br />AMOUNT
                 </TableCell>
-                <TableCell sx={{ width: '5%', fontWeight: 'bold', textAlign: 'center' }}>
+                <TableCell sx={{ 
+                  width: '6%', 
+                  fontWeight: 'bold', 
+                  textAlign: 'center',
+                  padding: '16px 4px',
+                  fontSize: '12px'
+                }}>
                   ID
                 </TableCell>
               </TableRow>
@@ -186,82 +247,124 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
                 'b. Additional payments',
                 '11. Prior year overpayment applied to current year',
               ].map((quarter, index) => (
-                <TableRow key={index}>
-                  <TableCell>{quarter}</TableCell>
-                  <TableCell>
+                <TableRow key={index} sx={{ '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.02)' } }}>
+                  <TableCell sx={{ padding: '20px 12px', fontSize: '13px' }}>
+                    {quarter}
+                  </TableCell>
+                  <TableCell sx={{ padding: '16px 8px' }}>
                     <TextField
                       type="date"
                       value={data[`federalDate${index + 1}`] || ''}
                       onChange={(e) => handleChange(`federalDate${index + 1}`, e.target.value)}
                       fullWidth
-                      size="small"
                       InputLabelProps={{ shrink: true }}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          height: '40px',
+                          fontSize: '12px'
+                        }
+                      }}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ padding: '16px 8px' }}>
                     <TextField
                       type="number"
                       value={data[`federalAmount${index + 1}`] || ''}
                       onChange={(e) => handleChange(`federalAmount${index + 1}`, e.target.value)}
                       InputProps={{ startAdornment: '$' }}
                       fullWidth
-                      size="small"
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          height: '40px',
+                          fontSize: '12px'
+                        }
+                      }}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ padding: '16px 8px' }}>
                     <TextField
                       type="date"
                       value={data[`stateDate${index + 1}`] || ''}
                       onChange={(e) => handleChange(`stateDate${index + 1}`, e.target.value)}
                       fullWidth
-                      size="small"
                       InputLabelProps={{ shrink: true }}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          height: '40px',
+                          fontSize: '12px'
+                        }
+                      }}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ padding: '16px 8px' }}>
                     <TextField
                       type="number"
                       value={data[`stateAmount${index + 1}`] || ''}
                       onChange={(e) => handleChange(`stateAmount${index + 1}`, e.target.value)}
                       InputProps={{ startAdornment: '$' }}
                       fullWidth
-                      size="small"
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          height: '40px',
+                          fontSize: '12px'
+                        }
+                      }}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ padding: '16px 4px' }}>
                     <TextField
                       value={data[`stateId${index + 1}`] || ''}
                       onChange={(e) => handleChange(`stateId${index + 1}`, e.target.value)}
                       fullWidth
-                      size="small"
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          height: '40px',
+                          fontSize: '12px'
+                        }
+                      }}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ padding: '16px 8px' }}>
                     <TextField
                       type="date"
                       value={data[`localDate${index + 1}`] || ''}
                       onChange={(e) => handleChange(`localDate${index + 1}`, e.target.value)}
                       fullWidth
-                      size="small"
                       InputLabelProps={{ shrink: true }}
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          height: '40px',
+                          fontSize: '12px'
+                        }
+                      }}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ padding: '16px 8px' }}>
                     <TextField
                       type="number"
                       value={data[`localAmount${index + 1}`] || ''}
                       onChange={(e) => handleChange(`localAmount${index + 1}`, e.target.value)}
                       InputProps={{ startAdornment: '$' }}
                       fullWidth
-                      size="small"
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          height: '40px',
+                          fontSize: '12px'
+                        }
+                      }}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ padding: '16px 4px' }}>
                     <TextField
                       value={data[`localId${index + 1}`] || ''}
                       onChange={(e) => handleChange(`localId${index + 1}`, e.target.value)}
                       fullWidth
-                      size="small"
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          height: '40px',
+                          fontSize: '12px'
+                        }
+                      }}
                     />
                   </TableCell>
                 </TableRow>
