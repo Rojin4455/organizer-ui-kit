@@ -126,6 +126,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
           <TextField
             label="Advertising"
+            placeholder="e.g., Google Ads, Facebook marketing, print ads"
             type="number"
             value={data.advertising || ''}
             onChange={(e) => handleChange('advertising', e.target.value)}
@@ -134,6 +135,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Office Expenses"
+            placeholder="e.g., supplies, stationery, software subscriptions"
             type="number"
             value={data.officeExpenses || ''}
             onChange={(e) => handleChange('officeExpenses', e.target.value)}
@@ -142,6 +144,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Bank Fees"
+            placeholder="e.g., account fees, transaction charges, wire fees"
             type="number"
             value={data.bankFees || ''}
             onChange={(e) => handleChange('bankFees', e.target.value)}
@@ -150,6 +153,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Other Interest"
+            placeholder="e.g., credit card interest, loan interest"
             type="number"
             value={data.otherInterest || ''}
             onChange={(e) => handleChange('otherInterest', e.target.value)}
@@ -158,6 +162,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Commissions"
+            placeholder="e.g., sales commissions, referral fees"
             type="number"
             value={data.commissions || ''}
             onChange={(e) => handleChange('commissions', e.target.value)}
@@ -166,6 +171,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Parking & Tolls"
+            placeholder="e.g., business parking fees, highway tolls"
             type="number"
             value={data.parkingTolls || ''}
             onChange={(e) => handleChange('parkingTolls', e.target.value)}
@@ -174,6 +180,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Computer Purchase"
+            placeholder="e.g., laptops, tablets, computer equipment"
             type="number"
             value={data.computerPurchase || ''}
             onChange={(e) => handleChange('computerPurchase', e.target.value)}
@@ -182,6 +189,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Rent - other business property"
+            placeholder="e.g., warehouse rent, storage unit, office space"
             type="number"
             value={data.rentOtherBusiness || ''}
             onChange={(e) => handleChange('rentOtherBusiness', e.target.value)}
@@ -190,6 +198,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Consulting/Training"
+            placeholder="e.g., business consultants, employee training courses"
             type="number"
             value={data.consultingTraining || ''}
             onChange={(e) => handleChange('consultingTraining', e.target.value)}
@@ -198,6 +207,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Rent - vehicles machinery & equipment"
+            placeholder="e.g., equipment rental, vehicle leases, machinery"
             type="number"
             value={data.rentVehiclesMachinery || ''}
             onChange={(e) => handleChange('rentVehiclesMachinery', e.target.value)}
@@ -206,6 +216,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Dues and Subscriptions"
+            placeholder="e.g., professional memberships, trade associations"
             type="number"
             value={data.duesSubscriptions || ''}
             onChange={(e) => handleChange('duesSubscriptions', e.target.value)}
@@ -214,6 +225,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Repairs"
+            placeholder="e.g., equipment repairs, building maintenance"
             type="number"
             value={data.repairs || ''}
             onChange={(e) => handleChange('repairs', e.target.value)}
@@ -222,6 +234,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Entity Creation"
+            placeholder="e.g., LLC filing fees, incorporation costs"
             type="number"
             value={data.entityCreation || ''}
             onChange={(e) => handleChange('entityCreation', e.target.value)}
@@ -230,6 +243,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Shipping/Postage"
+            placeholder="e.g., UPS, FedEx, postal services, packaging"
             type="number"
             value={data.shippingPostage || ''}
             onChange={(e) => handleChange('shippingPostage', e.target.value)}
@@ -238,6 +252,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Food/Eat Out"
+            placeholder="e.g., client meals, business lunches (50% deductible)"
             type="number"
             value={data.foodEatOut || ''}
             onChange={(e) => handleChange('foodEatOut', e.target.value)}
@@ -246,6 +261,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Taxes - real estate"
+            placeholder="e.g., property taxes on business real estate"
             type="number"
             value={data.taxesRealEstate || ''}
             onChange={(e) => handleChange('taxesRealEstate', e.target.value)}
@@ -254,6 +270,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Health Insurance Premiums"
+            placeholder="e.g., business health insurance for employees"
             type="number"
             value={data.healthInsurancePremiums || ''}
             onChange={(e) => handleChange('healthInsurancePremiums', e.target.value)}
@@ -262,6 +279,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Taxes - other"
+            placeholder="e.g., business license taxes, payroll taxes"
             type="number"
             value={data.taxesOther || ''}
             onChange={(e) => handleChange('taxesOther', e.target.value)}
@@ -270,6 +288,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Insurance other than health"
+            placeholder="e.g., liability, property, business insurance"
             type="number"
             value={data.insuranceOtherHealth || ''}
             onChange={(e) => handleChange('insuranceOtherHealth', e.target.value)}
@@ -278,6 +297,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Telephone"
+            placeholder="e.g., business phone lines, mobile phone bills"
             type="number"
             value={data.telephone || ''}
             onChange={(e) => handleChange('telephone', e.target.value)}
@@ -286,6 +306,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Interest (mortgage, etc.)"
+            placeholder="e.g., business property mortgage interest"
             type="number"
             value={data.interestMortgage || ''}
             onChange={(e) => handleChange('interestMortgage', e.target.value)}
@@ -294,6 +315,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Total meals"
+            placeholder="e.g., all business meal expenses (will be 50% deductible)"
             type="number"
             value={data.totalMeals || ''}
             onChange={(e) => handleChange('totalMeals', e.target.value)}
@@ -302,6 +324,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Internet"
+            placeholder="e.g., business internet service, web hosting"
             type="number"
             value={data.internet || ''}
             onChange={(e) => handleChange('internet', e.target.value)}
@@ -310,6 +333,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Travel"
+            placeholder="e.g., flights, hotels, car rentals for business"
             type="number"
             value={data.travel || ''}
             onChange={(e) => handleChange('travel', e.target.value)}
@@ -318,6 +342,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Legal & Professional"
+            placeholder="e.g., attorney fees, accountant fees, tax prep"
             type="number"
             value={data.legalProfessional || ''}
             onChange={(e) => handleChange('legalProfessional', e.target.value)}
@@ -326,6 +351,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Utilities"
+            placeholder="e.g., electricity, gas, water for business location"
             type="number"
             value={data.utilities || ''}
             onChange={(e) => handleChange('utilities', e.target.value)}
@@ -334,6 +360,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Licenses"
+            placeholder="e.g., business licenses, professional certifications"
             type="number"
             value={data.licenses || ''}
             onChange={(e) => handleChange('licenses', e.target.value)}
@@ -342,6 +369,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Wages"
+            placeholder="e.g., employee salaries, contractor payments"
             type="number"
             value={data.wages || ''}
             onChange={(e) => handleChange('wages', e.target.value)}
@@ -350,6 +378,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Merchant fees"
+            placeholder="e.g., credit card processing fees, PayPal fees"
             type="number"
             value={data.merchantFees || ''}
             onChange={(e) => handleChange('merchantFees', e.target.value)}
@@ -358,6 +387,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Web Fees"
+            placeholder="e.g., domain registration, website maintenance"
             type="number"
             value={data.webFees || ''}
             onChange={(e) => handleChange('webFees', e.target.value)}
@@ -366,6 +396,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           />
           <TextField
             label="Wholesale/Drop Shipper fees"
+            placeholder="e.g., wholesale supplier fees, drop shipping costs"
             type="number"
             value={data.wholesaleDropShipper || ''}
             onChange={(e) => handleChange('wholesaleDropShipper', e.target.value)}
