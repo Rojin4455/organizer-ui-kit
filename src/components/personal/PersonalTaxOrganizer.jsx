@@ -22,6 +22,7 @@ import { DependentInfo } from './sections/DependentInfo';
 import { IncomeInfo } from './sections/IncomeInfo';
 import { DeductionsInfo } from './sections/DeductionsInfo';
 import { TaxPaymentsInfo } from './sections/TaxPaymentsInfo';
+import { GeneralQuestions } from './sections/GeneralQuestions';
 import { ReviewSubmit } from './sections/ReviewSubmit';
 
 export const PersonalTaxOrganizer = ({
@@ -38,6 +39,7 @@ export const PersonalTaxOrganizer = ({
     income: initialData.income || {},
     deductions: initialData.deductions || {},
     taxPayments: initialData.taxPayments || {},
+    generalQuestions: initialData.generalQuestions || {},
   });
 
   // Auto-save functionality
@@ -116,6 +118,19 @@ export const PersonalTaxOrganizer = ({
         <TaxPaymentsInfo
           data={formData.taxPayments}
           onChange={(data) => updateFormData('taxPayments', data)}
+        />
+      ),
+      isCompleted: true, // Optional section
+      isRequired: false,
+    },
+    {
+      id: 'general-questions',
+      label: 'General Questions',
+      description: 'Additional tax-related questions and situations',
+      content: (
+        <GeneralQuestions
+          data={formData.generalQuestions}
+          onChange={(data) => updateFormData('generalQuestions', data)}
         />
       ),
       isCompleted: true, // Optional section
