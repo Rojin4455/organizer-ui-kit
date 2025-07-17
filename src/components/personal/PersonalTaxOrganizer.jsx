@@ -85,6 +85,19 @@ export const PersonalTaxOrganizer = ({
       isRequired: false,
     },
     {
+      id: 'general-questions',
+      label: 'General Questions',
+      description: 'Additional tax-related questions and situations',
+      content: (
+        <GeneralQuestions
+          data={formData.generalQuestions}
+          onChange={(data) => updateFormData('generalQuestions', data)}
+        />
+      ),
+      isCompleted: true, // Optional section
+      isRequired: false,
+    },
+    {
       id: 'income',
       label: 'Income',
       description: 'W-2s, 1099s, and other income sources',
@@ -118,19 +131,6 @@ export const PersonalTaxOrganizer = ({
         <TaxPaymentsInfo
           data={formData.taxPayments}
           onChange={(data) => updateFormData('taxPayments', data)}
-        />
-      ),
-      isCompleted: true, // Optional section
-      isRequired: false,
-    },
-    {
-      id: 'general-questions',
-      label: 'General Questions',
-      description: 'Additional tax-related questions and situations',
-      content: (
-        <GeneralQuestions
-          data={formData.generalQuestions}
-          onChange={(data) => updateFormData('generalQuestions', data)}
         />
       ),
       isCompleted: true, // Optional section
