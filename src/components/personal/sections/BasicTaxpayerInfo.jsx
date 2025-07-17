@@ -10,6 +10,8 @@ import {
   Switch,
   Typography,
   Divider,
+  Checkbox,
+  FormGroup,
 } from '@mui/material';
 import { SecureTextField } from '../../shared/SecureTextField';
 import { FormSection } from '../../shared/FormSection';
@@ -21,7 +23,20 @@ export const BasicTaxpayerInfo = ({ data, onChange }) => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <FormSection title="Taxpayer Information" isSecure>
+      <FormSection title="Basic Taxpayer Information" isSecure>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={data.returningClient || false}
+              onChange={(e) => handleChange('returningClient', e.target.checked)}
+            />
+          }
+          label="Returning Client, No Changes to Personal Information"
+          sx={{ mb: 2 }}
+        />
+      </FormSection>
+
+      <FormSection title="Personal Information" isSecure>
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
           <TextField
             label="First Name"
@@ -147,11 +162,18 @@ export const BasicTaxpayerInfo = ({ data, onChange }) => {
             value={data.streetAddress || ''}
             onChange={(e) => handleChange('streetAddress', e.target.value)}
             fullWidth
+            sx={{ gridColumn: { md: '1 / -1' } }}
           />
           <TextField
             label="City"
             value={data.city || ''}
             onChange={(e) => handleChange('city', e.target.value)}
+            fullWidth
+          />
+          <TextField
+            label="County"
+            value={data.county || ''}
+            onChange={(e) => handleChange('county', e.target.value)}
             fullWidth
           />
           <TextField
@@ -172,6 +194,7 @@ export const BasicTaxpayerInfo = ({ data, onChange }) => {
             value={data.email || ''}
             onChange={(e) => handleChange('email', e.target.value)}
             fullWidth
+            sx={{ gridColumn: { md: '1 / -1' } }}
           />
           <TextField
             label="Home Phone"
@@ -179,6 +202,132 @@ export const BasicTaxpayerInfo = ({ data, onChange }) => {
             onChange={(e) => handleChange('homePhone', e.target.value)}
             fullWidth
           />
+        </Box>
+      </FormSection>
+
+      <FormSection title="Additional Information">
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {/* Taxpayer Status */}
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+              Taxpayer
+            </Typography>
+            <FormGroup row>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={data.taxpayerBlind || false}
+                    onChange={(e) => handleChange('taxpayerBlind', e.target.checked)}
+                  />
+                }
+                label="Blind"
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={data.taxpayerDisabled || false}
+                    onChange={(e) => handleChange('taxpayerDisabled', e.target.checked)}
+                  />
+                }
+                label="Disabled"
+              />
+            </FormGroup>
+          </Box>
+
+          {/* Spouse Status */}
+          {data.hasSpouse && (
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                Spouse
+              </Typography>
+              <FormGroup row>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={data.spouseBlind || false}
+                      onChange={(e) => handleChange('spouseBlind', e.target.checked)}
+                    />
+                  }
+                  label="Blind"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={data.spouseDisabled || false}
+                      onChange={(e) => handleChange('spouseDisabled', e.target.checked)}
+                    />
+                  }
+                  label="Disabled"
+                />
+              </FormGroup>
+            </Box>
+          )}
+
+          {/* Dependent Eligibility */}
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+              Eligible to be claimed as a dependent on another return:
+            </Typography>
+            <FormGroup row>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={data.taxpayerDependentEligible || false}
+                    onChange={(e) => handleChange('taxpayerDependentEligible', e.target.checked)}
+                  />
+                }
+                label="Taxpayer"
+              />
+              {data.hasSpouse && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={data.spouseDependentEligible || false}
+                      onChange={(e) => handleChange('spouseDependentEligible', e.target.checked)}
+                    />
+                  }
+                  label="Spouse"
+                />
+              )}
+            </FormGroup>
+          </Box>
+
+          {/* Date of Spouse's Death */}
+          {data.filingStatus === 'qualifyingWidow' && (
+            <TextField
+              label="Date of Spouse's Death"
+              type="date"
+              value={data.spouseDeathDate || ''}
+              onChange={(e) => handleChange('spouseDeathDate', e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+            />
+          )}
+
+          {/* Marital Status Change */}
+          <Box>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={data.maritalStatusChanged || false}
+                  onChange={(e) => handleChange('maritalStatusChanged', e.target.checked)}
+                />
+              }
+              label="Did your Marital Status change during the current tax year?"
+            />
+            
+            {data.maritalStatusChanged && (
+              <TextField
+                label="If yes, please explain"
+                value={data.maritalStatusExplanation || ''}
+                onChange={(e) => handleChange('maritalStatusExplanation', e.target.value)}
+                multiline
+                rows={3}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+            )}
+          </Box>
         </Box>
       </FormSection>
     </Box>
