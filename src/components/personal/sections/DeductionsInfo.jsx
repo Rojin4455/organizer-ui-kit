@@ -4,7 +4,14 @@ import {
   TextField,
   Typography,
   FormControlLabel,
-  Switch,
+  Checkbox,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Paper,
+  TableContainer,
 } from '@mui/material';
 import { FormSection } from '../../shared/FormSection';
 
@@ -13,93 +20,99 @@ export const DeductionsInfo = ({ data, onChange }) => {
     onChange({ ...data, [field]: value });
   };
 
+  const handleArrayChange = (arrayField, index, field, value) => {
+    const array = data[arrayField] || [];
+    const newArray = [...array];
+    if (!newArray[index]) {
+      newArray[index] = {};
+    }
+    newArray[index][field] = value;
+    handleChange(arrayField, newArray);
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <FormSection title="Medical and Dental Expenses">
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Medical expenses must exceed 7.5% of your adjusted gross income to be deductible.
-        </Typography>
-        
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-          <TextField
-            label="Prescription Medications"
-            type="number"
-            value={data.prescriptionMedications || ''}
-            onChange={(e) => handleChange('prescriptionMedications', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-          <TextField
-            label="Health Insurance Premiums"
-            type="number"
-            value={data.healthInsurancePremiums || ''}
-            onChange={(e) => handleChange('healthInsurancePremiums', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-          <TextField
-            label="Doctors, Dentists, etc."
-            type="number"
-            value={data.doctorsDentists || ''}
-            onChange={(e) => handleChange('doctorsDentists', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-          <TextField
-            label="Hospitals, Clinics"
-            type="number"
-            value={data.hospitalsClinics || ''}
-            onChange={(e) => handleChange('hospitalsClinics', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-          <TextField
-            label="Eyeglasses and Contact Lenses"
-            type="number"
-            value={data.eyeglassesContacts || ''}
-            onChange={(e) => handleChange('eyeglassesContacts', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-          <TextField
-            label="Medical Equipment and Supplies"
-            type="number"
-            value={data.medicalEquipment || ''}
-            onChange={(e) => handleChange('medicalEquipment', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-        </Box>
-      </FormSection>
-
       <FormSection title="Charitable Contributions">
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={data.attachContributionStatements || false}
+              onChange={(e) => handleChange('attachContributionStatements', e.target.checked)}
+            />
+          }
+          label="Attach all copies of your Contribution Statements"
+        />
+        
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Charitable Contributions Table
+          </Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name of Donee Organization</TableCell>
+                  <TableCell>Current Year Amount</TableCell>
+                  <TableCell>Name of Donee Organization</TableCell>
+                  <TableCell>Current Year Amount</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {[0, 1, 2, 3, 4, 5].map((row) => (
+                  <TableRow key={row}>
+                    <TableCell>
+                      <TextField
+                        size="small"
+                        value={data.charitableOrganizations?.[row * 2]?.name || ''}
+                        onChange={(e) => handleArrayChange('charitableOrganizations', row * 2, 'name', e.target.value)}
+                        fullWidth
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <TextField
+                        size="small"
+                        type="number"
+                        value={data.charitableOrganizations?.[row * 2]?.amount || ''}
+                        onChange={(e) => handleArrayChange('charitableOrganizations', row * 2, 'amount', e.target.value)}
+                        InputProps={{ startAdornment: '$' }}
+                        fullWidth
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <TextField
+                        size="small"
+                        value={data.charitableOrganizations?.[row * 2 + 1]?.name || ''}
+                        onChange={(e) => handleArrayChange('charitableOrganizations', row * 2 + 1, 'name', e.target.value)}
+                        fullWidth
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <TextField
+                        size="small"
+                        type="number"
+                        value={data.charitableOrganizations?.[row * 2 + 1]?.amount || ''}
+                        onChange={(e) => handleArrayChange('charitableOrganizations', row * 2 + 1, 'amount', e.target.value)}
+                        InputProps={{ startAdornment: '$' }}
+                        fullWidth
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mt: 2 }}>
           <TextField
-            label="Cash Contributions"
-            type="number"
-            value={data.charitableCash || ''}
-            onChange={(e) => handleChange('charitableCash', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-          <TextField
-            label="Non-Cash Contributions"
-            type="number"
-            value={data.charitableNonCash || ''}
-            onChange={(e) => handleChange('charitableNonCash', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-            helperText="Fair market value of donated items"
-          />
-          <TextField
-            label="Miles Driven for Charitable Purposes"
+            label="Miles driven for charitable purposes"
             type="number"
             value={data.charitableMiles || ''}
             onChange={(e) => handleChange('charitableMiles', e.target.value)}
             fullWidth
           />
           <TextField
-            label="Parking/Tolls for Charitable Purposes"
+            label="Parking fees, tolls, and local transportation"
             type="number"
             value={data.charitableParkingTolls || ''}
             onChange={(e) => handleChange('charitableParkingTolls', e.target.value)}
@@ -109,94 +122,149 @@ export const DeductionsInfo = ({ data, onChange }) => {
         </Box>
       </FormSection>
 
-      <FormSection title="Taxes Paid">
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-          <TextField
-            label="Real Estate Taxes (Principal Residence)"
-            type="number"
-            value={data.realEstateTaxesPrincipal || ''}
-            onChange={(e) => handleChange('realEstateTaxesPrincipal', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-          <TextField
-            label="Real Estate Taxes (Additional Homes)"
-            type="number"
-            value={data.realEstateTaxesAdditional || ''}
-            onChange={(e) => handleChange('realEstateTaxesAdditional', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-          <TextField
-            label="Auto Registration Fees"
-            type="number"
-            value={data.autoRegistrationFees || ''}
-            onChange={(e) => handleChange('autoRegistrationFees', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-            helperText="Based on value of vehicle"
-          />
-          <TextField
-            label="Other Personal Property Taxes"
-            type="number"
-            value={data.otherPersonalPropertyTaxes || ''}
-            onChange={(e) => handleChange('otherPersonalPropertyTaxes', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-        </Box>
-      </FormSection>
-
-      <FormSection title="Interest Paid">
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-          <TextField
-            label="Home Mortgage Interest"
-            type="number"
-            value={data.mortgageInterest || ''}
-            onChange={(e) => handleChange('mortgageInterest', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-          <TextField
-            label="Student Loan Interest"
-            type="number"
-            value={data.studentLoanInterest || ''}
-            onChange={(e) => handleChange('studentLoanInterest', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-        </Box>
-      </FormSection>
-
-      <FormSection title="Business Expenses (Employee)">
-        <FormControlLabel
-          control={
-            <Switch
-              checked={data.hasBusinessExpenses || false}
-              onChange={(e) => handleChange('hasBusinessExpenses', e.target.checked)}
-            />
-          }
-          label="Do you have unreimbursed employee business expenses?"
-        />
+      <FormSection title="Non-Cash Contributions">
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          Donee Organization Information
+        </Typography>
         
-        {data.hasBusinessExpenses && (
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mt: 2 }}>
-            <TextField
-              label="Business Miles Driven"
-              type="number"
-              value={data.businessMiles || ''}
-              onChange={(e) => handleChange('businessMiles', e.target.value)}
-              fullWidth
-            />
-            <TextField
-              label="Total Vehicle Miles"
-              type="number"
-              value={data.totalMiles || ''}
-              onChange={(e) => handleChange('totalMiles', e.target.value)}
-              fullWidth
-            />
+        {[0, 1, 2].map((index) => (
+          <Box key={index} sx={{ mb: 3, p: 2, border: '1px solid #ddd', borderRadius: 1 }}>
+            <Typography variant="subtitle1" sx={{ mb: 2 }}>
+              Organization {index + 1}
+            </Typography>
+            
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2 }}>
+              <TextField
+                label="Name of Donee Organization"
+                value={data.nonCashOrganizations?.[index]?.name || ''}
+                onChange={(e) => handleArrayChange('nonCashOrganizations', index, 'name', e.target.value)}
+                fullWidth
+              />
+              
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+                <TextField
+                  label="Date of Contribution"
+                  type="date"
+                  value={data.nonCashOrganizations?.[index]?.dateOfContribution || ''}
+                  onChange={(e) => handleArrayChange('nonCashOrganizations', index, 'dateOfContribution', e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  fullWidth
+                />
+                <TextField
+                  label="Amount of Contribution"
+                  type="number"
+                  value={data.nonCashOrganizations?.[index]?.amount || ''}
+                  onChange={(e) => handleArrayChange('nonCashOrganizations', index, 'amount', e.target.value)}
+                  InputProps={{ startAdornment: '$' }}
+                  fullWidth
+                />
+              </Box>
+              
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '2fr 1fr 1fr 1fr' }, gap: 2 }}>
+                <TextField
+                  label="Address"
+                  value={data.nonCashOrganizations?.[index]?.address || ''}
+                  onChange={(e) => handleArrayChange('nonCashOrganizations', index, 'address', e.target.value)}
+                  fullWidth
+                />
+                <TextField
+                  label="City"
+                  value={data.nonCashOrganizations?.[index]?.city || ''}
+                  onChange={(e) => handleArrayChange('nonCashOrganizations', index, 'city', e.target.value)}
+                  fullWidth
+                />
+                <TextField
+                  label="State"
+                  value={data.nonCashOrganizations?.[index]?.state || ''}
+                  onChange={(e) => handleArrayChange('nonCashOrganizations', index, 'state', e.target.value)}
+                  fullWidth
+                />
+                <TextField
+                  label="ZIP"
+                  value={data.nonCashOrganizations?.[index]?.zip || ''}
+                  onChange={(e) => handleArrayChange('nonCashOrganizations', index, 'zip', e.target.value)}
+                  fullWidth
+                />
+              </Box>
+              
+              <TextField
+                label="Description of Donated Property"
+                value={data.nonCashOrganizations?.[index]?.description || ''}
+                onChange={(e) => handleArrayChange('nonCashOrganizations', index, 'description', e.target.value)}
+                multiline
+                rows={2}
+                fullWidth
+              />
+            </Box>
           </Box>
-        )}
+        ))}
+      </FormSection>
+
+      <FormSection title="General Vehicle Information">
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontWeight: 'bold' }}>
+          Do not include self-employment mileage here. This section is for EMPLOYEE business expense only.
+        </Typography>
+        
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Vehicle Information</TableCell>
+                <TableCell>Vehicle</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              <TableRow>
+                <TableCell>19. Description of vehicle</TableCell>
+                <TableCell>
+                  <TextField
+                    size="small"
+                    value={data.vehicleDescription || ''}
+                    onChange={(e) => handleChange('vehicleDescription', e.target.value)}
+                    fullWidth
+                  />
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>20. Date placed in service</TableCell>
+                <TableCell>
+                  <TextField
+                    size="small"
+                    type="date"
+                    value={data.vehicleDatePlacedInService || ''}
+                    onChange={(e) => handleChange('vehicleDatePlacedInService', e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    fullWidth
+                  />
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>21. Total miles for the year</TableCell>
+                <TableCell>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={data.vehicleTotalMiles || ''}
+                    onChange={(e) => handleChange('vehicleTotalMiles', e.target.value)}
+                    fullWidth
+                  />
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>22. Business miles</TableCell>
+                <TableCell>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={data.vehicleBusinessMiles || ''}
+                    onChange={(e) => handleChange('vehicleBusinessMiles', e.target.value)}
+                    fullWidth
+                  />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </TableContainer>
       </FormSection>
     </Box>
   );
