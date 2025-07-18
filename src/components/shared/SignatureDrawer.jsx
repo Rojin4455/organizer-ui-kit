@@ -18,35 +18,41 @@ export const SignatureDrawer = ({ label, value, onChange, width = 400, height = 
       isDrawingMode: true,
     });
 
-    canvas.freeDrawingBrush.color = '#000000';
-    canvas.freeDrawingBrush.width = 2;
-
-    // Load existing signature if value exists
-    if (value) {
-      try {
-        canvas.loadFromJSON(value, () => {
-          canvas.renderAll();
-        });
-      } catch (error) {
-        console.log('Error loading signature:', error);
+    // Wait for canvas to be fully initialized
+    setTimeout(() => {
+      if (canvas.freeDrawingBrush) {
+        canvas.freeDrawingBrush.color = '#000000';
+        canvas.freeDrawingBrush.width = 2;
       }
-    }
 
-    setFabricCanvas(canvas);
+      // Load existing signature if value exists
+      if (value) {
+        try {
+          canvas.loadFromJSON(value, () => {
+            canvas.renderAll();
+          });
+        } catch (error) {
+          console.log('Error loading signature:', error);
+        }
+      }
 
-    // Save signature when drawing stops
-    const handlePathCreated = () => {
-      setTimeout(() => {
-        const signatureData = canvas.toJSON();
-        onChange(JSON.stringify(signatureData));
-      }, 100);
-    };
+      setFabricCanvas(canvas);
 
-    canvas.on('path:created', handlePathCreated);
+      // Save signature when drawing stops
+      const handlePathCreated = () => {
+        setTimeout(() => {
+          const signatureData = canvas.toJSON();
+          onChange(JSON.stringify(signatureData));
+        }, 100);
+      };
+
+      canvas.on('path:created', handlePathCreated);
+    }, 100);
 
     return () => {
-      canvas.off('path:created', handlePathCreated);
-      canvas.dispose();
+      if (canvas) {
+        canvas.dispose();
+      }
     };
   }, []);
 
@@ -63,6 +69,11 @@ export const SignatureDrawer = ({ label, value, onChange, width = 400, height = 
     const newDrawingMode = !isDrawing;
     setIsDrawing(newDrawingMode);
     fabricCanvas.isDrawingMode = newDrawingMode;
+    
+    if (newDrawingMode && fabricCanvas.freeDrawingBrush) {
+      fabricCanvas.freeDrawingBrush.color = '#000000';
+      fabricCanvas.freeDrawingBrush.width = 2;
+    }
   };
 
   return (
