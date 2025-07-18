@@ -13,6 +13,7 @@ import {
   Divider,
 } from '@mui/material';
 import { FormSection } from '../../shared/FormSection';
+import { SignatureDrawer } from '../../shared/SignatureDrawer';
 
 export const TaxPaymentsInfo = ({ data, onChange }) => {
   const handleChange = (field, value) => {
@@ -501,30 +502,17 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
           </Typography>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'end' }}>
-              <Box sx={{ flex: 2 }}>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
-                  Taxpayer Signature
-                </Typography>
-                <TextField
+            <Box sx={{ display: 'flex', gap: 3, alignItems: 'start', flexWrap: 'wrap' }}>
+              <Box sx={{ flex: 1, minWidth: '300px' }}>
+                <SignatureDrawer
+                  label="Taxpayer Signature"
                   value={data.taxpayerSignature || ''}
-                  onChange={(e) => handleChange('taxpayerSignature', e.target.value)}
-                  fullWidth
-                  variant="standard"
-                  placeholder="Taxpayer Signature"
-                  sx={{
-                    '& .MuiInput-underline:before': {
-                      borderBottomColor: 'rgba(0, 0, 0, 0.7)',
-                      borderBottomWidth: '2px'
-                    },
-                    '& .MuiInput-underline:after': {
-                      borderBottomColor: '#1976d2',
-                      borderBottomWidth: '2px'
-                    }
-                  }}
+                  onChange={(value) => handleChange('taxpayerSignature', value)}
+                  width={350}
+                  height={120}
                 />
               </Box>
-              <Box sx={{ flex: 1 }}>
+              <Box sx={{ flex: 0, minWidth: '200px', mt: 4 }}>
                 <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
                   Date
                 </Typography>
@@ -533,46 +521,23 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
                   value={data.taxpayerSignatureDate || ''}
                   onChange={(e) => handleChange('taxpayerSignatureDate', e.target.value)}
                   fullWidth
-                  variant="standard"
+                  variant="outlined"
                   InputLabelProps={{ shrink: true }}
-                  sx={{
-                    '& .MuiInput-underline:before': {
-                      borderBottomColor: 'rgba(0, 0, 0, 0.7)',
-                      borderBottomWidth: '2px'
-                    },
-                    '& .MuiInput-underline:after': {
-                      borderBottomColor: '#1976d2',
-                      borderBottomWidth: '2px'
-                    }
-                  }}
                 />
               </Box>
             </Box>
 
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'end' }}>
-              <Box sx={{ flex: 2 }}>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
-                  Spouse Signature
-                </Typography>
-                <TextField
+            <Box sx={{ display: 'flex', gap: 3, alignItems: 'start', flexWrap: 'wrap' }}>
+              <Box sx={{ flex: 1, minWidth: '300px' }}>
+                <SignatureDrawer
+                  label="Spouse Signature"
                   value={data.spouseSignature || ''}
-                  onChange={(e) => handleChange('spouseSignature', e.target.value)}
-                  fullWidth
-                  variant="standard"
-                  placeholder="Spouse Signature"
-                  sx={{
-                    '& .MuiInput-underline:before': {
-                      borderBottomColor: 'rgba(0, 0, 0, 0.7)',
-                      borderBottomWidth: '2px'
-                    },
-                    '& .MuiInput-underline:after': {
-                      borderBottomColor: '#1976d2',
-                      borderBottomWidth: '2px'
-                    }
-                  }}
+                  onChange={(value) => handleChange('spouseSignature', value)}
+                  width={350}
+                  height={120}
                 />
               </Box>
-              <Box sx={{ flex: 1 }}>
+              <Box sx={{ flex: 0, minWidth: '200px', mt: 4 }}>
                 <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
                   Date
                 </Typography>
@@ -581,18 +546,8 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
                   value={data.spouseSignatureDate || ''}
                   onChange={(e) => handleChange('spouseSignatureDate', e.target.value)}
                   fullWidth
-                  variant="standard"
+                  variant="outlined"
                   InputLabelProps={{ shrink: true }}
-                  sx={{
-                    '& .MuiInput-underline:before': {
-                      borderBottomColor: 'rgba(0, 0, 0, 0.7)',
-                      borderBottomWidth: '2px'
-                    },
-                    '& .MuiInput-underline:after': {
-                      borderBottomColor: '#1976d2',
-                      borderBottomWidth: '2px'
-                    }
-                  }}
                 />
               </Box>
             </Box>

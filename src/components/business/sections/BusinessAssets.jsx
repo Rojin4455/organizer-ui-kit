@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, TextField, FormControlLabel, Switch, Typography, Divider, Paper } from '@mui/material';
 import { FormSection } from '../../shared/FormSection';
+import { SignatureDrawer } from '../../shared/SignatureDrawer';
 
 export const BusinessAssets = ({ data, onChange }) => {
   const handleChange = (field, value) => {
@@ -152,38 +153,56 @@ export const BusinessAssets = ({ data, onChange }) => {
           I have adequate records.
         </Typography>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3, mb: 3 }}>
-          <TextField
-            label="Taxpayer Signature"
-            value={data.signatures?.taxpayerSignature || ''}
-            onChange={(e) => handleSignatureChange('taxpayerSignature', e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="Date"
-            type="date"
-            value={data.signatures?.taxpayerDate || ''}
-            onChange={(e) => handleSignatureChange('taxpayerDate', e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-          />
-        </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <Box sx={{ display: 'flex', gap: 3, alignItems: 'start', flexWrap: 'wrap' }}>
+            <Box sx={{ flex: 1, minWidth: '300px' }}>
+              <SignatureDrawer
+                label="Taxpayer Signature"
+                value={data.signatures?.taxpayerSignature || ''}
+                onChange={(value) => handleSignatureChange('taxpayerSignature', value)}
+                width={350}
+                height={120}
+              />
+            </Box>
+            <Box sx={{ flex: 0, minWidth: '200px', mt: 4 }}>
+              <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
+                Date
+              </Typography>
+              <TextField
+                type="date"
+                value={data.signatures?.taxpayerDate || ''}
+                onChange={(e) => handleSignatureChange('taxpayerDate', e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                variant="outlined"
+              />
+            </Box>
+          </Box>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-          <TextField
-            label="Partner Signature"
-            value={data.signatures?.partnerSignature || ''}
-            onChange={(e) => handleSignatureChange('partnerSignature', e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="Date"
-            type="date"
-            value={data.signatures?.partnerDate || ''}
-            onChange={(e) => handleSignatureChange('partnerDate', e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-          />
+          <Box sx={{ display: 'flex', gap: 3, alignItems: 'start', flexWrap: 'wrap' }}>
+            <Box sx={{ flex: 1, minWidth: '300px' }}>
+              <SignatureDrawer
+                label="Partner Signature"
+                value={data.signatures?.partnerSignature || ''}
+                onChange={(value) => handleSignatureChange('partnerSignature', value)}
+                width={350}
+                height={120}
+              />
+            </Box>
+            <Box sx={{ flex: 0, minWidth: '200px', mt: 4 }}>
+              <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
+                Date
+              </Typography>
+              <TextField
+                type="date"
+                value={data.signatures?.partnerDate || ''}
+                onChange={(e) => handleSignatureChange('partnerDate', e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                variant="outlined"
+              />
+            </Box>
+          </Box>
         </Box>
       </Paper>
 
