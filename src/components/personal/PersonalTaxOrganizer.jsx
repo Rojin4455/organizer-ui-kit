@@ -29,6 +29,8 @@ export const PersonalTaxOrganizer = ({
   onSave,
   onBack,
   initialData = {},
+  userId,
+  isLoading = false,
 }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,13 +44,32 @@ export const PersonalTaxOrganizer = ({
     generalQuestions: initialData.generalQuestions || {},
   });
 
-  // Auto-save functionality
+  // Update form data when initialData changes (from URL load)
   useEffect(() => {
+    if (initialData && Object.keys(initialData).length > 0) {
+      setFormData({
+        basicInfo: initialData.basicInfo || {},
+        dependents: initialData.dependents || [],
+        income: initialData.income || {},
+        deductions: initialData.deductions || {},
+        taxPayments: initialData.taxPayments || {},
+        generalQuestions: initialData.generalQuestions || {},
+      });
+    }
+  }, [initialData]);
+
+  // Auto-save functionality - only for existing forms with userId
+  useEffect(() => {
+    if (!userId || Object.keys(formData).length === 0) return;
+
     const timeout = setTimeout(() => {
+      // Call the parent's save function for auto-save
+      onSave(formData, false);
       localStorage.setItem('personalTaxData', JSON.stringify(formData));
-    }, 1000);
+    }, 3000); // Auto-save after 3 seconds of inactivity
+
     return () => clearTimeout(timeout);
-  }, [formData]);
+  }, [formData, userId, onSave]);
 
   const updateFormData = (section, data) => {
     setFormData(prev => ({
@@ -166,11 +187,19 @@ export const PersonalTaxOrganizer = ({
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      onSave(formData);
+      await onSave(formData, true); // isCompleted = true
+    } catch (error) {
+      console.error('Error submitting form:', error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSaveProgress = async () => {
+    try {
+      await onSave(formData, false); // isCompleted = false
+    } catch (error) {
+      console.error('Error saving progress:', error);
     }
   };
 
@@ -202,11 +231,12 @@ export const PersonalTaxOrganizer = ({
           />
           <Button
             startIcon={<SaveIcon />}
-            onClick={() => onSave(formData)}
+            onClick={handleSaveProgress}
             variant="outlined"
             size="small"
+            disabled={isLoading}
           >
-            Save Progress
+            {isLoading ? 'Saving...' : 'Save Progress'}
           </Button>
         </Toolbar>
       </AppBar>

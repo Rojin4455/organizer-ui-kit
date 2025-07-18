@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Paper,
@@ -16,6 +16,8 @@ import {
   Toolbar,
   Button,
   IconButton,
+  Alert,
+  Snackbar,
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -26,6 +28,8 @@ import {
 } from '@mui/icons-material';
 import { PersonalTaxOrganizer } from './personal/PersonalTaxOrganizer';
 import { BusinessTaxOrganizer } from './business/BusinessTaxOrganizer';
+import { getUrlParams, setUrlParams, generateFormLink } from '../utils/urlParams';
+import { apiService } from '../services/api';
 
 const theme = createTheme({
   palette: {
@@ -118,19 +122,99 @@ export const TaxOrganizerApp = ({
 }) => {
   const [selectedOrganizer, setSelectedOrganizer] = useState(null);
   const [savedData, setSavedData] = useState(initialData);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
 
-  const handleSave = (data) => {
-    setSavedData(data);
-    onSave?.(data);
-    
-    // Save to localStorage for persistence
-    localStorage.setItem('taxOrganizerData', JSON.stringify(data));
+  // Check URL parameters on component mount
+  useEffect(() => {
+    const params = getUrlParams();
+    if (params.userId && params.formType) {
+      setCurrentUserId(params.userId);
+      setSelectedOrganizer(params.formType);
+      loadFormData(params.userId, params.formType);
+    }
+  }, []);
+
+  const loadFormData = async (userId, formType) => {
+    setIsLoading(true);
+    try {
+      const response = formType === 'personal' 
+        ? await apiService.getPersonalTaxForm(userId)
+        : await apiService.getBusinessTaxForm(userId);
+      
+      setSavedData(response.data || {});
+      showNotification('Form data loaded successfully', 'success');
+    } catch (error) {
+      console.error('Error loading form data:', error);
+      showNotification('Failed to load form data', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const showNotification = (message, severity = 'info') => {
+    setNotification({ open: true, message, severity });
+  };
+
+  const handleSave = async (data, isCompleted = false) => {
+    try {
+      setIsLoading(true);
+      
+      const response = selectedOrganizer === 'personal'
+        ? await apiService.savePersonalTaxForm(data, currentUserId)
+        : await apiService.saveBusinessTaxForm(data, currentUserId);
+
+      setSavedData(data);
+      onSave?.(data);
+      
+      // Update URL with user ID if it's a new form
+      if (!currentUserId && response.user_id) {
+        setCurrentUserId(response.user_id);
+        setUrlParams({ 
+          userId: response.user_id, 
+          type: selectedOrganizer 
+        });
+      }
+
+      // Save to localStorage as backup
+      localStorage.setItem('taxOrganizerData', JSON.stringify(data));
+      
+      showNotification(
+        isCompleted ? 'Form submitted successfully!' : 'Progress saved successfully!', 
+        'success'
+      );
+
+      // Generate shareable link if completed
+      if (isCompleted && response.user_id) {
+        const formLink = generateFormLink(response.user_id, selectedOrganizer, 'view');
+        console.log('Shareable form link:', formLink);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Error saving form:', error);
+      showNotification('Failed to save form. Please try again.', 'error');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleReset = () => {
     setSelectedOrganizer(null);
     setSavedData({});
+    setCurrentUserId(null);
+    setUrlParams({ userId: null, type: null });
     localStorage.removeItem('taxOrganizerData');
+    showNotification('Form reset successfully', 'info');
+  };
+
+  const handleNewForm = (formType) => {
+    setSelectedOrganizer(formType);
+    setCurrentUserId(null);
+    setSavedData({});
+    setUrlParams({ type: formType, userId: null });
   };
 
   if (selectedOrganizer === 'personal') {
@@ -140,7 +224,9 @@ export const TaxOrganizerApp = ({
         <PersonalTaxOrganizer
           onSave={handleSave}
           onBack={() => setSelectedOrganizer(null)}
-          initialData={savedData.personal}
+          initialData={savedData}
+          userId={currentUserId}
+          isLoading={isLoading}
         />
       </ThemeProvider>
     );
@@ -153,7 +239,9 @@ export const TaxOrganizerApp = ({
         <BusinessTaxOrganizer
           onSave={handleSave}
           onBack={() => setSelectedOrganizer(null)}
-          initialData={savedData.business}
+          initialData={savedData}
+          userId={currentUserId}
+          isLoading={isLoading}
         />
       </ThemeProvider>
     );
@@ -228,7 +316,7 @@ export const TaxOrganizerApp = ({
           <Box sx={{ display: 'flex', gap: 4, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Card sx={{ width: { xs: '100%', md: '400px' }, height: '100%' }}>
               <CardActionArea
-                onClick={() => setSelectedOrganizer('personal')}
+                onClick={() => handleNewForm('personal')}
                 sx={{ height: '100%', p: 3 }}
               >
                 <CardContent sx={{ textAlign: 'center' }}>
@@ -252,7 +340,7 @@ export const TaxOrganizerApp = ({
 
             <Card sx={{ width: { xs: '100%', md: '400px' }, height: '100%' }}>
               <CardActionArea
-                onClick={() => setSelectedOrganizer('business')}
+                onClick={() => handleNewForm('business')}
                 sx={{ height: '100%', p: 3 }}
               >
                 <CardContent sx={{ textAlign: 'center' }}>
@@ -281,6 +369,19 @@ export const TaxOrganizerApp = ({
             </Typography>
           </Box>
         </Container>
+
+        <Snackbar
+          open={notification.open}
+          autoHideDuration={6000}
+          onClose={() => setNotification({ ...notification, open: false })}
+        >
+          <Alert 
+            onClose={() => setNotification({ ...notification, open: false })} 
+            severity={notification.severity}
+          >
+            {notification.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </ThemeProvider>
   );
