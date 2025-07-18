@@ -6,7 +6,7 @@ import { Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
 export const SignatureDrawer = ({ label, value, onChange, width = 400, height = 150 }) => {
   const canvasRef = useRef(null);
   const [fabricCanvas, setFabricCanvas] = useState(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(true); // Start in drawing mode
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -98,27 +98,29 @@ export const SignatureDrawer = ({ label, value, onChange, width = 400, height = 
             border: '2px dashed #ccc', 
             borderRadius: 1, 
             p: 1,
-            backgroundColor: '#fafafa'
+            backgroundColor: '#fafafa',
+            cursor: 'crosshair'
           }}
         >
           <canvas 
             ref={canvasRef}
             style={{ 
-              cursor: isDrawing ? 'crosshair' : 'default',
-              display: 'block'
+              cursor: 'crosshair',
+              display: 'block',
+              touchAction: 'none'
             }}
           />
         </Box>
         
         <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
           <Button
-            variant="outlined"
+            variant={isDrawing ? "contained" : "outlined"}
             size="small"
             startIcon={<EditIcon />}
             onClick={toggleDrawingMode}
-            color={isDrawing ? "primary" : "inherit"}
+            color="primary"
           >
-            {isDrawing ? 'Stop Drawing' : 'Start Drawing'}
+            {isDrawing ? 'Drawing Mode' : 'Selection Mode'}
           </Button>
           <Button
             variant="outlined"
@@ -132,7 +134,7 @@ export const SignatureDrawer = ({ label, value, onChange, width = 400, height = 
         </Box>
         
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
-          Click "Start Drawing" to sign, then draw your signature above
+          Click and drag to draw your signature above
         </Typography>
       </Paper>
     </Box>
