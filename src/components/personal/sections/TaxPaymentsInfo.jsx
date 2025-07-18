@@ -13,7 +13,7 @@ import {
   Divider,
 } from '@mui/material';
 import { FormSection } from '../../shared/FormSection';
-import { SignatureDrawer } from '../../shared/SignatureDrawer';
+import { SignaturePad } from '../../shared/SignaturePad';
 
 export const TaxPaymentsInfo = ({ data, onChange }) => {
   const handleChange = (field, value) => {
@@ -504,7 +504,7 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Box sx={{ display: 'flex', gap: 3, alignItems: 'start', flexWrap: 'wrap' }}>
               <Box sx={{ flex: 1, minWidth: '300px' }}>
-                <SignatureDrawer
+                <SignaturePad
                   label="Taxpayer Signature"
                   value={data.taxpayerSignature || ''}
                   onChange={(value) => handleChange('taxpayerSignature', value)}
@@ -529,7 +529,7 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
 
             <Box sx={{ display: 'flex', gap: 3, alignItems: 'start', flexWrap: 'wrap' }}>
               <Box sx={{ flex: 1, minWidth: '300px' }}>
-                <SignatureDrawer
+                <SignaturePad
                   label="Spouse Signature"
                   value={data.spouseSignature || ''}
                   onChange={(value) => handleChange('spouseSignature', value)}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, TextField, FormControlLabel, Switch, Typography, Divider, Paper } from '@mui/material';
 import { FormSection } from '../../shared/FormSection';
-import { SignatureDrawer } from '../../shared/SignatureDrawer';
+import { SignaturePad } from '../../shared/SignaturePad';
 
 export const BusinessAssets = ({ data, onChange }) => {
   const handleChange = (field, value) => {
@@ -156,7 +156,7 @@ export const BusinessAssets = ({ data, onChange }) => {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <Box sx={{ display: 'flex', gap: 3, alignItems: 'start', flexWrap: 'wrap' }}>
             <Box sx={{ flex: 1, minWidth: '300px' }}>
-              <SignatureDrawer
+              <SignaturePad
                 label="Taxpayer Signature"
                 value={data.signatures?.taxpayerSignature || ''}
                 onChange={(value) => handleSignatureChange('taxpayerSignature', value)}
@@ -181,7 +181,7 @@ export const BusinessAssets = ({ data, onChange }) => {
 
           <Box sx={{ display: 'flex', gap: 3, alignItems: 'start', flexWrap: 'wrap' }}>
             <Box sx={{ flex: 1, minWidth: '300px' }}>
-              <SignatureDrawer
+              <SignaturePad
                 label="Partner Signature"
                 value={data.signatures?.partnerSignature || ''}
                 onChange={(value) => handleSignatureChange('partnerSignature', value)}
