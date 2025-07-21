@@ -65,7 +65,7 @@ export const BusinessTaxOrganizer = ({
           onChange={(data) => updateFormData('contactInfo', data)}
         />
       ),
-      isCompleted: Boolean(formData.contactInfo.fullName && formData.contactInfo.email && formData.contactInfo.phone),
+      isCompleted: Boolean(formData.contactInfo.fullName && (formData.contactInfo.email || formData.contactInfo.phone)),
       isRequired: true,
     },
     {
@@ -150,6 +150,18 @@ export const BusinessTaxOrganizer = ({
     }
   };
 
+  const handleStepChange = (stepIndex) => {
+    const contactInfoCompleted = Boolean(formData.contactInfo.fullName && (formData.contactInfo.email || formData.contactInfo.phone));
+    
+    // Don't allow navigation beyond contact info until it's completed
+    if (stepIndex > 0 && !contactInfoCompleted) {
+      alert('Please complete the Contact Information section before proceeding to other sections.');
+      return;
+    }
+    
+    setActiveStep(stepIndex);
+  };
+
   const handleBack = () => {
     if (activeStep > 0) {
       setActiveStep(activeStep - 1);
@@ -208,13 +220,14 @@ export const BusinessTaxOrganizer = ({
         <FormStepper
           steps={steps}
           activeStep={activeStep}
-          onStepChange={setActiveStep}
+          onStepChange={handleStepChange}
           onNext={handleNext}
           onBack={handleBack}
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
           submitLabel="Submit Business Tax Organizer"
           orientation={useVerticalStepper ? 'vertical' : 'horizontal'}
+          isNextDisabled={activeStep === 0 && !Boolean(formData.contactInfo.fullName && (formData.contactInfo.email || formData.contactInfo.phone))}
         />
       </Container>
     </Box>

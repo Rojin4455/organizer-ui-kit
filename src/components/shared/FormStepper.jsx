@@ -27,6 +27,7 @@ export const FormStepper = ({
   isSubmitting = false,
   submitLabel = 'Complete',
   orientation = 'vertical',
+  isNextDisabled = false,
 }) => {
   const currentStep = steps[activeStep];
   const isLastStep = activeStep === steps.length - 1;
@@ -141,6 +142,7 @@ export const FormStepper = ({
                       onClick={onNext}
                       variant="contained"
                       size="small"
+                      disabled={isNextDisabled}
                     >
                       Next
                     </Button>
@@ -202,6 +204,7 @@ export const FormStepper = ({
                 <Button
                   onClick={onNext}
                   variant="contained"
+                  disabled={isNextDisabled}
                 >
                   Next
                 </Button>
