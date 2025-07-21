@@ -15,6 +15,7 @@ import {
   Business as BusinessIcon,
 } from '@mui/icons-material';
 import { FormStepper } from '../shared/FormStepper';
+import { ContactInfo } from './sections/ContactInfo';
 import { BusinessBasicInfo } from './sections/BusinessBasicInfo';
 import { OwnerInfo } from './sections/OwnerInfo';
 import { BusinessIncomeExpenses } from './sections/BusinessIncomeExpenses';
@@ -30,6 +31,7 @@ export const BusinessTaxOrganizer = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [useVerticalStepper, setUseVerticalStepper] = useState(true);
   const [formData, setFormData] = useState({
+    contactInfo: initialData.contactInfo || {},
     basicInfo: initialData.basicInfo || {},
     ownerInfo: initialData.ownerInfo || {},
     incomeExpenses: initialData.incomeExpenses || {},
@@ -53,6 +55,19 @@ export const BusinessTaxOrganizer = ({
   };
 
   const steps = [
+    {
+      id: 'contact-info',
+      label: 'Contact Information',
+      description: 'Your name, email, and phone number',
+      content: (
+        <ContactInfo
+          data={formData.contactInfo}
+          onChange={(data) => updateFormData('contactInfo', data)}
+        />
+      ),
+      isCompleted: Boolean(formData.contactInfo.fullName && formData.contactInfo.email && formData.contactInfo.phone),
+      isRequired: true,
+    },
     {
       id: 'basic-info',
       label: 'Business Information',
