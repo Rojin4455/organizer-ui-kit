@@ -136,6 +136,15 @@ export const BusinessTaxOrganizer = ({
   ];
 
   const handleNext = () => {
+    const currentStep = steps[activeStep];
+    
+    // Check if current step is completed before allowing progression
+    if (!currentStep.isCompleted && currentStep.isRequired) {
+      // Show validation message or handle incomplete step
+      alert(`Please complete all required fields in the ${currentStep.label} section before proceeding.`);
+      return;
+    }
+    
     if (activeStep < steps.length - 1) {
       setActiveStep(activeStep + 1);
     }

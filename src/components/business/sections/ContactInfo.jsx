@@ -31,8 +31,8 @@ export const ContactInfo = ({ data = {}, onChange }) => {
         </Typography>
       </Box>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
+      <Grid container spacing={3} sx={{ width: '100%' }}>
+        <Grid size={12}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
             <PersonIcon sx={{ mr: 1, color: '#22c55e', fontSize: 20 }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#374151' }}>
@@ -55,7 +55,7 @@ export const ContactInfo = ({ data = {}, onChange }) => {
           />
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
             <EmailIcon sx={{ mr: 1, color: '#22c55e', fontSize: 20 }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#374151' }}>
@@ -79,7 +79,7 @@ export const ContactInfo = ({ data = {}, onChange }) => {
           />
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
             <PhoneIcon sx={{ mr: 1, color: '#22c55e', fontSize: 20 }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#374151' }}>
