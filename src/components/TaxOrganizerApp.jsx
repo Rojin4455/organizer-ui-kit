@@ -30,6 +30,7 @@ import { PersonalTaxOrganizer } from './personal/PersonalTaxOrganizer';
 import { BusinessTaxOrganizer } from './business/BusinessTaxOrganizer';
 import { getUrlParams, setUrlParams, generateFormLink } from '../utils/urlParams';
 import { apiService } from '../services/api';
+import { businessLogo } from '../assets';
 
 const theme = createTheme({
   palette: {
@@ -253,7 +254,13 @@ export const TaxOrganizerApp = ({
       <Box sx={{ flexGrow: 1 }}>
         <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
           <Toolbar>
-            <TaxIcon sx={{ mr: 2, color: '#3b82f6' }} />
+            <Box sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>
+              <img 
+                src={businessLogo} 
+                alt="Business Logo" 
+                style={{ height: '40px', width: 'auto' }}
+              />
+            </Box>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1, color: '#1e293b', fontWeight: 600 }}>
               Tax Organizer Pro
             </Typography>
