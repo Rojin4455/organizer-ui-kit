@@ -269,7 +269,19 @@ const businessTaxQuestions = {
   homeOffice: {
     sectionTitle: "Business Use of Home",
     questions: {
-      // Add home office questions when viewing the component
+      hasHomeOffice: "Check if you had a home office during the year",
+      rent: "Rent",
+      utilities: "Utilities", 
+      insurance: "Insurance",
+      janitorial: "Janitorial",
+      miscellaneous: "Miscellaneous",
+      exclusiveBusinessUse: "% of Exclusive Business use",
+      sizeOfHome: "Size of Home",
+      sizeOfHomeOffice: "Size of Home Office",
+      repairsMaintenance: "Repairs & Maintenance",
+      otherExpenses: "Other Expenses",
+      signatures: "Taxpayer and Partner Signatures",
+      notes: "Additional Notes"
     }
   }
 };
