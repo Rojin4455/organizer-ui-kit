@@ -136,7 +136,8 @@ export const TaxOrganizerApp = ({
       loadFormData(params.userId, params.formType);
     }
   }, []);
-
+  console.log("saved data: ", savedData)
+  
   const loadFormData = async (userId, formType) => {
     setIsLoading(true);
     try {
@@ -144,7 +145,8 @@ export const TaxOrganizerApp = ({
         ? await apiService.getPersonalTaxForm(userId)
         : await apiService.getBusinessTaxForm(userId);
       
-      setSavedData(response.data || {});
+      // setSavedData(response.data || {});
+      
       showNotification('Form data loaded successfully', 'success');
     } catch (error) {
       console.error('Error loading form data:', error);
@@ -159,6 +161,7 @@ export const TaxOrganizerApp = ({
   };
 
   const handleSave = async (data, isCompleted = false) => {
+    console.log("saved Data Before: ", data)
     try {
       setIsLoading(true);
       
@@ -166,7 +169,8 @@ export const TaxOrganizerApp = ({
         ? await apiService.savePersonalTaxForm(data, currentUserId)
         : await apiService.saveBusinessTaxForm(data, currentUserId);
 
-      setSavedData(data);
+      console.log("saved Data: ", data)
+    setSavedData(data);
       onSave?.(data);
       
       // Update URL with user ID if it's a new form

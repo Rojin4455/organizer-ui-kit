@@ -74,6 +74,8 @@ export const PersonalTaxOrganizer = ({
     return () => clearTimeout(timeout);
   }, [formData, userId, onSave]);
 
+  
+
   const updateFormData = (section, data) => {
     setFormData(prev => ({
       ...prev,

@@ -35,7 +35,7 @@ class ApiService {
   }
 
   // Personal Tax Form APIs
-  async savePersonalTaxForm(data, userId = null) {
+  async (data, userId = null) {
     const endpoint = userId ? `/personal-tax/${userId}/` : '/personal-tax/';
     const method = userId ? 'PUT' : 'POST';
     
