@@ -1,8 +1,50 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiService } from '../services/api';
 
+interface LoginCredentials {
+  username: string;
+  password: string;
+}
+
+interface SignupCredentials {
+  username: string;
+  email: string;
+  password: string;
+  password_confirm: string;
+}
+
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+}
+
+interface AuthTokens {
+  access: string;
+  refresh: string;
+}
+
+interface AuthResponse {
+  message: string;
+  user: User;
+  tokens: AuthTokens;
+}
+
+interface AuthState {
+  user: User | null;
+  tokens: {
+    access: string | null;
+    refresh: string | null;
+  };
+  isAuthenticated: boolean;
+  loading: boolean;
+  error: string | null;
+}
+
 // Async thunk for login
-export const loginUser = createAsyncThunk(
+export const loginUser = createAsyncThunk<AuthResponse, LoginCredentials>(
   'auth/login',
   async ({ username, password }, { rejectWithValue }) => {
     try {
@@ -15,7 +57,7 @@ export const loginUser = createAsyncThunk(
 );
 
 // Async thunk for signup
-export const signupUser = createAsyncThunk(
+export const signupUser = createAsyncThunk<AuthResponse, SignupCredentials>(
   'auth/signup',
   async ({ username, email, password, password_confirm }, { rejectWithValue }) => {
     try {
@@ -28,7 +70,7 @@ export const signupUser = createAsyncThunk(
 );
 
 // Async thunk for token refresh
-export const refreshToken = createAsyncThunk(
+export const refreshToken = createAsyncThunk<{ tokens: AuthTokens }, void, { state: { auth: AuthState } }>(
   'auth/refreshToken',
   async (_, { getState, rejectWithValue }) => {
     try {
@@ -41,7 +83,7 @@ export const refreshToken = createAsyncThunk(
   }
 );
 
-const initialState = {
+const initialState: AuthState = {
   user: null,
   tokens: {
     access: null,
@@ -85,7 +127,7 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload as string;
         state.isAuthenticated = false;
       })
       // Signup cases
@@ -102,7 +144,7 @@ const authSlice = createSlice({
       })
       .addCase(signupUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload as string;
         state.isAuthenticated = false;
       })
       // Refresh token cases

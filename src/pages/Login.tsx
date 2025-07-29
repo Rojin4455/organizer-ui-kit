@@ -41,7 +41,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.username && formData.password) {
-      dispatch(loginUser(formData));
+      dispatch(loginUser(formData) as any);
     }
   };
 

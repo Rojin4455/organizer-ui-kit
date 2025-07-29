@@ -57,7 +57,7 @@ const Signup = () => {
     }
 
     if (formData.username && formData.email && formData.password && formData.password_confirm) {
-      dispatch(signupUser(formData));
+      dispatch(signupUser(formData) as any);
     }
   };
 

@@ -2,16 +2,26 @@ import { createListenerMiddleware } from '@reduxjs/toolkit';
 import { apiService } from '../services/api';
 import { updateTokens, logout } from '../store/authSlice';
 
+interface RootState {
+  auth: {
+    isAuthenticated: boolean;
+    tokens: {
+      access: string | null;
+      refresh: string | null;
+    };
+  };
+}
+
 export const authMiddleware = createListenerMiddleware();
 
 // Token refresh middleware
 authMiddleware.startListening({
-  predicate: (action, currentState) => {
+  predicate: (action, currentState: RootState): boolean => {
     // Listen for any action that might need authentication
-    return currentState.auth.isAuthenticated && currentState.auth.tokens.access;
+    return !!(currentState.auth.isAuthenticated && currentState.auth.tokens.access);
   },
   effect: async (action, listenerApi) => {
-    const state = listenerApi.getState();
+    const state = listenerApi.getState() as RootState;
     const { tokens } = state.auth;
 
     // Check if access token is about to expire (decode JWT and check exp)
@@ -39,8 +49,8 @@ authMiddleware.startListening({
 
 // Add auth header to all API requests
 const originalRequest = apiService.request;
-apiService.request = async function(endpoint, options = {}) {
-  const state = window.__REDUX_STORE__?.getState();
+apiService.request = async function(endpoint: string, options: any = {}) {
+  const state = (window as any).__REDUX_STORE__?.getState();
   
   if (state?.auth?.tokens?.access) {
     options.headers = {
@@ -51,7 +61,7 @@ apiService.request = async function(endpoint, options = {}) {
   
   try {
     return await originalRequest.call(this, endpoint, options);
-  } catch (error) {
+  } catch (error: any) {
     // If we get a 401, try to refresh the token
     if (error.message.includes('401') && state?.auth?.tokens?.refresh) {
       try {
@@ -61,14 +71,14 @@ apiService.request = async function(endpoint, options = {}) {
         });
         
         // Update tokens in store
-        window.__REDUX_STORE__?.dispatch(updateTokens(refreshResponse.tokens));
+        (window as any).__REDUX_STORE__?.dispatch(updateTokens(refreshResponse.tokens));
         
         // Retry original request with new token
         options.headers.Authorization = `Bearer ${refreshResponse.tokens.access}`;
         return await originalRequest.call(this, endpoint, options);
       } catch (refreshError) {
         // If refresh fails, logout
-        window.__REDUX_STORE__?.dispatch(logout());
+        (window as any).__REDUX_STORE__?.dispatch(logout());
         throw refreshError;
       }
     }
