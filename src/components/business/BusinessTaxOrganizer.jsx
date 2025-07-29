@@ -32,13 +32,27 @@ export const BusinessTaxOrganizer = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [useVerticalStepper, setUseVerticalStepper] = useState(true);
   const [formData, setFormData] = useState({
-    contactInfo: initialData.contactInfo || {},
-    basicInfo: initialData.basicInfo || {},
-    ownerInfo: initialData.ownerInfo || {},
-    incomeExpenses: initialData.incomeExpenses || {},
-    assets: initialData.assets || {},
-    homeOffice: initialData.homeOffice || {},
+    contactInfo: {},
+    basicInfo: {},
+    ownerInfo: {},
+    incomeExpenses: {},
+    assets: {},
+    homeOffice: {},
   });
+
+  // Update formData when initialData changes
+  useEffect(() => {
+    if (initialData && Object.keys(initialData).length > 0) {
+      setFormData({
+        contactInfo: initialData.contactInfo || {},
+        basicInfo: initialData.basicInfo || {},
+        ownerInfo: initialData.ownerInfo || {},
+        incomeExpenses: initialData.incomeExpenses || {},
+        assets: initialData.assets || {},
+        homeOffice: initialData.homeOffice || {},
+      });
+    }
+  }, [initialData]);
 
   // Auto-save functionality
   useEffect(() => {

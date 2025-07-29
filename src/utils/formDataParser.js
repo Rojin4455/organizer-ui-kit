@@ -86,18 +86,18 @@ const getFieldNameFromQuestion = (questionText, sectionKey) => {
     },
     basicInfo: {
       'Business Name': 'businessName',
-      'First year in business': 'firstYearInBusiness',
+      'First year in business': 'firstYear',
       'Start Date of Business': 'startDate',
-      'Business Description': 'businessDescription',
+      'Business Description': 'businessDescriptions',
       'Other Business Description (if selected)': 'otherBusinessDescription',
-      'Business Address': 'address',
+      'Business Address': 'businessAddress',
       'City': 'city',
       'State': 'state',
-      'Zip Code': 'zipCode',
+      'Zip Code': 'zip',
       'Country': 'country',
       'Employer Identification Number (EIN)': 'ein',
       'State Business Registered In': 'stateRegistered',
-      'Type of Entity': 'entityType'
+      'Type of Entity': 'entityTypes'
     },
     ownerInfo: {
       'Business Owners Details': 'owners'
