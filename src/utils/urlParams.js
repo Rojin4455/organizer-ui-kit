@@ -6,6 +6,7 @@ export const getUrlParams = () => {
     userId: params.get('userId'),
     formType: params.get('type'),
     view: params.get('view'),
+    formId: params.get('form_id'),
   };
 };
 
@@ -21,13 +22,13 @@ export const setUrlParams = (params) => {
   window.history.replaceState({}, '', url);
 };
 
-export const generateFormLink = (userId, formType, view = 'form') => {
+export const generateFormLink = (formId, formType, view = 'form') => {
   const baseUrl = window.location.origin;
-  return `${baseUrl}?userId=${userId}&type=${formType}&view=${view}`;
+  return `${baseUrl}?form_id=${formId}&type=${formType}&view=${view}`;
 };
 
-export const generateViewLink = (userId, formType) => {
-  return generateFormLink(userId, formType, 'view');
+export const generateViewLink = (formId, formType) => {
+  return generateFormLink(formId, formType, 'view');
 };
 
 export const generatePDFLink = (userId, formType) => {

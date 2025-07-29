@@ -32,6 +32,7 @@ import { getUrlParams, setUrlParams, generateFormLink } from '../utils/urlParams
 import { apiService } from '../services/api';
 import { businessLogo } from '../assets';
 import UserHeader from './UserHeader';
+import { parseFormDataFromResponse } from '../utils/formDataParser';
 
 const theme = createTheme({
   palette: {
@@ -127,6 +128,7 @@ export const TaxOrganizerApp = ({
   const [currentUserId, setCurrentUserId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
+  const [formId, setFormId] = useState(null);
 
   // Check URL parameters on component mount
   useEffect(() => {
@@ -135,6 +137,13 @@ export const TaxOrganizerApp = ({
       setCurrentUserId(params.userId);
       setSelectedOrganizer(params.formType);
       loadFormData(params.userId, params.formType);
+    }
+    
+    // Load existing form data if form_id is provided
+    if (params.formId) {
+      setFormId(params.formId);
+      setSelectedOrganizer(params.formType || 'personal');
+      loadExistingFormData(params.formId);
     }
   }, []);
   console.log("saved data: ", savedData)
@@ -157,6 +166,21 @@ export const TaxOrganizerApp = ({
     }
   };
 
+  const loadExistingFormData = async (formId) => {
+    setIsLoading(true);
+    try {
+      const response = await apiService.getFormData(formId);
+      const parsedData = parseFormDataFromResponse(response, selectedOrganizer);
+      setSavedData(parsedData);
+      showNotification('Form data loaded successfully', 'success');
+    } catch (error) {
+      console.error('Error loading existing form data:', error);
+      showNotification('Failed to load form data', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const showNotification = (message, severity = 'info') => {
     setNotification({ open: true, message, severity });
   };
@@ -166,21 +190,21 @@ export const TaxOrganizerApp = ({
     try {
       setIsLoading(true);
       
-      
       const response = selectedOrganizer === 'personal'
-        ? await apiService.savePersonalTaxForm(data, currentUserId)
-        : await apiService.saveBusinessTaxForm(data, currentUserId);
+        ? await apiService.savePersonalTaxForm(data, formId)
+        : await apiService.saveBusinessTaxForm(data, formId);
 
       console.log("saved Data: ", data)
-    setSavedData(data);
+      setSavedData(data);
       onSave?.(data);
       
-      // Update URL with user ID if it's a new form
-      if (!currentUserId && response.user_id) {
-        setCurrentUserId(response.user_id);
+      // Store form ID for subsequent saves
+      if (response.id && !formId) {
+        setFormId(response.id);
+        // Update URL with form_id
         setUrlParams({ 
-          userId: response.user_id, 
-          type: selectedOrganizer 
+          type: selectedOrganizer, 
+          form_id: response.id 
         });
       }
 
@@ -193,8 +217,9 @@ export const TaxOrganizerApp = ({
       );
 
       // Generate shareable link if completed
-      if (isCompleted && response.user_id) {
-        const formLink = generateFormLink(response.user_id, selectedOrganizer, 'view');
+      if (isCompleted && (formId || response.id)) {
+        const finalFormId = formId || response.id;
+        const formLink = generateFormLink(finalFormId, selectedOrganizer, 'view');
         console.log('Shareable form link:', formLink);
       }
 

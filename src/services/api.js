@@ -57,10 +57,9 @@ class ApiService {
   }
 
   // Personal Tax Form APIs
-  async savePersonalTaxForm(data, userId = null) {
-    console.log("userID:", userId)
-    const endpoint = userId ? `/form/tax-forms/submissions/` : '/form/tax-forms/submissions/';
-    const method = userId ? 'PUT' : 'POST';
+  async savePersonalTaxForm(data, formId = null) {
+    const endpoint = formId ? `/form/tax-forms/submissions/${formId}/` : '/form/tax-forms/submissions/';
+    const method = formId ? 'PUT' : 'POST';
     return this.request(endpoint, {
       method,
       headers: {
@@ -89,9 +88,9 @@ class ApiService {
   }
 
   // Business Tax Form APIs
-  async saveBusinessTaxForm(data, userId = null) {
-    const endpoint = userId ? `/form/tax-forms/submissions/` : '/form/tax-forms/submissions/';
-    const method = userId ? 'PUT' : 'POST';
+  async saveBusinessTaxForm(data, formId = null) {
+    const endpoint = formId ? `/form/tax-forms/submissions/${formId}/` : '/form/tax-forms/submissions/';
+    const method = formId ? 'PUT' : 'POST';
     
     return this.request(endpoint, {
       method,
@@ -134,6 +133,11 @@ class ApiService {
     }
 
     return response.blob();
+  }
+
+  // Get existing form data
+  async getFormData(formId) {
+    return this.request(`/form/tax-forms/submissions/${formId}/formatted_data/`);
   }
 
   // Auto-save functionality
