@@ -34,8 +34,30 @@ class ApiService {
     }
   }
 
+  // Authentication APIs
+  async login(username, password) {
+    return this.request('/form/login/', {
+      method: 'POST',
+      body: { username, password },
+    });
+  }
+
+  async signup(username, email, password, password_confirm) {
+    return this.request('/form/signup/', {
+      method: 'POST',
+      body: { username, email, password, password_confirm },
+    });
+  }
+
+  async refreshToken(refreshToken) {
+    return this.request('/token/refresh/', {
+      method: 'POST',
+      body: { refresh: refreshToken },
+    });
+  }
+
   // Personal Tax Form APIs
-  async (data, userId = null) {
+  async savePersonalTaxForm(data, userId = null) {
     const endpoint = userId ? `/personal-tax/${userId}/` : '/personal-tax/';
     const method = userId ? 'PUT' : 'POST';
     

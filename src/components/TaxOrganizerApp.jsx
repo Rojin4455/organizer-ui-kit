@@ -31,6 +31,7 @@ import { BusinessTaxOrganizer } from './business/BusinessTaxOrganizer';
 import { getUrlParams, setUrlParams, generateFormLink } from '../utils/urlParams';
 import { apiService } from '../services/api';
 import { businessLogo } from '../assets';
+import UserHeader from './UserHeader';
 
 const theme = createTheme({
   palette: {
@@ -256,6 +257,7 @@ export const TaxOrganizerApp = ({
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ flexGrow: 1 }}>
+        <UserHeader />
         <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
           <Toolbar>
             <Box sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>
