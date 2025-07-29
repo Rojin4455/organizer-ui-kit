@@ -58,11 +58,14 @@ class ApiService {
 
   // Personal Tax Form APIs
   async savePersonalTaxForm(data, userId = null) {
-    const endpoint = userId ? `/personal-tax/${userId}/` : '/personal-tax/';
+    console.log("userID:", userId)
+    const endpoint = userId ? `/form/tax-forms/submissions/` : '/form/tax-forms/submissions/';
     const method = userId ? 'PUT' : 'POST';
-    
     return this.request(endpoint, {
       method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: {
         ...data,
         form_type: 'personal',
@@ -87,11 +90,14 @@ class ApiService {
 
   // Business Tax Form APIs
   async saveBusinessTaxForm(data, userId = null) {
-    const endpoint = userId ? `/business-tax/${userId}/` : '/business-tax/';
+    const endpoint = userId ? `/form/tax-forms/submissions/` : '/form/tax-forms/submissions/';
     const method = userId ? 'PUT' : 'POST';
     
     return this.request(endpoint, {
       method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: {
         ...data,
         form_type: 'business',

@@ -166,6 +166,7 @@ export const TaxOrganizerApp = ({
     try {
       setIsLoading(true);
       
+      
       const response = selectedOrganizer === 'personal'
         ? await apiService.savePersonalTaxForm(data, currentUserId)
         : await apiService.saveBusinessTaxForm(data, currentUserId);
