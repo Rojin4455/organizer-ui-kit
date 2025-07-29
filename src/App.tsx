@@ -1,3 +1,4 @@
+import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,17 +12,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
-import './middleware/authMiddleware';
 
 const queryClient = new QueryClient();
-
-// Make store available globally for middleware
-declare global {
-  interface Window {
-    __REDUX_STORE__: typeof store;
-  }
-}
-(window as any).__REDUX_STORE__ = store;
 
 const App = () => (
   <Provider store={store}>

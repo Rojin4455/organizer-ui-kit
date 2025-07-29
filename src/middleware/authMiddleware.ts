@@ -1,6 +1,7 @@
 import { createListenerMiddleware } from '@reduxjs/toolkit';
 import { apiService } from '../services/api';
 import { updateTokens, logout } from '../store/authSlice';
+import { store } from '../store/store';
 
 interface RootState {
   auth: {
@@ -50,7 +51,8 @@ authMiddleware.startListening({
 // Add auth header to all API requests
 const originalRequest = apiService.request;
 apiService.request = async function(endpoint: string, options: any = {}) {
-  const state = (window as any).__REDUX_STORE__?.getState();
+  // Get state from store directly instead of window
+  const state = store.getState() as RootState;
   
   if (state?.auth?.tokens?.access) {
     options.headers = {
@@ -71,14 +73,14 @@ apiService.request = async function(endpoint: string, options: any = {}) {
         });
         
         // Update tokens in store
-        (window as any).__REDUX_STORE__?.dispatch(updateTokens(refreshResponse.tokens));
+        store.dispatch(updateTokens(refreshResponse.tokens));
         
         // Retry original request with new token
         options.headers.Authorization = `Bearer ${refreshResponse.tokens.access}`;
         return await originalRequest.call(this, endpoint, options);
       } catch (refreshError) {
         // If refresh fails, logout
-        (window as any).__REDUX_STORE__?.dispatch(logout());
+        store.dispatch(logout());
         throw refreshError;
       }
     }
