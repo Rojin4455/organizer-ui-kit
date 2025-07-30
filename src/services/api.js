@@ -119,6 +119,16 @@ class ApiService {
     });
   }
 
+  // Get user's forms
+  async getUserForms(token) {
+    return this.request('/form/tax-forms/submissions/user-forms/', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  }
+
   // PDF Generation
   async generatePDF(userId, formType) {
     const response = await fetch(`${this.baseURL}/${formType}-tax/${userId}/pdf/`, {
@@ -130,6 +140,23 @@ class ApiService {
 
     if (!response.ok) {
       throw new Error(`Failed to generate PDF: ${response.status}`);
+    }
+
+    return response.blob();
+  }
+
+  // Download PDF for a form
+  async downloadFormPDF(formId, token) {
+    const response = await fetch(`${this.baseURL}/form/tax-forms/submissions/${formId}/pdf/`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/pdf',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to download PDF: ${response.status}`);
     }
 
     return response.blob();

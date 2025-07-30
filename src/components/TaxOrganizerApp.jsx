@@ -28,6 +28,7 @@ import {
 } from '@mui/icons-material';
 import { PersonalTaxOrganizer } from './personal/PersonalTaxOrganizer';
 import { BusinessTaxOrganizer } from './business/BusinessTaxOrganizer';
+import { FormsListView } from './FormsListView';
 import { getUrlParams, setUrlParams, generateFormLink } from '../utils/urlParams';
 import { apiService } from '../services/api';
 import { businessLogo } from '../assets';
@@ -129,6 +130,8 @@ export const TaxOrganizerApp = ({
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
   const [formId, setFormId] = useState(null);
+  const [showFormsList, setShowFormsList] = useState(false);
+  const [userToken, setUserToken] = useState(null); // You'll need to get this from your auth system
 
   // Check URL parameters on component mount
   useEffect(() => {
@@ -195,6 +198,8 @@ export const TaxOrganizerApp = ({
         : await apiService.saveBusinessTaxForm(data, formId);
 
       console.log("saved Data: ", data)
+      
+      // Update local state with saved data
       setSavedData(data);
       onSave?.(data);
       
@@ -206,6 +211,18 @@ export const TaxOrganizerApp = ({
           type: selectedOrganizer, 
           form_id: response.id 
         });
+      }
+
+      // Refresh form data from server to ensure consistency
+      if (formId || response.id) {
+        const finalFormId = formId || response.id;
+        try {
+          const serverResponse = await apiService.getFormData(finalFormId);
+          const parsedData = parseFormDataFromResponse(serverResponse, selectedOrganizer);
+          setSavedData(parsedData);
+        } catch (refreshError) {
+          console.warn('Failed to refresh form data after save:', refreshError);
+        }
       }
 
       // Save to localStorage as backup
@@ -246,8 +263,21 @@ export const TaxOrganizerApp = ({
     setSelectedOrganizer(formType);
     setCurrentUserId(null);
     setSavedData({});
-    setUrlParams({ type: formType, userId: null });
+    setFormId(null);
+    setUrlParams({ type: formType, userId: null, form_id: null });
   };
+
+  if (showFormsList) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <FormsListView
+          onBack={() => setShowFormsList(false)}
+          userToken={userToken}
+        />
+      </ThemeProvider>
+    );
+  }
 
   if (selectedOrganizer === 'personal') {
     return (
@@ -296,6 +326,14 @@ export const TaxOrganizerApp = ({
             <Typography variant="h6" component="div" sx={{ flexGrow: 1, color: '#1e293b', fontWeight: 600 }}>
               Tax Organizer Pro
             </Typography>
+            <Button
+              variant="outlined"
+              startIcon={<SaveIcon />}
+              onClick={() => setShowFormsList(true)}
+              sx={{ mr: 1 }}
+            >
+              My Forms
+            </Button>
             <Button
               variant="outlined"
               startIcon={<SaveIcon />}
