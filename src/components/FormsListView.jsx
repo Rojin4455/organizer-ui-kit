@@ -197,7 +197,6 @@ export const FormsListView = ({ onBack, userToken }) => {
                         size="small"
                         startIcon={<DownloadIcon />}
                         onClick={() => handleDownloadPDF(form.id, form.form_type)}
-                        disabled={form.status.toLowerCase() !== 'submitted'}
                       >
                         PDF
                       </Button>

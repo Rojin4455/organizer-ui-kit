@@ -181,7 +181,6 @@ export const FormDetailView = ({ form, onBack, onDownloadPDF, userToken }) => {
             variant="contained"
             startIcon={<DownloadIcon />}
             onClick={onDownloadPDF}
-            disabled={form.status.toLowerCase() !== 'submitted'}
             sx={{ ml: 2 }}
           >
             Download PDF
