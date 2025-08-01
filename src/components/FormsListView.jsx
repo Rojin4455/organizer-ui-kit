@@ -27,6 +27,7 @@ import {
 } from '@mui/icons-material';
 import { apiService } from '../services/api';
 import { FormDetailView } from './FormDetailView';
+import { downloadFormAsPDF } from '../utils/pdfGenerator';
 
 export const FormsListView = ({ onBack, userToken }) => {
   const [forms, setForms] = useState([]);
@@ -61,16 +62,15 @@ export const FormsListView = ({ onBack, userToken }) => {
 
   const handleDownloadPDF = async (formId, formType) => {
     try {
-      const blob = await apiService.downloadFormPDF(formId, userToken);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${formType}-tax-form-${formId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showNotification('PDF downloaded successfully', 'success');
+      showNotification('Generating PDF...', 'info');
+      
+      // Get the formatted data for the form
+      const formData = await apiService.getFormData(formId);
+      
+      // Generate and download PDF on frontend
+      downloadFormAsPDF(formData);
+      
+      showNotification('PDF downloaded successfully!', 'success');
     } catch (error) {
       console.error('Error downloading PDF:', error);
       showNotification('Failed to download PDF', 'error');
