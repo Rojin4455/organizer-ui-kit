@@ -32,7 +32,6 @@ export const BusinessTaxOrganizer = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [useVerticalStepper, setUseVerticalStepper] = useState(true);
   const [formData, setFormData] = useState({
-    contactInfo: {},
     basicInfo: {},
     ownerInfo: {},
     incomeExpenses: {},
@@ -44,7 +43,6 @@ export const BusinessTaxOrganizer = ({
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
       setFormData({
-        contactInfo: initialData.contactInfo || {},
         basicInfo: initialData.basicInfo || {},
         ownerInfo: initialData.ownerInfo || {},
         incomeExpenses: initialData.incomeExpenses || {},
@@ -70,19 +68,19 @@ export const BusinessTaxOrganizer = ({
   };
 
   const steps = [
-    {
-      id: 'contact-info',
-      label: 'Contact Information',
-      description: 'Your name, email, and phone number',
-      content: (
-        <ContactInfo
-          data={formData.contactInfo}
-          onChange={(data) => updateFormData('contactInfo', data)}
-        />
-      ),
-      isCompleted: Boolean(formData.contactInfo.fullName && (formData.contactInfo.email || formData.contactInfo.phone)),
-      isRequired: true,
-    },
+    // {
+    //   id: 'contact-info',
+    //   label: 'Contact Information',
+    //   description: 'Your name, email, and phone number',
+    //   content: (
+    //     <ContactInfo
+    //       data={formData.contactInfo}
+    //       onChange={(data) => updateFormData('contactInfo', data)}
+    //     />
+    //   ),
+    //   isCompleted: Boolean(formData.contactInfo.fullName && (formData.contactInfo.email || formData.contactInfo.phone)),
+    //   isRequired: true,
+    // },
     {
       id: 'basic-info',
       label: 'Business Information',
@@ -154,11 +152,11 @@ export const BusinessTaxOrganizer = ({
     const currentStep = steps[activeStep];
     
     // Check if current step is completed before allowing progression
-    if (!currentStep.isCompleted && currentStep.isRequired) {
-      // Show validation message or handle incomplete step
-      alert(`Please complete all required fields in the ${currentStep.label} section before proceeding.`);
-      return;
-    }
+    // if (!currentStep.isCompleted && currentStep.isRequired) {
+    //   // Show validation message or handle incomplete step
+    //   alert(`Please complete all required fields in the ${currentStep.label} section before proceeding.`);
+    //   return;
+    // }
     
     if (activeStep < steps.length - 1) {
       setActiveStep(activeStep + 1);
@@ -169,10 +167,10 @@ export const BusinessTaxOrganizer = ({
     const contactInfoCompleted = Boolean(formData.contactInfo.fullName && (formData.contactInfo.email || formData.contactInfo.phone));
     
     // Don't allow navigation beyond contact info until it's completed
-    if (stepIndex > 0 && !contactInfoCompleted) {
-      alert('Please complete the Contact Information section before proceeding to other sections.');
-      return;
-    }
+    // if (stepIndex > 0 && !contactInfoCompleted) {
+    //   alert('Please complete the Contact Information section before proceeding to other sections.');
+    //   return;
+    // }
     
     setActiveStep(stepIndex);
   };
@@ -243,7 +241,7 @@ export const BusinessTaxOrganizer = ({
           isSubmitting={isSubmitting}
           submitLabel="Submit Business Tax Organizer"
           orientation={useVerticalStepper ? 'vertical' : 'horizontal'}
-          isNextDisabled={activeStep === 0 && !Boolean(formData.contactInfo.fullName && (formData.contactInfo.email || formData.contactInfo.phone))}
+          // isNextDisabled={activeStep === 0 && !Boolean(formData.contactInfo.fullName && (formData.contactInfo.email || formData.contactInfo.phone))}
         />
       </Container>
     </Box>
