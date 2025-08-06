@@ -59,10 +59,14 @@ class ApiService {
 
   // New unified Tax Form Submission APIs (simplified backend)
   async createTaxFormSubmission(payload) {
-    // POST /survey/submit-tax-form/
+    console.log("payloaddd: ", payload);
+  
     return this.request('/survey/submit-tax-form/', {
       method: 'POST',
-      body: payload,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),  // Ensure it's a JSON string
     });
   }
 
@@ -70,8 +74,10 @@ class ApiService {
     // PUT /survey/submit-tax-form/{id}/?type={formType}
     return this.request(`/survey/submit-tax-form/${formId}/?type=${encodeURIComponent(formType)}`, {
       method: 'PUT',
-      body: payload,
-    });
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),    });
   }
 
   async getSubmission(formId, formType) {
