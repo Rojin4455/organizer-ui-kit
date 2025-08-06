@@ -27,16 +27,18 @@ export const BusinessTaxOrganizer = ({
   onSave,
   onBack,
   initialData = {},
+  userId,
+  isLoading = false,
 }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [useVerticalStepper, setUseVerticalStepper] = useState(true);
   const [formData, setFormData] = useState({
-    basicInfo: {},
-    ownerInfo: {},
-    incomeExpenses: {},
-    assets: {},
-    homeOffice: {},
+    basicInfo: initialData.basicInfo || {},
+    ownerInfo: initialData.ownerInfo || {},
+    incomeExpenses: initialData.incomeExpenses || {},
+    assets: initialData.assets || {},
+    homeOffice: initialData.homeOffice || {},
   });
 
   // Update formData when initialData changes
@@ -164,14 +166,6 @@ export const BusinessTaxOrganizer = ({
   };
 
   const handleStepChange = (stepIndex) => {
-    const contactInfoCompleted = Boolean(formData.contactInfo.fullName && (formData.contactInfo.email || formData.contactInfo.phone));
-    
-    // Don't allow navigation beyond contact info until it's completed
-    // if (stepIndex > 0 && !contactInfoCompleted) {
-    //   alert('Please complete the Contact Information section before proceeding to other sections.');
-    //   return;
-    // }
-    
     setActiveStep(stepIndex);
   };
 
