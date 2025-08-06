@@ -24,7 +24,7 @@ import { DeductionsInfo } from './sections/DeductionsInfo';
 import { TaxPaymentsInfo } from './sections/TaxPaymentsInfo';
 import { GeneralQuestions } from './sections/GeneralQuestions';
 import { ReviewSubmit } from './sections/ReviewSubmit';
-import { formatPersonalTaxData } from '../../utils/formDataFormatter';
+
 
 export const PersonalTaxOrganizer = ({
   onSave,
@@ -64,10 +64,8 @@ export const PersonalTaxOrganizer = ({
     if (!userId || Object.keys(formData).length === 0) return;
 
     const timeout = setTimeout(() => {
-      // Format data with questions and answers for auto-save
-      const formattedData = formatPersonalTaxData(formData);
-      // Call the parent's save function for auto-save
-      onSave(formattedData, false);
+      // Auto-save raw form data to backend via parent handler
+      onSave(formData, false);
       localStorage.setItem('personalTaxData', JSON.stringify(formData));
     }, 3000); // Auto-save after 3 seconds of inactivity
 
@@ -192,9 +190,7 @@ export const PersonalTaxOrganizer = ({
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // Format data with questions and answers before sending to backend
-      const formattedData = formatPersonalTaxData(formData);
-      await onSave(formattedData, true); // isCompleted = true
+      await onSave(formData, true); // status = submitted
     } catch (error) {
       console.error('Error submitting form:', error);
     } finally {
@@ -204,9 +200,7 @@ export const PersonalTaxOrganizer = ({
 
   const handleSaveProgress = async () => {
     try {
-      // Format data with questions and answers before sending to backend
-      const formattedData = formatPersonalTaxData(formData);
-      await onSave(formattedData, false); // isCompleted = false
+      await onSave(formData, false); // status = drafted
     } catch (error) {
       console.error('Error saving progress:', error);
     }

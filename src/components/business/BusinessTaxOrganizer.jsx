@@ -21,7 +21,7 @@ import { OwnerInfo } from './sections/OwnerInfo';
 import { BusinessIncomeExpenses } from './sections/BusinessIncomeExpenses';
 import { BusinessAssets } from './sections/BusinessAssets';
 import { BusinessReview } from './sections/BusinessReview';
-import { formatBusinessTaxData } from '../../utils/formDataFormatter';
+
 
 export const BusinessTaxOrganizer = ({
   onSave,
@@ -186,11 +186,8 @@ export const BusinessTaxOrganizer = ({
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // Format data with questions and answers before sending to backend
-      const formattedData = formatBusinessTaxData(formData);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      onSave(formattedData);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      onSave(formData, true);
     } finally {
       setIsSubmitting(false);
     }
@@ -225,9 +222,7 @@ export const BusinessTaxOrganizer = ({
           <Button
             startIcon={<SaveIcon />}
             onClick={() => {
-              // Format data with questions and answers before sending to backend
-              const formattedData = formatBusinessTaxData(formData);
-              onSave(formattedData);
+              onSave(formData, false);
             }}
             variant="outlined"
             size="small"

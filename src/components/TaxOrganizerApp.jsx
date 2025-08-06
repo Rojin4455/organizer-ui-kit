@@ -33,7 +33,7 @@ import { getUrlParams, setUrlParams, generateFormLink } from '../utils/urlParams
 import { apiService } from '../services/api';
 import { businessLogo } from '../assets';
 import UserHeader from './UserHeader';
-import { parseFormDataFromResponse } from '../utils/formDataParser';
+
 
 const theme = createTheme({
   palette: {
@@ -145,8 +145,9 @@ export const TaxOrganizerApp = ({
     // Load existing form data if form_id is provided
     if (params.formId) {
       setFormId(params.formId);
-      setSelectedOrganizer(params.formType || 'personal');
-      loadExistingFormData(params.formId);
+      const resolvedType = params.formType || 'personal';
+      setSelectedOrganizer(resolvedType);
+      loadExistingFormData(params.formId, resolvedType);
     }
   }, []);
   console.log("saved data: ", savedData)
@@ -169,11 +170,11 @@ export const TaxOrganizerApp = ({
     }
   };
 
-  const loadExistingFormData = async (formId) => {
+  const loadExistingFormData = async (formId, formType) => {
     setIsLoading(true);
     try {
-      const response = await apiService.getFormData(formId);
-      const parsedData = parseFormDataFromResponse(response, selectedOrganizer);
+      const response = await apiService.getSubmission(formId, formType);
+      const parsedData = response?.submission_data || {};
       setSavedData(parsedData);
       showNotification('Form data loaded successfully', 'success');
     } catch (error) {
@@ -192,10 +193,12 @@ export const TaxOrganizerApp = ({
     console.log("saved Data Before: ", data)
     try {
       setIsLoading(true);
-      
-      const response = selectedOrganizer === 'personal'
-        ? await apiService.savePersonalTaxForm(data, formId)
-        : await apiService.saveBusinessTaxForm(data, formId);
+      // Build payload with simplified structure
+      const payload = { form_type: selectedOrganizer || 'personal', status: isCompleted ? 'submitted' : 'drafted', ...data };
+      // Create or update submission
+      const response = formId
+        ? await apiService.updateTaxFormSubmission(formId, payload.form_type, payload)
+        : await apiService.createTaxFormSubmission(payload);
 
       console.log("saved Data: ", data)
       
@@ -217,8 +220,8 @@ export const TaxOrganizerApp = ({
       if (formId || response.id) {
         const finalFormId = formId || response.id;
         try {
-          const serverResponse = await apiService.getFormData(finalFormId);
-          const parsedData = parseFormDataFromResponse(serverResponse, selectedOrganizer);
+          const serverResponse = await apiService.getSubmission(finalFormId, selectedOrganizer || 'personal');
+          const parsedData = serverResponse?.submission_data || {};
           setSavedData(parsedData);
         } catch (refreshError) {
           console.warn('Failed to refresh form data after save:', refreshError);

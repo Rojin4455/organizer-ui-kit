@@ -56,66 +56,27 @@ class ApiService {
     });
   }
 
-  // Personal Tax Form APIs
-  async savePersonalTaxForm(data, formId = null) {
-    const endpoint = formId ? `/form/tax-forms/submissions/${formId}/` : '/form/tax-forms/submissions/';
-    const method = formId ? 'PUT' : 'POST';
-    return this.request(endpoint, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: {
-        ...data,
-        form_type: 'personal',
-        status: data.isCompleted ? 'completed' : 'draft'
-      },
-    });
-  }
-
-  async getPersonalTaxForm(userId) {
-    return this.request(`/personal-tax/${userId}/`);
-  }
-
-  async submitPersonalTaxForm(userId, data) {
-    return this.request(`/personal-tax/${userId}/submit/`, {
+  // New unified Tax Form Submission APIs (simplified backend)
+  async createTaxFormSubmission(payload) {
+    // POST /survey/submit-tax-form/
+    return this.request('/survey/submit-tax-form/', {
       method: 'POST',
-      body: {
-        ...data,
-        status: 'completed'
-      },
+      body: payload,
     });
   }
 
-  // Business Tax Form APIs
-  async saveBusinessTaxForm(data, formId = null) {
-    const endpoint = formId ? `/form/tax-forms/submissions/${formId}/` : '/form/tax-forms/submissions/';
-    const method = formId ? 'PUT' : 'POST';
-    
-    return this.request(endpoint, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: {
-        ...data,
-        form_type: 'business',
-        status: data.isCompleted ? 'completed' : 'draft'
-      },
+  async updateTaxFormSubmission(formId, formType, payload) {
+    // PUT /survey/submit-tax-form/{id}/?type={formType}
+    return this.request(`/survey/submit-tax-form/${formId}/?type=${encodeURIComponent(formType)}`, {
+      method: 'PUT',
+      body: payload,
     });
   }
 
-  async getBusinessTaxForm(userId) {
-    return this.request(`/business-tax/${userId}/`);
-  }
-
-  async submitBusinessTaxForm(userId, data) {
-    return this.request(`/business-tax/${userId}/submit/`, {
-      method: 'POST',
-      body: {
-        ...data,
-        status: 'completed'
-      },
+  async getSubmission(formId, formType) {
+    // GET /survey/submit-tax-form/{id}/?type={formType}
+    return this.request(`/survey/submit-tax-form/${formId}/?type=${encodeURIComponent(formType)}`, {
+      method: 'GET',
     });
   }
 
@@ -162,8 +123,9 @@ class ApiService {
     return response.blob();
   }
 
-  // Get existing form data
+  // Get existing form formatted data (deprecated in new flow)
   async getFormData(formId) {
+    // Keeping for backward compatibility if needed; prefer getSubmission
     return this.request(`/form/tax-forms/submissions/${formId}/formatted_data/`);
   }
 
