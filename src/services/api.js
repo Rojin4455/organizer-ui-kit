@@ -87,13 +87,10 @@ class ApiService {
     });
   }
 
-  // Get user's forms
-  async getUserForms(token) {
-    return this.request('/form/tax-forms/submissions/user-forms/', {
+  // Get user's forms using new endpoint
+  async getUserForms() {
+    return this.request('/survey/all-submissions/', {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
     });
   }
 

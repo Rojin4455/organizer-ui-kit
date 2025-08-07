@@ -42,7 +42,7 @@ export const FormsListView = ({ onBack, userToken }) => {
   const loadUserForms = async () => {
     try {
       setLoading(true);
-      const response = await apiService.getUserForms(userToken);
+      const response = await apiService.getUserForms();
       setForms(response || []);
     } catch (error) {
       console.error('Error loading forms:', error);
@@ -60,12 +60,21 @@ export const FormsListView = ({ onBack, userToken }) => {
     setSelectedForm(form);
   };
 
+  const handleEditForm = (formId, formType, formData) => {
+    // Navigate to the form edit page with pre-filled data
+    const urlParams = new URLSearchParams({
+      form_id: formId,
+      type: formType
+    });
+    window.location.href = `/?${urlParams.toString()}`;
+  };
+
   const handleDownloadPDF = async (formId, formType) => {
     try {
       showNotification('Generating PDF...', 'info');
       
-      // Get the formatted data for the form
-      const formData = await apiService.getFormData(formId);
+      // Get the form data using new endpoint
+      const formData = await apiService.getSubmission(formId, formType);
       
       // Generate and download PDF on frontend
       downloadFormAsPDF(formData);
@@ -103,7 +112,7 @@ export const FormsListView = ({ onBack, userToken }) => {
       <FormDetailView
         form={selectedForm}
         onBack={() => setSelectedForm(null)}
-        onDownloadPDF={() => handleDownloadPDF(selectedForm.id, selectedForm.form_type)}
+        onEdit={handleEditForm}
         userToken={userToken}
       />
     );
@@ -176,10 +185,10 @@ export const FormsListView = ({ onBack, userToken }) => {
                     </Box>
 
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      <strong>Submitted:</strong> {formatDate(form.submission_date)}
+                      <strong>Submitted:</strong> {formatDate(form.submitted_at)}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      <strong>Created:</strong> {formatDate(form.created_at)}
+                      <strong>Form ID:</strong> {form.id}
                     </Typography>
 
                     <Box sx={{ display: 'flex', gap: 1, mt: 'auto' }}>
