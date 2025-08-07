@@ -1,17 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Container,
-  Typography,
-  Card,
-  CardContent,
   Button,
   AppBar,
   Toolbar,
-  Divider,
-  Grid,
-  Paper,
-  Chip,
+  Typography,
   Alert,
   Snackbar,
 } from '@mui/material';
@@ -19,11 +12,11 @@ import {
   ArrowBack as ArrowBackIcon,
   Download as DownloadIcon,
   Edit as EditIcon,
-  Business as BusinessIcon,
-  Person as PersonIcon,
 } from '@mui/icons-material';
 import { apiService } from '../services/api';
 import { downloadFormAsPDF } from '../utils/pdfGenerator';
+import { PersonalTaxOrganizerReadOnly } from './personal/PersonalTaxOrganizerReadOnly';
+import { BusinessTaxOrganizerReadOnly } from './business/BusinessTaxOrganizerReadOnly';
 
 export const FormDetailView = ({ form, onBack, onEdit, userToken }) => {
   const [formData, setFormData] = useState(null);
@@ -54,7 +47,7 @@ export const FormDetailView = ({ form, onBack, onEdit, userToken }) => {
   const handleDownloadPDF = async () => {
     try {
       showNotification('Generating PDF...', 'info');
-      downloadFormAsPDF(formData);
+      downloadFormAsPDF(formData, form);
       showNotification('PDF downloaded successfully!', 'success');
     } catch (error) {
       console.error('Error downloading PDF:', error);
@@ -66,121 +59,6 @@ export const FormDetailView = ({ form, onBack, onEdit, userToken }) => {
     if (onEdit) {
       onEdit(form.id, form.form_type, formData);
     }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Not provided';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  const formatValue = (value, section, field) => {
-    if (value === null || value === undefined || value === '') {
-      return 'Not provided';
-    }
-
-    // Handle boolean values
-    if (typeof value === 'boolean') {
-      return value ? 'Yes' : 'No';
-    }
-
-    // Handle dates
-    if (field && (field.includes('date') || field.includes('Date'))) {
-      return formatDate(value);
-    }
-
-    // Handle arrays and objects
-    if (Array.isArray(value)) {
-      if (value.length === 0) return 'None';
-      return value.map((item, index) => {
-        if (typeof item === 'object' && item !== null) {
-          return (
-            <Box key={index} sx={{ mb: 1, p: 1, bgcolor: '#f8fafc', borderRadius: 1, fontSize: '0.875rem' }}>
-              {Object.entries(item).map(([key, val]) => (
-                <Typography key={key} variant="body2">
-                  <strong>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</strong> {val || 'Not provided'}
-                </Typography>
-              ))}
-            </Box>
-          );
-        }
-        return `${index + 1}. ${item}`;
-      });
-    }
-
-    if (typeof value === 'object' && value !== null) {
-      return (
-        <Box>
-          {Object.entries(value).map(([key, val]) => (
-            <Typography key={key} variant="body2" sx={{ mb: 0.5 }}>
-              <strong>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</strong> {val || 'Not provided'}
-            </Typography>
-          ))}
-        </Box>
-      );
-    }
-
-    // Handle numbers with formatting
-    if (typeof value === 'number') {
-      return value.toLocaleString();
-    }
-
-    return String(value);
-  };
-
-  const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
-      case 'submitted':
-        return 'success';
-      case 'drafted':
-        return 'warning';
-      default:
-        return 'default';
-    }
-  };
-
-  const renderFormSection = (sectionKey, sectionData, title) => {
-    if (!sectionData || Object.keys(sectionData).length === 0) {
-      return null;
-    }
-
-    return (
-      <Card key={sectionKey} sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: '#1e293b' }}>
-            {title}
-          </Typography>
-          
-          <Grid container spacing={2}>
-            {Object.entries(sectionData).map(([field, value], index) => (
-              <Grid item xs={12} md={6} key={field}>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 500, mb: 1, color: '#374151' }}>
-                    {field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                  </Typography>
-                  <Box sx={{ 
-                    p: 2, 
-                    bgcolor: '#f9fafb', 
-                    borderRadius: 1, 
-                    border: '1px solid #e5e7eb',
-                    minHeight: '40px',
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}>
-                    <Typography variant="body2" sx={{ color: '#111827' }}>
-                      {formatValue(value, sectionKey, field)}
-                    </Typography>
-                  </Box>
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
-        </CardContent>
-      </Card>
-    );
   };
 
   if (loading) {
@@ -212,17 +90,9 @@ export const FormDetailView = ({ form, onBack, onEdit, userToken }) => {
           >
             Back to Forms
           </Button>
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
-            {form.form_type === 'business' ? (
-              <BusinessIcon sx={{ color: '#22c55e', mr: 1 }} />
-            ) : (
-              <PersonIcon sx={{ color: '#3b82f6', mr: 1 }} />
-            )}
-            <Typography variant="h6" component="div" sx={{ color: '#1e293b', fontWeight: 600 }}>
-              {form.form_type.charAt(0).toUpperCase() + form.form_type.slice(1)} Tax Form Details
-            </Typography>
-          </Box>
-          <Box sx={{ flexGrow: 1 }} />
+          <Typography variant="h6" component="div" sx={{ color: '#1e293b', fontWeight: 600, flexGrow: 1 }}>
+            {form.form_type.charAt(0).toUpperCase() + form.form_type.slice(1)} Tax Form Details
+          </Typography>
           {isDrafted && (
             <Button
               variant="outlined"
@@ -243,56 +113,20 @@ export const FormDetailView = ({ form, onBack, onEdit, userToken }) => {
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="lg" sx={{ mt: 3, mb: 4 }}>
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
-                {form.form_type.charAt(0).toUpperCase() + form.form_type.slice(1)} Tax Form
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Form ID: {form.id}
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={6} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
-              <Chip
-                label={form.status.charAt(0).toUpperCase() + form.status.slice(1)}
-                color={getStatusColor(form.status)}
-                sx={{ mb: 1 }}
-              />
-              <Typography variant="body2" color="text.secondary">
-                Submitted: {formatDate(form.submitted_at)}
-              </Typography>
-            </Grid>
-          </Grid>
-        </Paper>
-
-        {/* Render form data sections */}
-        {formData.submission_data && Object.entries(formData.submission_data).map(([sectionKey, sectionData]) => {
-          // Skip empty sections
-          if (!sectionData || (typeof sectionData === 'object' && Object.keys(sectionData).length === 0)) {
-            return null;
-          }
-
-          // Generate section title
-          const sectionTitle = sectionKey
-            .replace(/([A-Z])/g, ' $1')
-            .replace(/^./, str => str.toUpperCase())
-            .replace(/info/gi, 'Information');
-
-          return renderFormSection(sectionKey, sectionData, sectionTitle);
-        })}
-
-        {!formData.submission_data && (
-          <Card>
-            <CardContent>
-              <Typography variant="h6" color="text.secondary" align="center">
-                No form data available
-              </Typography>
-            </CardContent>
-          </Card>
-        )}
-      </Container>
+      {/* Render form using structured read-only components */}
+      {form.form_type === 'personal' ? (
+        <PersonalTaxOrganizerReadOnly
+          submissionData={formData.submission_data}
+          formInfo={form}
+          showHeader={true}
+        />
+      ) : (
+        <BusinessTaxOrganizerReadOnly
+          submissionData={formData.submission_data}
+          formInfo={form}
+          showHeader={true}
+        />
+      )}
 
       <Snackbar
         open={notification.open}
