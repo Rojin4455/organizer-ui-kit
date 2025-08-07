@@ -44,12 +44,15 @@ export const BusinessTaxOrganizer = ({
   // Update formData when initialData changes
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
+      console.log('BusinessTaxOrganizer received initialData:', initialData);
+      // Handle both direct form data and submission_data structure
+      const dataToSet = initialData.submission_data || initialData;
       setFormData({
-        basicInfo: initialData.basicInfo || {},
-        ownerInfo: initialData.ownerInfo || {},
-        incomeExpenses: initialData.incomeExpenses || {},
-        assets: initialData.assets || {},
-        homeOffice: initialData.homeOffice || {},
+        basicInfo: dataToSet.basicInfo || {},
+        ownerInfo: dataToSet.ownerInfo || {},
+        incomeExpenses: dataToSet.incomeExpenses || {},
+        assets: dataToSet.assets || {},
+        homeOffice: dataToSet.homeOffice || {},
       });
     }
   }, [initialData]);
