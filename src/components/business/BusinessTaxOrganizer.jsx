@@ -34,39 +34,33 @@ export const BusinessTaxOrganizer = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [useVerticalStepper, setUseVerticalStepper] = useState(true);
   const [formData, setFormData] = useState({
-    basicInfo: initialData.basicInfo || {},
-    ownerInfo: initialData.ownerInfo || {},
-    incomeExpenses: initialData.incomeExpenses || {},
-    assets: initialData.assets || {},
-    homeOffice: initialData.homeOffice || {},
+    basicInfo: {},
+    ownerInfo: {},
+    incomeExpenses: {},
+    assets: {},
+    homeOffice: {},
   });
 
   // Update formData when initialData changes
   useEffect(() => {
-    if (
-      initialData &&
-      Object.keys(initialData).length > 0 &&
-      (initialData.submission_data || initialData.basicInfo)
-    ) {
-      setFormData(prev => {
-        const dataToSet = initialData.submission_data || initialData;
-  
-        // Only update if prev is still empty
-        if (
-          Object.keys(prev.basicInfo).length === 0 &&
-          Object.keys(prev.ownerInfo).length === 0
-        ) {
-          return {
+    if (initialData && Object.keys(initialData).length > 0) {
+      const dataToSet = initialData.submission_data || initialData;
+      
+      // Only update if we have actual data and current form is empty
+      if (dataToSet && (dataToSet.basicInfo || dataToSet.ownerInfo)) {
+        const hasExistingData = Object.keys(formData.basicInfo).length > 0 || 
+                               Object.keys(formData.ownerInfo).length > 0;
+        
+        if (!hasExistingData) {
+          setFormData({
             basicInfo: dataToSet.basicInfo || {},
             ownerInfo: dataToSet.ownerInfo || {},
             incomeExpenses: dataToSet.incomeExpenses || {},
             assets: dataToSet.assets || {},
             homeOffice: dataToSet.homeOffice || {},
-          };
+          });
         }
-  
-        return prev;
-      });
+      }
     }
   }, [initialData]);
 
