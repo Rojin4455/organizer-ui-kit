@@ -46,20 +46,24 @@ export const BusinessTaxOrganizer = ({
     if (initialData && Object.keys(initialData).length > 0) {
       const dataToSet = initialData.submission_data || initialData;
       
-      // Only update if we have actual data and current form is empty
-      if (dataToSet && (dataToSet.basicInfo || dataToSet.ownerInfo)) {
-        const hasExistingData = Object.keys(formData.basicInfo).length > 0 || 
-                               Object.keys(formData.ownerInfo).length > 0;
-        
-        if (!hasExistingData) {
-          setFormData({
-            basicInfo: dataToSet.basicInfo || {},
-            ownerInfo: dataToSet.ownerInfo || {},
-            incomeExpenses: dataToSet.incomeExpenses || {},
-            assets: dataToSet.assets || {},
-            homeOffice: dataToSet.homeOffice || {},
-          });
-        }
+      // Check if we have actual form data and current form is empty
+      if (dataToSet && (dataToSet.basicInfo || dataToSet.ownerInfo || dataToSet.incomeExpenses)) {
+        setFormData(prev => {
+          const hasExistingData = Object.keys(prev.basicInfo).length > 0 || 
+                                 Object.keys(prev.ownerInfo).length > 0 ||
+                                 Object.keys(prev.incomeExpenses).length > 0;
+          
+          if (!hasExistingData) {
+            return {
+              basicInfo: dataToSet.basicInfo || {},
+              ownerInfo: dataToSet.ownerInfo || {},
+              incomeExpenses: dataToSet.incomeExpenses || {},
+              assets: dataToSet.assets || {},
+              homeOffice: dataToSet.homeOffice || {},
+            };
+          }
+          return prev;
+        });
       }
     }
   }, [initialData]);

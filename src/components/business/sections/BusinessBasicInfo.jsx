@@ -15,6 +15,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
 import { SecureTextField } from '../../shared/SecureTextField';
 import { FormSection } from '../../shared/FormSection';
 
@@ -70,9 +71,13 @@ export const BusinessBasicInfo = ({ data, onChange }) => {
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
               <DatePicker
                 label="Start Date of Business"
-                value={data.startDate || null}
-                onChange={(newValue) => handleChange('startDate', newValue)}
-                renderInput={(params) => <TextField {...params} fullWidth />}
+                value={data.startDate ? dayjs(data.startDate) : null}
+                onChange={(newValue) => handleChange('startDate', newValue ? newValue.format('YYYY-MM-DD') : null)}
+                slotProps={{
+                  textField: {
+                    fullWidth: true
+                  }
+                }}
               />
             </Box>
 
