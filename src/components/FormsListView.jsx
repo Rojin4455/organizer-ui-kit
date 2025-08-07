@@ -36,6 +36,14 @@ export const FormsListView = ({ onBack, userToken }) => {
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
 
   useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.search) {
+      // Remove query string
+      window.history.replaceState({}, document.title, url.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
     loadUserForms();
   }, []);
 
