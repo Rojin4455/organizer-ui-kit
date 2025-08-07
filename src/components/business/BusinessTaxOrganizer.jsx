@@ -43,19 +43,41 @@ export const BusinessTaxOrganizer = ({
 
   // Update formData when initialData changes
   useEffect(() => {
-    if (initialData && Object.keys(initialData).length > 0) {
-      console.log('BusinessTaxOrganizer received initialData:', initialData);
-      // Handle both direct form data and submission_data structure
-      const dataToSet = initialData.submission_data || initialData;
-      setFormData({
-        basicInfo: dataToSet.basicInfo || {},
-        ownerInfo: dataToSet.ownerInfo || {},
-        incomeExpenses: dataToSet.incomeExpenses || {},
-        assets: dataToSet.assets || {},
-        homeOffice: dataToSet.homeOffice || {},
+    if (
+      initialData &&
+      Object.keys(initialData).length > 0 &&
+      (initialData.submission_data || initialData.basicInfo)
+    ) {
+      setFormData(prev => {
+        const dataToSet = initialData.submission_data || initialData;
+  
+        // Only update if prev is still empty
+        if (
+          Object.keys(prev.basicInfo).length === 0 &&
+          Object.keys(prev.ownerInfo).length === 0
+        ) {
+          return {
+            basicInfo: dataToSet.basicInfo || {},
+            ownerInfo: dataToSet.ownerInfo || {},
+            incomeExpenses: dataToSet.incomeExpenses || {},
+            assets: dataToSet.assets || {},
+            homeOffice: dataToSet.homeOffice || {},
+          };
+        }
+  
+        return prev;
       });
     }
   }, [initialData]);
+
+  useEffect(() => {
+    console.log("initialData being passed to BusinessTaxOrganizer:", initialData);
+  }, [initialData]);
+
+
+  useEffect(()=>{
+    console.log("formstted data in business form: ", formData)
+  })
 
   // Auto-save functionality
   useEffect(() => {

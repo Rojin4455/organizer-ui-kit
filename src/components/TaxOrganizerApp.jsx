@@ -150,7 +150,6 @@ export const TaxOrganizerApp = ({
       loadExistingFormData(params.formId, resolvedType);
     }
   }, []);
-  console.log("saved data: ", savedData)
   
   const loadFormData = async (userId, formType) => {
     setIsLoading(true);
