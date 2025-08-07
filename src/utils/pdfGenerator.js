@@ -2,69 +2,115 @@ import jsPDF from 'jspdf';
 
 const PAGE_HEIGHT = 297; // A4 height in mm
 const PAGE_WIDTH = 210; // A4 width in mm
-const MARGIN = 20;
-const LINE_HEIGHT = 7;
-const SECTION_SPACING = 15;
+const MARGIN = 15;
+const CELL_HEIGHT = 8;
+const ROW_HEIGHT = 10;
 
 // Helper function to add a new page if needed
-const checkPageSpace = (doc, yPosition, requiredSpace = 15) => {
+const checkPageSpace = (doc, yPosition, requiredSpace = 20) => {
   if (yPosition + requiredSpace > PAGE_HEIGHT - MARGIN) {
     doc.addPage();
-    return 30; // Reset yPosition for new page
+    return MARGIN + 10; // Reset yPosition for new page
   }
   return yPosition;
 };
 
-// Helper function to wrap text
-const wrapText = (doc, text, maxWidth) => {
-  return doc.splitTextToSize(text, maxWidth);
-};
-
-// Helper function to format values for PDF
+// Helper function to format values for PDF display
 const formatValue = (value, type = 'text') => {
   if (value === null || value === undefined || value === '') {
-    return '_____';
+    return '';
   }
 
   if (type === 'boolean') {
-    return value ? '☑ Yes' : '☐ No';
+    return value ? '☑' : '☐';
   }
 
   if (type === 'secure') {
-    return value ? '***-**-****' : '_____';
-  }
-
-  if (type === 'multiline') {
-    return String(value);
-  }
-
-  if (typeof value === 'boolean') {
-    return value ? '☑ Yes' : '☐ No';
-  }
-
-  if (Array.isArray(value)) {
-    if (value.length === 0) return 'None';
-    return value.map((item, index) => {
-      if (typeof item === 'object' && item !== null) {
-        return `Item ${index + 1}: ${Object.entries(item)
-          .map(([key, val]) => `${key}: ${val || 'Not provided'}`)
-          .join(', ')}`;
-      }
-      return `${index + 1}. ${item}`;
-    }).join('\n');
-  }
-
-  if (typeof value === 'object' && value !== null) {
-    return Object.entries(value)
-      .map(([key, val]) => `${key}: ${val || 'Not provided'}`)
-      .join('\n');
-  }
-
-  if (typeof value === 'number') {
-    return value.toLocaleString();
+    return value ? '***-**-****' : '';
   }
 
   return String(value);
+};
+
+// Helper function to draw a bordered table
+const drawTable = (doc, x, y, width, height, title = '', fillHeader = true) => {
+  // Draw outer border
+  doc.setLineWidth(0.5);
+  doc.setDrawColor(0, 0, 0);
+  doc.rect(x, y, width, height);
+  
+  if (title && fillHeader) {
+    // Fill header background
+    doc.setFillColor(220, 220, 220);
+    doc.rect(x, y, width, CELL_HEIGHT, 'F');
+    
+    // Add title text
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text(title, x + 2, y + 6);
+  }
+  
+  return y + (title ? CELL_HEIGHT : 0);
+};
+
+// Helper function to draw table row
+const drawTableRow = (doc, x, y, columns, values = [], height = CELL_HEIGHT) => {
+  let currentX = x;
+  
+  // Draw row border
+  doc.setLineWidth(0.5);
+  doc.setDrawColor(0, 0, 0);
+  doc.rect(x, y, columns.reduce((sum, col) => sum + col.width, 0), height);
+  
+  // Draw column separators and content
+  columns.forEach((column, index) => {
+    if (index > 0) {
+      doc.line(currentX, y, currentX, y + height);
+    }
+    
+    // Add content if provided
+    if (values[index] !== undefined) {
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(0, 0, 0);
+      
+      const text = String(values[index]);
+      const maxWidth = column.width - 4;
+      const lines = doc.splitTextToSize(text, maxWidth);
+      
+      let textY = y + 6;
+      lines.forEach(line => {
+        if (textY < y + height - 2) {
+          doc.text(line, currentX + 2, textY);
+          textY += 4;
+        }
+      });
+    }
+    
+    currentX += column.width;
+  });
+  
+  return y + height;
+};
+
+// Helper function to add signature image from base64
+const addSignatureImage = (doc, base64Data, x, y, width, height) => {
+  if (!base64Data) return;
+  
+  try {
+    // Remove data URL prefix if present
+    const base64 = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
+    doc.addImage(base64, 'PNG', x, y, width, height);
+  } catch (error) {
+    console.error('Error adding signature image:', error);
+    // Fallback: draw a placeholder box
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0, 0, 0);
+    doc.rect(x, y, width, height);
+    doc.setFontSize(8);
+    doc.text('Signature', x + 2, y + height/2 + 2);
+  }
 };
 
 // Form structure definitions - matching the exact form components
@@ -337,167 +383,412 @@ const getBusinessFormStructure = (submissionData) => [
   }
 ];
 
+// Generate Personal Tax Form PDF with professional table structure
+const generatePersonalTaxFormPDF = (doc, submissionData) => {
+  let yPosition = MARGIN + 10;
+  const tableWidth = PAGE_WIDTH - 2 * MARGIN;
+  
+  // Header with Name and SSN fields (like the sample)
+  yPosition = checkPageSpace(doc, yPosition, 15);
+  const headerColumns = [
+    { width: tableWidth * 0.7 },
+    { width: tableWidth * 0.3 }
+  ];
+  yPosition = drawTableRow(doc, MARGIN, yPosition, headerColumns, [
+    'Name: ___________________________',
+    'Soc. Sec. (last 4 digits)'
+  ]);
+  
+  // BASIC TAXPAYER INFORMATION Section
+  yPosition = checkPageSpace(doc, yPosition, 40);
+  yPosition = drawTable(doc, MARGIN, yPosition, tableWidth, 0, 'BASIC TAXPAYER INFORMATION', true);
+  
+  // Personal Information Table
+  yPosition = checkPageSpace(doc, yPosition, 80);
+  const personalInfoY = yPosition;
+  yPosition = drawTable(doc, MARGIN, yPosition, tableWidth * 0.75, 0, 'PERSONAL INFORMATION', true);
+  
+  // Returning Client checkbox (top right)
+  const returningClientY = personalInfoY;
+  const returningClientX = MARGIN + tableWidth * 0.75 + 5;
+  yPosition = drawTableRow(doc, returningClientX, returningClientY, 
+    [{ width: tableWidth * 0.25 - 5 }], 
+    [`${formatValue(submissionData?.basicInfo?.returningClient, 'boolean')} Returning Client, No Changes to Personal Information`]);
+  
+  // Personal info table structure
+  const personalColumns = [
+    { width: 30 }, // Row labels
+    { width: 45 }, // Name
+    { width: 35 }, // SSN
+    { width: 30 }, // DOB
+    { width: 35 }, // Occupation
+    { width: 30 }  // Cell Phone
+  ];
+  
+  yPosition = personalInfoY + CELL_HEIGHT;
+  yPosition = drawTableRow(doc, MARGIN, yPosition, personalColumns, [
+    '', 'Name', 'Social Security No.', 'Date of Birth', 'Occupation', 'Cell Phone'
+  ]);
+  
+  yPosition = drawTableRow(doc, MARGIN, yPosition, personalColumns, [
+    'Taxpayer',
+    `${submissionData?.basicInfo?.firstName || ''} ${submissionData?.basicInfo?.lastName || ''}`,
+    formatValue(submissionData?.basicInfo?.ssn, 'secure'),
+    submissionData?.basicInfo?.dateOfBirth || '',
+    submissionData?.basicInfo?.occupation || '',
+    submissionData?.basicInfo?.cellPhone || ''
+  ]);
+  
+  yPosition = drawTableRow(doc, MARGIN, yPosition, personalColumns, [
+    'Spouse',
+    `${submissionData?.basicInfo?.spouseFirstName || ''} ${submissionData?.basicInfo?.spouseLastName || ''}`,
+    formatValue(submissionData?.basicInfo?.spouseSSN, 'secure'),
+    submissionData?.basicInfo?.spouseDateOfBirth || '',
+    submissionData?.basicInfo?.spouseOccupation || '',
+    submissionData?.basicInfo?.spouseCellPhone || ''
+  ]);
+  
+  // Address section
+  yPosition = checkPageSpace(doc, yPosition, 30);
+  const addressColumns = [
+    { width: 90 }, // Street Address
+    { width: 30 }, // City
+    { width: 25 }, // County
+    { width: 20 }, // State
+    { width: 15 }  // ZIP
+  ];
+  
+  yPosition = drawTableRow(doc, MARGIN, yPosition, addressColumns, [
+    'Street Address', 'City', 'County', 'State', 'ZIP'
+  ]);
+  
+  yPosition = drawTableRow(doc, MARGIN, yPosition, addressColumns, [
+    submissionData?.basicInfo?.streetAddress || '',
+    submissionData?.basicInfo?.city || '',
+    submissionData?.basicInfo?.county || '',
+    submissionData?.basicInfo?.state || '',
+    submissionData?.basicInfo?.zipCode || ''
+  ]);
+  
+  // Email and Phone
+  yPosition = checkPageSpace(doc, yPosition, 15);
+  const contactColumns = [
+    { width: tableWidth * 0.7 },
+    { width: tableWidth * 0.3 }
+  ];
+  
+  yPosition = drawTableRow(doc, MARGIN, yPosition, contactColumns, [
+    `Email Address: ${submissionData?.basicInfo?.email || ''}`,
+    `Home Phone: ${submissionData?.basicInfo?.homePhone || ''}`
+  ]);
+  
+  // Additional Information Section
+  yPosition = checkPageSpace(doc, yPosition, 60);
+  const additionalInfoColumns = [
+    { width: 60 }, // Left section
+    { width: 70 }, // Middle section
+    { width: 50 }  // Right section
+  ];
+  
+  yPosition = drawTableRow(doc, MARGIN, yPosition, additionalInfoColumns, [
+    'Taxpayer    Spouse\nBlind    ☐ Yes ☐ No    ☐ Yes ☐ No\nDisabled ☐ Yes ☐ No    ☐ Yes ☐ No',
+    'Filing Status\n☐ Single\n☐ Married filing separately\n☐ Qualifying widow(er)',
+    '☐ Married filing jointly\n☐ Head of Household'
+  ], CELL_HEIGHT * 3);
+  
+  // DEPENDENTS Section
+  yPosition = checkPageSpace(doc, yPosition, 80);
+  yPosition = drawTable(doc, MARGIN, yPosition, tableWidth * 0.75, 0, 'DEPENDENTS (CHILDREN & OTHERS)', true);
+  
+  // Returning Client checkbox for dependents
+  const dependentsReturnY = yPosition - CELL_HEIGHT;
+  yPosition = drawTableRow(doc, returningClientX, dependentsReturnY, 
+    [{ width: tableWidth * 0.25 - 5 }], 
+    ['☐ Returning Client, No Changes to Dependent Information']);
+  
+  // Dependents table headers
+  const dependentColumns = [
+    { width: 40 }, // Full Name
+    { width: 25 }, // SSN
+    { width: 20 }, // Relationship
+    { width: 15 }, // Months
+    { width: 15 }, // DOB
+    { width: 20 }, // Care Expense
+    { width: 20 }  // Student
+  ];
+  
+  yPosition = drawTableRow(doc, MARGIN, yPosition, dependentColumns, [
+    'Full Name\n(First, Last)',
+    'Social Security\nNumber',
+    'Relationship',
+    'Months Lived\nWith You',
+    'Date of\nBirth\n/ /',
+    'Current Year\nChild Care Expense',
+    'Full Time\nStudent\n☐ Yes ☐ No'
+  ], CELL_HEIGHT * 2);
+  
+  // Draw 4 empty dependent rows
+  for (let i = 0; i < 4; i++) {
+    const dependent = submissionData?.dependents?.dependents?.[i];
+    yPosition = drawTableRow(doc, MARGIN, yPosition, dependentColumns, [
+      dependent ? `${dependent.firstName || ''} ${dependent.lastName || ''}` : '',
+      dependent ? formatValue(dependent.ssn, 'secure') : '',
+      dependent?.relationship || '',
+      dependent?.monthsLivedWithYou || '',
+      dependent?.dateOfBirth ? '/ /' : '/ /',
+      dependent?.childCareExpense ? `$${dependent.childCareExpense}` : '',
+      dependent ? `${formatValue(dependent.isFullTimeStudent, 'boolean')} Yes ☐ No` : '☐ Yes ☐ No'
+    ]);
+  }
+  
+  // CHILD AND DEPENDENT CARE EXPENSES Section
+  yPosition = checkPageSpace(doc, yPosition, 60);
+  yPosition = drawTable(doc, MARGIN, yPosition, tableWidth, 0, 'CHILD AND DEPENDENT CARE EXPENSES', true);
+  
+  yPosition = drawTableRow(doc, MARGIN, yPosition, [{ width: tableWidth }], [
+    'Enter below the persons or organizations who provided the child and dependent care.'
+  ]);
+  
+  const careColumns = [
+    { width: 10 }, // Number
+    { width: 40 }, // Name
+    { width: 50 }, // Address
+    { width: 30 }, // EIN/SSN
+    { width: 25 }, // Amount
+    { width: 25 }  // Child
+  ];
+  
+  yPosition = drawTableRow(doc, MARGIN, yPosition, careColumns, [
+    '', 'NAME', 'ADDRESS', 'EIN or Soc.Sec.#', 'AMOUNT PAID', 'CHILD'
+  ]);
+  
+  // Draw 3 care expense rows
+  for (let i = 0; i < 3; i++) {
+    const expense = submissionData?.dependents?.careExpenses?.[i];
+    yPosition = drawTableRow(doc, MARGIN, yPosition, careColumns, [
+      `${i + 1}.`,
+      expense?.name || '',
+      expense?.address || '',
+      expense?.einOrSsn || '',
+      expense?.amountPaid ? `$${expense.amountPaid}` : '',
+      expense?.child || ''
+    ]);
+  }
+  
+  // Add signatures if they exist
+  if (submissionData?.reviewSubmit?.taxpayerSignature) {
+    yPosition = checkPageSpace(doc, yPosition, 40);
+    
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('Taxpayer Signature:', MARGIN, yPosition);
+    
+    addSignatureImage(doc, submissionData.reviewSubmit.taxpayerSignature, MARGIN + 40, yPosition - 5, 50, 20);
+    
+    yPosition += 30;
+  }
+  
+  return yPosition;
+};
+
+// Generate Business Tax Form PDF with professional table structure
+const generateBusinessTaxFormPDF = (doc, submissionData) => {
+  let yPosition = MARGIN + 10;
+  const tableWidth = PAGE_WIDTH - 2 * MARGIN;
+  
+  // Business Information Section
+  yPosition = checkPageSpace(doc, yPosition, 40);
+  yPosition = drawTable(doc, MARGIN, yPosition, tableWidth, 0, 'BUSINESS INFORMATION', true);
+  
+  // Business basic info table
+  const businessInfoColumns = [
+    { width: tableWidth * 0.6 },
+    { width: tableWidth * 0.4 }
+  ];
+  
+  yPosition = drawTableRow(doc, MARGIN, yPosition, businessInfoColumns, [
+    `Business Name: ${submissionData?.basicInfo?.businessName || ''}`,
+    `EIN: ${formatValue(submissionData?.basicInfo?.ein, 'secure')}`
+  ]);
+  
+  yPosition = drawTableRow(doc, MARGIN, yPosition, businessInfoColumns, [
+    `Start Date: ${submissionData?.basicInfo?.startDate || ''}`,
+    `First Year: ${formatValue(submissionData?.basicInfo?.firstYear, 'boolean')} Yes ☐ No`
+  ]);
+  
+  // Business Address
+  yPosition = checkPageSpace(doc, yPosition, 30);
+  const addressColumns = [
+    { width: 70 }, // Address
+    { width: 30 }, // City
+    { width: 20 }, // State
+    { width: 20 }, // Zip
+    { width: 40 }  // Country
+  ];
+  
+  yPosition = drawTableRow(doc, MARGIN, yPosition, addressColumns, [
+    'Business Address', 'City', 'State', 'Zip', 'Country'
+  ]);
+  
+  yPosition = drawTableRow(doc, MARGIN, yPosition, addressColumns, [
+    submissionData?.basicInfo?.businessAddress || '',
+    submissionData?.basicInfo?.city || '',
+    submissionData?.basicInfo?.state || '',
+    submissionData?.basicInfo?.zip || '',
+    submissionData?.basicInfo?.country || ''
+  ]);
+  
+  // Entity Type Section
+  yPosition = checkPageSpace(doc, yPosition, 40);
+  yPosition = drawTable(doc, MARGIN, yPosition, tableWidth, 0, 'TYPE OF ENTITY', true);
+  
+  const entityTypes = [
+    { label: 'Corporation', value: submissionData?.basicInfo?.entityTypes?.corporation },
+    { label: 'S Corporation', value: submissionData?.basicInfo?.entityTypes?.sCorporation },
+    { label: 'Single Member LLC', value: submissionData?.basicInfo?.entityTypes?.singleMemberLLC },
+    { label: 'Multi-Member LLC', value: submissionData?.basicInfo?.entityTypes?.multiMemberLLC },
+    { label: 'Sole Proprietor', value: submissionData?.basicInfo?.entityTypes?.soleProprietor }
+  ];
+  
+  const entityColumns = [
+    { width: tableWidth * 0.2 },
+    { width: tableWidth * 0.2 },
+    { width: tableWidth * 0.2 },
+    { width: tableWidth * 0.2 },
+    { width: tableWidth * 0.2 }
+  ];
+  
+  yPosition = drawTableRow(doc, MARGIN, yPosition, entityColumns, 
+    entityTypes.map(type => `${formatValue(type.value, 'boolean')} ${type.label}`)
+  );
+  
+  // Owner Information
+  if (submissionData?.ownerInfo?.owners?.length > 0) {
+    yPosition = checkPageSpace(doc, yPosition, 60);
+    yPosition = drawTable(doc, MARGIN, yPosition, tableWidth, 0, 'OWNER INFORMATION', true);
+    
+    const ownerColumns = [
+      { width: 50 }, // Name
+      { width: 40 }, // SSN
+      { width: 60 }, // Address
+      { width: 30 }  // Ownership %
+    ];
+    
+    yPosition = drawTableRow(doc, MARGIN, yPosition, ownerColumns, [
+      'Owner Name', 'SSN', 'Address', 'Ownership %'
+    ]);
+    
+    submissionData.ownerInfo.owners.forEach(owner => {
+      yPosition = drawTableRow(doc, MARGIN, yPosition, ownerColumns, [
+        `${owner.firstName || ''} ${owner.middleInitial || ''} ${owner.lastName || ''}`,
+        formatValue(owner.ssn, 'secure'),
+        `${owner.address || ''}, ${owner.city || ''}, ${owner.state || ''} ${owner.zip || ''}`,
+        `${owner.ownershipPercentage || '0'}%`
+      ]);
+    });
+  }
+  
+  // Income & Expenses Section
+  yPosition = checkPageSpace(doc, yPosition, 80);
+  yPosition = drawTable(doc, MARGIN, yPosition, tableWidth, 0, 'INCOME & EXPENSES', true);
+  
+  const incomeExpenseFields = [
+    { label: 'Gross Receipts', value: submissionData?.incomeExpenses?.grossReceipts },
+    { label: 'Returns and Allowances', value: submissionData?.incomeExpenses?.returnsAllowances },
+    { label: 'Cost of Goods Sold', value: submissionData?.incomeExpenses?.costOfGoodsSold },
+    { label: 'Advertising', value: submissionData?.incomeExpenses?.advertising },
+    { label: 'Car and Truck Expenses', value: submissionData?.incomeExpenses?.carTruckExpenses },
+    { label: 'Office Expenses', value: submissionData?.incomeExpenses?.officeExpenses },
+    { label: 'Professional Services', value: submissionData?.incomeExpenses?.professionalServices },
+    { label: 'Rent', value: submissionData?.incomeExpenses?.rent },
+    { label: 'Utilities', value: submissionData?.incomeExpenses?.utilities }
+  ];
+  
+  const expenseColumns = [
+    { width: tableWidth * 0.5 },
+    { width: tableWidth * 0.5 }
+  ];
+  
+  for (let i = 0; i < incomeExpenseFields.length; i += 2) {
+    const field1 = incomeExpenseFields[i];
+    const field2 = incomeExpenseFields[i + 1];
+    
+    yPosition = drawTableRow(doc, MARGIN, yPosition, expenseColumns, [
+      `${field1.label}: ${field1.value || ''}`,
+      field2 ? `${field2.label}: ${field2.value || ''}` : ''
+    ]);
+  }
+  
+  // Signatures Section
+  if (submissionData?.assets?.signatures) {
+    yPosition = checkPageSpace(doc, yPosition, 60);
+    yPosition = drawTable(doc, MARGIN, yPosition, tableWidth, 0, 'TAXPAYER AND PARTNER REPRESENTATION', true);
+    
+    const signatureColumns = [
+      { width: tableWidth * 0.5 },
+      { width: tableWidth * 0.5 }
+    ];
+    
+    yPosition = drawTableRow(doc, MARGIN, yPosition, signatureColumns, [
+      'Taxpayer Signature', 'Partner Signature'
+    ], CELL_HEIGHT * 3);
+    
+    // Add signature images if they exist
+    if (submissionData.assets.signatures.taxpayer) {
+      addSignatureImage(doc, submissionData.assets.signatures.taxpayer, MARGIN + 5, yPosition - 20, 40, 15);
+    }
+    
+    if (submissionData.assets.signatures.partner) {
+      addSignatureImage(doc, submissionData.assets.signatures.partner, MARGIN + tableWidth * 0.5 + 5, yPosition - 20, 40, 15);
+    }
+    
+    yPosition = drawTableRow(doc, MARGIN, yPosition, signatureColumns, [
+      `Date: ${submissionData.assets.signatures.taxpayerDate || ''}`,
+      `Date: ${submissionData.assets.signatures.partnerDate || ''}`
+    ]);
+  }
+  
+  return yPosition;
+};
+
 export const generatePDFFromFormData = (formData, formInfo) => {
   const doc = new jsPDF();
-  let yPosition = 30;
-
+  let yPosition = MARGIN;
+  
   // Add professional header
   doc.setFillColor(240, 240, 240);
-  doc.rect(0, 0, PAGE_WIDTH, 25, 'F');
+  doc.rect(0, 0, PAGE_WIDTH, 20, 'F');
   
-  doc.setFontSize(20);
+  doc.setFontSize(16);
   doc.setFont(undefined, 'bold');
   doc.setTextColor(0, 0, 0);
   const formType = formInfo?.form_type || 'Tax';
   doc.text(`${formType.charAt(0).toUpperCase() + formType.slice(1)} Tax Organizer`, MARGIN, 15);
-
-  // Add form metadata
-  yPosition = 35;
-  doc.setFontSize(10);
+  
+  // Add form metadata in top right
+  doc.setFontSize(8);
   doc.setFont(undefined, 'normal');
   doc.setTextColor(100, 100, 100);
+  doc.text(`Form ID: ${formInfo?.id?.slice(0, 8) || 'N/A'}`, PAGE_WIDTH - MARGIN - 30, 8);
+  doc.text(`Status: ${formInfo?.status || 'N/A'}`, PAGE_WIDTH - MARGIN - 30, 13);
+  doc.text(`Generated: ${new Date().toLocaleDateString()}`, PAGE_WIDTH - MARGIN - 30, 18);
   
-  const formInfoData = [
-    `Form ID: ${formInfo?.id || 'N/A'}`,
-    `Status: ${formInfo?.status || 'N/A'}`,
-    `Submitted: ${formInfo?.submitted_at ? new Date(formInfo.submitted_at).toLocaleDateString() : 'N/A'}`,
-    `Generated: ${new Date().toLocaleDateString()}`
-  ];
-
-  formInfoData.forEach(info => {
-    doc.text(info, MARGIN, yPosition);
-    yPosition += 5;
-  });
-
-  // Add separator line
-  yPosition += 5;
-  doc.setDrawColor(200, 200, 200);
-  doc.setLineWidth(0.5);
-  doc.line(MARGIN, yPosition, PAGE_WIDTH - MARGIN, yPosition);
-  yPosition += 10;
-
-  // Get form structure based on type
-  const formStructure = formInfo?.form_type === 'personal' ? 
-    getPersonalFormStructure(formData.submission_data) :
-    getBusinessFormStructure(formData.submission_data);
-
-  // Process form sections
-  formStructure.forEach(section => {
-    yPosition = checkPageSpace(doc, yPosition, 25);
-
-    // Section header with background
-    doc.setFillColor(248, 249, 250);
-    doc.rect(MARGIN - 5, yPosition - 5, PAGE_WIDTH - 2 * MARGIN + 10, 12, 'F');
-    
-    doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text(section.title, MARGIN, yPosition + 3);
-    yPosition += 20;
-
-    // Handle sections with subsections
-    if (section.subsections) {
-      section.subsections.forEach(subsection => {
-        yPosition = checkPageSpace(doc, yPosition, 20);
-
-        // Subsection title
-        doc.setFontSize(12);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(30, 30, 30);
-        doc.text(subsection.title, MARGIN + 5, yPosition);
-        yPosition += 12;
-
-        // Subsection fields
-        subsection.fields.forEach(field => {
-          yPosition = checkPageSpace(doc, yPosition, 15);
-
-          // Field label and value on same line for checkboxes and short fields
-          doc.setFontSize(10);
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(60, 60, 60);
-          
-          const formattedValue = formatValue(field.value, field.type);
-          const fieldText = `${field.label}: ${formattedValue}`;
-          const fieldLines = wrapText(doc, fieldText, PAGE_WIDTH - 2 * MARGIN - 20);
-          
-          fieldLines.forEach(line => {
-            yPosition = checkPageSpace(doc, yPosition, LINE_HEIGHT);
-            doc.text(line, MARGIN + 10, yPosition);
-            yPosition += LINE_HEIGHT;
-          });
-
-          yPosition += 2; // Small spacing between fields
-        });
-
-        yPosition += 8; // Spacing between subsections
-      });
-    } 
-    // Handle sections with direct fields
-    else if (section.fields) {
-      section.fields.forEach(field => {
-        yPosition = checkPageSpace(doc, yPosition, 20);
-
-        // For multiline fields, show label and value separately
-        if (field.type === 'multiline') {
-          // Field label
-          doc.setFontSize(11);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(60, 60, 60);
-          doc.text(field.label + ':', MARGIN, yPosition);
-          yPosition += LINE_HEIGHT + 2;
-
-          // Field value
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(0, 0, 0);
-          
-          const formattedValue = formatValue(field.value, field.type);
-          const valueLines = wrapText(doc, formattedValue, PAGE_WIDTH - 2 * MARGIN - 10);
-          
-          valueLines.forEach(line => {
-            yPosition = checkPageSpace(doc, yPosition, LINE_HEIGHT);
-            doc.text(line, MARGIN + 10, yPosition);
-            yPosition += LINE_HEIGHT;
-          });
-
-          yPosition += 5; // Extra spacing after multiline fields
-        } else {
-          // Field label and value on same line for simple fields
-          doc.setFontSize(10);
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(60, 60, 60);
-          
-          const formattedValue = formatValue(field.value, field.type);
-          const fieldText = `${field.label}: ${formattedValue}`;
-          const fieldLines = wrapText(doc, fieldText, PAGE_WIDTH - 2 * MARGIN - 10);
-          
-          fieldLines.forEach(line => {
-            yPosition = checkPageSpace(doc, yPosition, LINE_HEIGHT);
-            doc.text(line, MARGIN, yPosition);
-            yPosition += LINE_HEIGHT;
-          });
-
-          yPosition += 3; // Small spacing between fields
-        }
-      });
-    }
-
-    yPosition += SECTION_SPACING;
-  });
-
+  // Generate form based on type
+  if (formInfo?.form_type === 'personal') {
+    generatePersonalTaxFormPDF(doc, formData.submission_data);
+  } else {
+    generateBusinessTaxFormPDF(doc, formData.submission_data);
+  }
+  
   // Add footer to all pages
   const totalPages = doc.internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     
-    // Footer background
-    doc.setFillColor(248, 249, 250);
-    doc.rect(0, PAGE_HEIGHT - 15, PAGE_WIDTH, 15, 'F');
-    
     doc.setFontSize(8);
     doc.setFont(undefined, 'normal');
     doc.setTextColor(100, 100, 100);
     
-    // Page number
     doc.text(
       `Page ${i} of ${totalPages}`,
       PAGE_WIDTH - MARGIN,
@@ -505,14 +796,13 @@ export const generatePDFFromFormData = (formData, formInfo) => {
       { align: 'right' }
     );
     
-    // Company/form identifier
     doc.text(
       'Tax Organizer Form',
       MARGIN,
       PAGE_HEIGHT - 5
     );
   }
-
+  
   return doc;
 };
 
