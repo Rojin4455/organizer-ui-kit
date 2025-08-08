@@ -220,6 +220,97 @@ const getPersonalFormStructure = (submissionData) => [
   }
 ];
 
+const getRentalFormStructure = (submissionData) => [
+  {
+    title: 'Entity Information',
+    fields: [
+      { label: 'Property held in personal name', value: submissionData?.entityInfo?.propertyInName, type: 'boolean' },
+      ...(submissionData?.entityInfo?.propertyInName ? [] : [
+        { label: 'Business Name', value: submissionData?.entityInfo?.businessName },
+        { label: 'State date of LLC', value: submissionData?.entityInfo?.stateDateLLC },
+        { label: 'Business Address', value: submissionData?.entityInfo?.businessAddress },
+        { label: 'City', value: submissionData?.entityInfo?.city },
+        { label: 'State', value: submissionData?.entityInfo?.state },
+        { label: 'Zip', value: submissionData?.entityInfo?.zip },
+        { label: 'County', value: submissionData?.entityInfo?.county },
+        { label: 'Employer Identification Number', value: submissionData?.entityInfo?.ein, type: 'secure' },
+      ])
+    ]
+  },
+  {
+    title: 'Owner Information',
+    fields: submissionData?.ownerInfo?.owners?.length > 0 ?
+      submissionData.ownerInfo.owners.map((owner, index) => ({
+        label: `Owner #${index + 1}`,
+        value: `Name: ${owner.firstName || ''} ${owner.initial || ''} ${owner.lastName || ''}\nSSN: ${owner.ssn || 'Not provided'}\nAddress: ${owner.address || ''}\nCity: ${owner.city || ''}, State: ${owner.state || ''}, Zip: ${owner.zip || ''}\nCounty: ${owner.county || ''}\nWork Phone: ${owner.workPhone || ''}\nEmail: ${owner.email || ''}\nOwnership Percentage: ${owner.ownershipPercentage || '0'}%`,
+        type: 'multiline'
+      })) :
+      [{ label: 'Owners', value: 'None reported' }]
+  },
+  {
+    title: 'Property Information',
+    fields: [
+      { label: 'Property Address', value: submissionData?.propertyInfo?.propertyAddress },
+      { label: 'City', value: submissionData?.propertyInfo?.city },
+      { label: 'State', value: submissionData?.propertyInfo?.state },
+      { label: 'ZIP', value: submissionData?.propertyInfo?.zip },
+      { label: 'Single Family Res', value: submissionData?.propertyInfo?.propertyTypes?.singleFamily, type: 'boolean' },
+      { label: 'Multi-Family Res', value: submissionData?.propertyInfo?.propertyTypes?.multiFamily, type: 'boolean' },
+      { label: 'Commercial', value: submissionData?.propertyInfo?.propertyTypes?.commercial, type: 'boolean' },
+      { label: 'Land', value: submissionData?.propertyInfo?.propertyTypes?.land, type: 'boolean' },
+      { label: 'Fair rental days', value: submissionData?.propertyInfo?.fairRentalDays },
+      { label: 'Personal use days', value: submissionData?.propertyInfo?.personalUseDays },
+      { label: 'New property purchased/converted to rental', value: submissionData?.propertyInfo?.newPropertyPurchased, type: 'boolean' },
+    ]
+  },
+  {
+    title: 'Income & Expenses',
+    subsections: [
+      {
+        title: 'Property Income',
+        fields: [
+          { label: 'Rents received', value: submissionData?.incomeExpenses?.income?.rentsReceived },
+        ]
+      },
+      {
+        title: 'Expenses',
+        fields: [
+          { label: 'Advertising', value: submissionData?.incomeExpenses?.expenses?.advertising },
+          { label: 'Appliances', value: submissionData?.incomeExpenses?.expenses?.appliances },
+          { label: 'Association dues', value: submissionData?.incomeExpenses?.expenses?.associationDues },
+          { label: 'Auto and travel', value: submissionData?.incomeExpenses?.expenses?.autoAndTravel },
+          { label: 'Cleaning/Maintenance', value: submissionData?.incomeExpenses?.expenses?.cleaningMaintenance },
+          { label: 'Commissions', value: submissionData?.incomeExpenses?.expenses?.commissions },
+          { label: 'Insurance', value: submissionData?.incomeExpenses?.expenses?.insurance },
+          { label: 'Professional fees', value: submissionData?.incomeExpenses?.expenses?.professionalFees },
+          { label: 'Mortgage interest', value: submissionData?.incomeExpenses?.expenses?.mortgageInterest },
+          { label: 'Other Interest', value: submissionData?.incomeExpenses?.expenses?.otherInterest },
+          { label: 'Repairs and Maintenance', value: submissionData?.incomeExpenses?.expenses?.repairsMaintenance },
+          { label: 'Taxes', value: submissionData?.incomeExpenses?.expenses?.taxes },
+          { label: 'Utilities', value: submissionData?.incomeExpenses?.expenses?.utilities },
+          { label: 'Improvements', value: submissionData?.incomeExpenses?.expenses?.improvements },
+          { label: 'Other Expenses', value: submissionData?.incomeExpenses?.expenses?.other?.map(item => `${item.description}: $${item.amount}`).join('\n') || 'None', type: 'multiline' },
+        ]
+      }
+    ]
+  },
+  {
+    title: 'Notes',
+    fields: [
+      { label: 'Notes', value: submissionData?.notes?.notes, type: 'multiline' },
+    ]
+  },
+  {
+    title: 'Signatures',
+    fields: [
+      { label: 'Taxpayer Signature', value: submissionData?.signatures?.taxpayer ? 'Signature provided' : 'Not signed' },
+      { label: 'Taxpayer Date', value: submissionData?.signatures?.taxpayerDate },
+      { label: 'Partner Signature', value: submissionData?.signatures?.partner ? 'Signature provided' : 'Not signed' },
+      { label: 'Partner Date', value: submissionData?.signatures?.partnerDate },
+    ]
+  }
+];
+
 const getBusinessFormStructure = (submissionData) => [
   {
     title: 'Business Information',
@@ -377,9 +468,20 @@ export const generatePDFFromFormData = (formData, formInfo) => {
   yPosition += 10;
 
   // Get form structure based on type
-  const formStructure = formInfo?.form_type === 'personal' ? 
-    getPersonalFormStructure(formData.submission_data) :
-    getBusinessFormStructure(formData.submission_data);
+  let formStructure;
+  switch (formInfo?.form_type) {
+    case 'personal':
+      formStructure = getPersonalFormStructure(formData.submission_data);
+      break;
+    case 'business':
+      formStructure = getBusinessFormStructure(formData.submission_data);
+      break;
+    case 'rental':
+      formStructure = getRentalFormStructure(formData.submission_data);
+      break;
+    default:
+      formStructure = getPersonalFormStructure(formData.submission_data);
+  }
 
   // Process form sections
   formStructure.forEach(section => {

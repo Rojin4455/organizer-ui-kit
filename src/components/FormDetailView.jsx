@@ -17,6 +17,7 @@ import { apiService } from '../services/api';
 import { downloadFormAsPDF } from '../utils/pdfGenerator';
 import { PersonalTaxOrganizerReadOnly } from './personal/PersonalTaxOrganizerReadOnly';
 import { BusinessTaxOrganizerReadOnly } from './business/BusinessTaxOrganizerReadOnly';
+import { RentalPropertyOrganizerReadOnly } from './rental/RentalPropertyOrganizerReadOnly';
 
 export const FormDetailView = ({ form, onBack, onEdit, userToken }) => {
   const [formData, setFormData] = useState(null);
@@ -114,14 +115,22 @@ export const FormDetailView = ({ form, onBack, onEdit, userToken }) => {
       </AppBar>
 
       {/* Render form using structured read-only components */}
-      {form.form_type === 'personal' ? (
+      {form.form_type === 'personal' && (
         <PersonalTaxOrganizerReadOnly
           submissionData={formData.submission_data}
           formInfo={form}
           showHeader={true}
         />
-      ) : (
+      )}
+      {form.form_type === 'business' && (
         <BusinessTaxOrganizerReadOnly
+          submissionData={formData.submission_data}
+          formInfo={form}
+          showHeader={true}
+        />
+      )}
+      {form.form_type === 'rental' && (
+        <RentalPropertyOrganizerReadOnly
           submissionData={formData.submission_data}
           formInfo={form}
           showHeader={true}

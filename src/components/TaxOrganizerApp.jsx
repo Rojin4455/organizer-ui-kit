@@ -22,12 +22,14 @@ import {
 import {
   Person as PersonIcon,
   Business as BusinessIcon,
+  Home as HomeIcon,
   AccountBalance as TaxIcon,
   Save as SaveIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { PersonalTaxOrganizer } from './personal/PersonalTaxOrganizer';
 import { BusinessTaxOrganizer } from './business/BusinessTaxOrganizer';
+import { RentalPropertyOrganizer } from './rental/RentalPropertyOrganizer';
 import { FormsListView } from './FormsListView';
 import { getUrlParams, setUrlParams, generateFormLink } from '../utils/urlParams';
 import { apiService } from '../services/api';
@@ -313,6 +315,21 @@ export const TaxOrganizerApp = ({
     );
   }
 
+  if (selectedOrganizer === 'rental') {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <RentalPropertyOrganizer
+          onSave={handleSave}
+          onBack={() => setSelectedOrganizer(null)}
+          initialData={savedData}
+          userId={currentUserId}
+          isLoading={isLoading}
+        />
+      </ThemeProvider>
+    );
+  }
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -438,6 +455,30 @@ export const TaxOrganizerApp = ({
                     <Chip size="small" label="Expenses" variant="outlined" />
                     <Chip size="small" label="Assets" variant="outlined" />
                     <Chip size="small" label="Entity Info" variant="outlined" />
+                  </Box>
+                </CardContent>
+              </CardActionArea>
+            </Card>
+
+            <Card sx={{ width: { xs: '100%', md: '400px' }, height: '100%' }}>
+              <CardActionArea
+                onClick={() => handleNewForm('rental')}
+                sx={{ height: '100%', p: 3 }}
+              >
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <HomeIcon sx={{ fontSize: 64, color: '#f59e0b', mb: 2 }} />
+                  <Typography variant="h4" component="h2" gutterBottom>
+                    Rental Property Organizer
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                    Organize your rental property information including property details, 
+                    income, expenses, and owner information.
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
+                    <Chip size="small" label="Property Info" variant="outlined" />
+                    <Chip size="small" label="Rental Income" variant="outlined" />
+                    <Chip size="small" label="Expenses" variant="outlined" />
+                    <Chip size="small" label="Owner Details" variant="outlined" />
                   </Box>
                 </CardContent>
               </CardActionArea>
