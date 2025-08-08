@@ -142,7 +142,7 @@ export const RentalPropertyOrganizer = ({
         <RentalReview
           data={formData.notes || {}}
           formData={formData}
-          onChange={setFormData}
+          onChange={(data) => updateFormData('notes', data)}
           onSave={handleSubmit}
           isSubmitting={isSubmitting}
         />
