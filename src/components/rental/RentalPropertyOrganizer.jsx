@@ -46,63 +46,117 @@ export const RentalPropertyOrganizer = ({
       
       // Check if we have actual form data and current form is empty
       if (dataToSet && (dataToSet.entityInfo || dataToSet.ownerInfo || dataToSet.propertyInfo)) {
-        setFormData({
-          entityInfo: dataToSet.entityInfo || {},
-          ownerInfo: dataToSet.ownerInfo || {},
-          propertyInfo: dataToSet.propertyInfo || {},
-          incomeExpenses: dataToSet.incomeExpenses || {},
-          notes: dataToSet.notes || {},
+        setFormData(prev => {
+          const hasExistingData = Object.keys(prev.entityInfo).length > 0 || 
+                                 Object.keys(prev.ownerInfo).length > 0 ||
+                                 Object.keys(prev.propertyInfo).length > 0;
+          
+          if (!hasExistingData) {
+            return {
+              entityInfo: dataToSet.entityInfo || {},
+              ownerInfo: dataToSet.ownerInfo || {},
+              propertyInfo: dataToSet.propertyInfo || {},
+              incomeExpenses: dataToSet.incomeExpenses || {},
+              notes: dataToSet.notes || {},
+            };
+          }
+          return prev;
         });
       }
     }
   }, [initialData]);
 
+  // Auto-save functionality
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      localStorage.setItem('rentalPropertyData', JSON.stringify(formData));
+    }, 1000);
+    return () => clearTimeout(timeout);
+  }, [formData]);
+
+  const updateFormData = (section, data) => {
+    setFormData(prev => ({
+      ...prev,
+      [section]: data,
+    }));
+  };
+
   const steps = [
     {
+      id: 'entity-info',
       label: 'Entity Information',
       description: 'Business details and entity type',
-      component: RentalEntityInfo,
-      dataKey: 'entityInfo',
-      icon: <HomeIcon />,
+      content: (
+        <RentalEntityInfo
+          data={formData.entityInfo}
+          onChange={(data) => updateFormData('entityInfo', data)}
+        />
+      ),
+      isCompleted: Boolean(formData.entityInfo.businessName || formData.entityInfo.propertyInName),
+      isRequired: true,
     },
     {
+      id: 'owner-info',
       label: 'Owner Information',
       description: 'Property owner details',
-      component: RentalOwnerInfo,
-      dataKey: 'ownerInfo',
-      icon: <HomeIcon />,
+      content: (
+        <RentalOwnerInfo
+          data={formData.ownerInfo}
+          onChange={(data) => updateFormData('ownerInfo', data)}
+        />
+      ),
+      isCompleted: Boolean(formData.ownerInfo.owners && formData.ownerInfo.owners[0]?.firstName),
+      isRequired: true,
     },
     {
+      id: 'property-info',
       label: 'Property Information',
       description: 'Rental property details',
-      component: RentalPropertyInfo,
-      dataKey: 'propertyInfo',
-      icon: <HomeIcon />,
+      content: (
+        <RentalPropertyInfo
+          data={formData.propertyInfo}
+          onChange={(data) => updateFormData('propertyInfo', data)}
+        />
+      ),
+      isCompleted: Boolean(formData.propertyInfo.propertyAddress),
+      isRequired: true,
     },
     {
+      id: 'income-expenses',
       label: 'Income & Expenses',
       description: 'Property income and expense details',
-      component: RentalIncomeExpenses,
-      dataKey: 'incomeExpenses',
-      icon: <HomeIcon />,
+      content: (
+        <RentalIncomeExpenses
+          data={formData.incomeExpenses}
+          onChange={(data) => updateFormData('incomeExpenses', data)}
+        />
+      ),
+      isCompleted: true, // Optional section
+      isRequired: false,
     },
     {
+      id: 'review',
       label: 'Review & Submit',
       description: 'Review and submit your rental property organizer',
-      component: RentalReview,
-      dataKey: 'review',
-      icon: <HomeIcon />,
+      content: (
+        <RentalReview
+          data={formData}
+          onChange={setFormData}
+        />
+      ),
+      isCompleted: false,
+      isRequired: true,
     },
   ];
-
-  const handleStepChange = (step) => {
-    setActiveStep(step);
-  };
 
   const handleNext = () => {
     if (activeStep < steps.length - 1) {
       setActiveStep(activeStep + 1);
     }
+  };
+
+  const handleStepChange = (stepIndex) => {
+    setActiveStep(stepIndex);
   };
 
   const handleBack = () => {
@@ -111,44 +165,37 @@ export const RentalPropertyOrganizer = ({
     }
   };
 
-  const handleDataChange = (stepKey, data) => {
-    setFormData(prev => ({
-      ...prev,
-      [stepKey]: data,
-    }));
-  };
-
-  const handleSave = async (isCompleted = false) => {
+  const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const dataToSave = {
-        ...formData,
-        isCompleted
-      };
-      await onSave(dataToSave, isCompleted);
-    } catch (error) {
-      console.error('Error saving form:', error);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      onSave(formData, true);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const currentStep = steps[activeStep];
-  const StepComponent = currentStep.component;
+  const handleSaveProgress = async () => {
+    try {
+      await onSave(formData, false);
+    } catch (error) {
+      console.error('Error saving progress:', error);
+    }
+  };
 
   return (
-    <Box sx={{ flexGrow: 1, bgcolor: 'background.default', minHeight: '100vh' }}>
-      <AppBar position="static" sx={{ bgcolor: 'primary.main' }}>
+    <Box sx={{ flexGrow: 1 }}>
+      <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
         <Toolbar>
           <Button
             startIcon={<ArrowBackIcon />}
             onClick={onBack}
-            sx={{ color: 'white', mr: 2 }}
+            sx={{ mr: 2, color: '#64748b' }}
           >
-            Back to Forms
+            Back
           </Button>
-          <HomeIcon sx={{ mr: 2 }} />
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          <HomeIcon sx={{ mr: 2, color: '#f97316' }} />
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1, color: '#1e293b', fontWeight: 600 }}>
             Rental Property Organizer
           </Typography>
           <FormControlLabel
@@ -156,53 +203,36 @@ export const RentalPropertyOrganizer = ({
               <Switch
                 checked={useVerticalStepper}
                 onChange={(e) => setUseVerticalStepper(e.target.checked)}
-                color="default"
+                size="small"
               />
             }
             label="Vertical Layout"
-            sx={{ color: 'white', mr: 2 }}
+            sx={{ mr: 2, color: '#64748b' }}
           />
           <Button
             startIcon={<SaveIcon />}
-            onClick={() => handleSave(false)}
+            onClick={handleSaveProgress}
             variant="outlined"
-            sx={{ 
-              color: 'white', 
-              borderColor: 'white',
-              '&:hover': {
-                borderColor: 'white',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              }
-            }}
-            disabled={isLoading || isSubmitting}
+            size="small"
+            disabled={isLoading}
           >
-            Save Progress
+            {isLoading ? 'Saving...' : 'Save Progress'}
           </Button>
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="xl" sx={{ py: 3 }}>
+      <Container maxWidth="lg" sx={{ mt: 3, mb: 4 }}>
         <FormStepper
           steps={steps}
           activeStep={activeStep}
           onStepChange={handleStepChange}
-          vertical={useVerticalStepper}
+          onNext={handleNext}
+          onBack={handleBack}
+          onSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
+          submitLabel="Submit Rental Property Organizer"
+          orientation={useVerticalStepper ? 'vertical' : 'horizontal'}
         />
-
-        <Box sx={{ mt: 3 }}>
-          <StepComponent
-            data={formData[currentStep.dataKey] || {}}
-            formData={formData}
-            onChange={(data) => handleDataChange(currentStep.dataKey, data)}
-            onNext={handleNext}
-            onBack={handleBack}
-            onSave={handleSave}
-            isLastStep={activeStep === steps.length - 1}
-            isFirstStep={activeStep === 0}
-            isSubmitting={isSubmitting}
-            userId={userId}
-          />
-        </Box>
       </Container>
     </Box>
   );
