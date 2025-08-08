@@ -25,7 +25,7 @@ export const RentalReview = ({
   const [currentSignatureField, setCurrentSignatureField] = useState('');
 
   const handleNotesChange = (value) => {
-    onChange(prev => ({ ...prev, notes: { ...prev.notes, notes: value } }));
+    onChange({ ...data, notes: value });
   };
 
   const handleSignatureClick = (field) => {
