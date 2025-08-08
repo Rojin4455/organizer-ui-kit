@@ -140,11 +140,8 @@ export const RentalPropertyOrganizer = ({
       description: 'Review and submit your rental property organizer',
       content: (
         <RentalReview
-          data={formData.notes || {}}
-          formData={formData}
+          data={formData}
           onChange={setFormData}
-          onSave={handleSubmit}
-          isSubmitting={isSubmitting}
         />
       ),
       isCompleted: false,
