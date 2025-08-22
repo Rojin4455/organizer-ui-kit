@@ -667,27 +667,27 @@ const getRentalFormStructure = (submissionData) => [
     fields: [
       { label: 'Notes', value: submissionData?.notes?.notes || submissionData?.notes || 'No additional notes provided', type: 'multiline' },
     ]
-  },
-  {
-    title: 'Signatures',
-    fields: [
-      { label: 'Taxpayer Signature', value: submissionData?.signatures?.taxpayer || submissionData?.taxpayerSignature, type: 'signature' },
-      { label: 'Taxpayer Date', value: submissionData?.signatures?.taxpayerDate || submissionData?.taxpayerDate || 'Not provided' },
-      { label: 'Partner Signature', value: submissionData?.signatures?.partner || submissionData?.partnerSignature, type: 'signature' },
-      { label: 'Partner Date', value: submissionData?.signatures?.partnerDate || submissionData?.partnerDate || 'Not provided' },
-    ]
   }
+  // {
+  //   title: 'Signatures',
+  //   fields: [
+  //     { label: 'Taxpayer Signature', value: submissionData?.signatures?.taxpayer || submissionData?.taxpayerSignature, type: 'signature' },
+  //     { label: 'Taxpayer Date', value: submissionData?.signatures?.taxpayerDate || submissionData?.taxpayerDate || 'Not provided' },
+  //     { label: 'Partner Signature', value: submissionData?.signatures?.partner || submissionData?.partnerSignature, type: 'signature' },
+  //     { label: 'Partner Date', value: submissionData?.signatures?.partnerDate || submissionData?.partnerDate || 'Not provided' },
+  //   ]
+  // }
 ];
 
 const getBusinessFormStructure = (submissionData) => [
-  {
-    title: 'Contact Information',
-    fields: [
-      { label: 'Full Name', value: submissionData?.contactInfo?.fullName },
-      { label: 'Email Address', value: submissionData?.contactInfo?.email },
-      { label: 'Phone Number', value: submissionData?.contactInfo?.phone },
-    ]
-  },
+  // {
+  //   title: 'Contact Information',
+  //   fields: [
+  //     { label: 'Full Name', value: submissionData?.contactInfo?.fullName },
+  //     { label: 'Email Address', value: submissionData?.contactInfo?.email },
+  //     { label: 'Phone Number', value: submissionData?.contactInfo?.phone },
+  //   ]
+  // },
   {
     title: 'Business Information',
     subsections: [
