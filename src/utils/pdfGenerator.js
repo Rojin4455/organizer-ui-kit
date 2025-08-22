@@ -15,9 +15,38 @@ const checkPageSpace = (doc, yPosition, requiredSpace = 15) => {
   return yPosition;
 };
 
-// Helper function to wrap text
+// Helper function to wrap text with consistent formatting
 const wrapText = (doc, text, maxWidth) => {
-  return doc.splitTextToSize(text, maxWidth);
+  const lines = doc.splitTextToSize(String(text || ''), maxWidth);
+  return Array.isArray(lines) ? lines : [lines];
+};
+
+// Helper function to add text with consistent formatting
+const addFormattedText = (doc, text, x, y, options = {}) => {
+  const {
+    fontSize = 10,
+    fontStyle = 'normal',
+    maxWidth = PAGE_WIDTH - (2 * MARGIN),
+    align = 'left'
+  } = options;
+  
+  doc.setFontSize(fontSize);
+  doc.setFont('helvetica', fontStyle);
+  
+  const wrappedLines = wrapText(doc, text, maxWidth);
+  let currentY = y;
+  
+  wrappedLines.forEach((line, index) => {
+    if (currentY + LINE_HEIGHT > PAGE_HEIGHT - MARGIN) {
+      doc.addPage();
+      currentY = 30;
+    }
+    
+    doc.text(line, x, currentY, { align });
+    currentY += LINE_HEIGHT;
+  });
+  
+  return currentY;
 };
 
 // Helper function to format values for PDF
@@ -614,22 +643,35 @@ export const generatePDFFromFormData = (formData, formInfo) => {
         subsection.fields.forEach(field => {
           yPosition = checkPageSpace(doc, yPosition, 15);
 
-          // Field label and value on same line for checkboxes and short fields
-          doc.setFontSize(10);
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(60, 60, 60);
-          
-          const formattedValue = formatValue(field.value, field.type);
-          const fieldText = `${field.label}: ${formattedValue}`;
-          const fieldLines = wrapText(doc, fieldText, PAGE_WIDTH - 2 * MARGIN - 20);
-          
-          fieldLines.forEach(line => {
-            yPosition = checkPageSpace(doc, yPosition, LINE_HEIGHT);
-            doc.text(line, MARGIN + 10, yPosition);
-            yPosition += LINE_HEIGHT;
-          });
+          // For multiline fields, show label and value separately
+          if (field.type === 'multiline') {
+            // Field label
+            yPosition = addFormattedText(doc, field.label + ':', MARGIN + 10, yPosition, {
+              fontSize: 11,
+              fontStyle: 'bold',
+              maxWidth: PAGE_WIDTH - 2 * MARGIN - 20
+            });
+            yPosition += 2;
 
-          yPosition += 2; // Small spacing between fields
+            // Field value
+            const formattedValue = formatValue(field.value, field.type);
+            yPosition = addFormattedText(doc, formattedValue, MARGIN + 15, yPosition, {
+              fontSize: 10,
+              fontStyle: 'normal',
+              maxWidth: PAGE_WIDTH - 2 * MARGIN - 25
+            });
+            yPosition += 5;
+          } else {
+            // Field label and value on same line for simple fields
+            const formattedValue = formatValue(field.value, field.type);
+            const fieldText = `${field.label}: ${formattedValue}`;
+            yPosition = addFormattedText(doc, fieldText, MARGIN + 10, yPosition, {
+              fontSize: 10,
+              fontStyle: 'normal',
+              maxWidth: PAGE_WIDTH - 2 * MARGIN - 20
+            });
+            yPosition += 3;
+          }
         });
 
         yPosition += 8; // Spacing between subsections
@@ -643,43 +685,31 @@ export const generatePDFFromFormData = (formData, formInfo) => {
         // For multiline fields, show label and value separately
         if (field.type === 'multiline') {
           // Field label
-          doc.setFontSize(11);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(60, 60, 60);
-          doc.text(field.label + ':', MARGIN, yPosition);
-          yPosition += LINE_HEIGHT + 2;
+          yPosition = addFormattedText(doc, field.label + ':', MARGIN, yPosition, {
+            fontSize: 11,
+            fontStyle: 'bold',
+            maxWidth: PAGE_WIDTH - 2 * MARGIN
+          });
+          yPosition += 2;
 
           // Field value
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(0, 0, 0);
-          
           const formattedValue = formatValue(field.value, field.type);
-          const valueLines = wrapText(doc, formattedValue, PAGE_WIDTH - 2 * MARGIN - 10);
-          
-          valueLines.forEach(line => {
-            yPosition = checkPageSpace(doc, yPosition, LINE_HEIGHT);
-            doc.text(line, MARGIN + 10, yPosition);
-            yPosition += LINE_HEIGHT;
+          yPosition = addFormattedText(doc, formattedValue, MARGIN + 10, yPosition, {
+            fontSize: 10,
+            fontStyle: 'normal',
+            maxWidth: PAGE_WIDTH - 2 * MARGIN - 10
           });
-
-          yPosition += 5; // Extra spacing after multiline fields
+          yPosition += 5;
         } else {
           // Field label and value on same line for simple fields
-          doc.setFontSize(10);
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(60, 60, 60);
-          
           const formattedValue = formatValue(field.value, field.type);
           const fieldText = `${field.label}: ${formattedValue}`;
-          const fieldLines = wrapText(doc, fieldText, PAGE_WIDTH - 2 * MARGIN - 10);
-          
-          fieldLines.forEach(line => {
-            yPosition = checkPageSpace(doc, yPosition, LINE_HEIGHT);
-            doc.text(line, MARGIN, yPosition);
-            yPosition += LINE_HEIGHT;
+          yPosition = addFormattedText(doc, fieldText, MARGIN, yPosition, {
+            fontSize: 10,
+            fontStyle: 'normal',
+            maxWidth: PAGE_WIDTH - 2 * MARGIN
           });
-
-          yPosition += 3; // Small spacing between fields
+          yPosition += 3;
         }
       });
     }
