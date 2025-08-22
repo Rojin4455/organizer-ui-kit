@@ -215,7 +215,7 @@ export const FormsListView = ({ onBack, userToken }) => {
                         startIcon={<DownloadIcon />}
                         onClick={() => handleDownloadPDF(form.id, form.form_type)}
                       >
-                        PDF
+                        Download PDF
                       </Button>
                     </Box>
                   </CardContent>
