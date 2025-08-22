@@ -15,8 +15,8 @@ import {
 import { SignatureDrawer } from '../../shared/SignatureDrawer';
 
 export const RentalReview = ({ 
-  data, 
-  formData, 
+  data = {},
+  formData = {},
   onChange, 
   onSave, 
   isSubmitting 
@@ -27,6 +27,8 @@ export const RentalReview = ({
   const handleNotesChange = (value) => {
     onChange({ ...data, notes: value });
   };
+
+  console.log("reached hereeee: ")
 
   const handleSignatureClick = (field) => {
     setCurrentSignatureField(field);
@@ -109,7 +111,7 @@ export const RentalReview = ({
       </Typography>
 
       {/* Form Completion Status */}
-      <Paper sx={{ p: 3, mb: 3, bgcolor: completedSections === totalSections ? 'success.50' : 'warning.50' }}>
+      {/* <Paper sx={{ p: 3, mb: 3, bgcolor: completedSections === totalSections ? 'success.50' : 'warning.50' }}>
         <Typography variant="h6" sx={{ mb: 2 }}>
           Form Completion Status: {completedSections}/{totalSections} sections completed
         </Typography>
@@ -134,7 +136,7 @@ export const RentalReview = ({
             </Grid>
           ))}
         </Grid>
-      </Paper>
+      </Paper> */}
 
       {/* Notes Section */}
       <Paper sx={{ p: 3, mb: 3 }}>
@@ -154,7 +156,7 @@ export const RentalReview = ({
       </Paper>
 
       {/* Signatures Section */}
-      <Paper sx={{ p: 3, mb: 4 }}>
+      {/* <Paper sx={{ p: 3, mb: 4 }}>
         <Typography variant="h6" sx={{ mb: 3 }}>
           Taxpayer and Partner Representation
         </Typography>
@@ -196,12 +198,12 @@ export const RentalReview = ({
             )}
           </Grid>
         </Grid>
-      </Paper>
+      </Paper> */}
 
       <Divider sx={{ my: 3 }} />
 
       {/* Submit Button */}
-      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+      {/* <Box sx={{ display: 'flex', justifyContent: 'center' }}>
         <Button
           variant="contained"
           size="large"
@@ -212,9 +214,9 @@ export const RentalReview = ({
         >
           {isSubmitting ? 'Submitting...' : 'Submit Rental Property Organizer'}
         </Button>
-      </Box>
+      </Box> */}
 
-      {completedSections < totalSections && (
+      {/* {completedSections < totalSections && (
         <Typography variant="body2" color="error" align="center" sx={{ mt: 2 }}>
           Please complete all sections before submitting.
         </Typography>
@@ -225,7 +227,7 @@ export const RentalReview = ({
         onClose={() => setSignatureOpen(false)}
         onSave={handleSignatureSave}
         title={`${currentSignatureField === 'taxpayer' ? 'Taxpayer' : 'Partner'} Signature`}
-      />
+      /> */}
     </Box>
   );
 };

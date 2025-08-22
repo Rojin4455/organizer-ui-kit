@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { loginUser, clearError } from '../store/authSlice';
 import businessLogo from '../assets/business-logo.png';
+import { Checkbox } from '@/components/ui/checkbox';
+
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -85,6 +87,19 @@ const Login = () => {
                 onChange={handleChange}
                 placeholder="Enter your password"
               />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="rememberMe"
+                name="rememberMe"
+                // checked={formData.rememberMe}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, rememberMe: checked }))
+                }
+              />
+              <Label htmlFor="rememberMe" className="text-sm font-normal">
+                Remember me
+              </Label>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
