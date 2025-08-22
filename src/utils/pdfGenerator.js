@@ -686,6 +686,14 @@ const getRentalFormStructure = (submissionData) => [
 
 const getBusinessFormStructure = (submissionData) => [
   {
+    title: 'Contact Information',
+    fields: [
+      { label: 'Full Name', value: submissionData?.contactInfo?.fullName },
+      { label: 'Email Address', value: submissionData?.contactInfo?.email },
+      { label: 'Phone Number', value: submissionData?.contactInfo?.phone },
+    ]
+  },
+  {
     title: 'Business Information',
     subsections: [
       {
@@ -747,54 +755,122 @@ const getBusinessFormStructure = (submissionData) => [
     fields: submissionData?.ownerInfo?.owners?.length > 0 ?
       submissionData.ownerInfo.owners.map((owner, index) => ({
         label: `Owner #${index + 1}`,
-        value: `Name: ${owner.firstName || ''} ${owner.middleInitial || ''} ${owner.lastName || ''}\nSSN: ${owner.ssn || 'Not provided'}\nAddress: ${owner.address || ''}\nCity: ${owner.city || ''}, State: ${owner.state || ''}, Zip: ${owner.zip || ''}\nCountry: ${owner.country || ''}\nWork Telephone: ${owner.workTelephone || ''}\nOwnership Percentage: ${owner.ownershipPercentage || '0'}%`,
+        value: `Name: ${owner.firstName || ''} ${owner.initial || ''} ${owner.lastName || ''}\nSSN: ${formatValue(owner.ssn, 'secure') || 'Not provided'}\nAddress: ${owner.address || ''}\nCity: ${owner.city || ''}, State: ${owner.state || ''}, Zip: ${owner.zip || ''}\nCountry: ${owner.country || ''}\nWork Telephone: ${owner.workTel || ''}\nOwnership Percentage: ${owner.ownershipPercentage || '0'}%`,
         type: 'multiline'
       })) :
       [{ label: 'Owners', value: 'None reported' }]
   },
   {
-    title: 'Income & Expenses',
+    title: 'Income',
     fields: [
-      { label: 'Gross Receipts', value: submissionData?.incomeExpenses?.grossReceipts },
-      { label: 'Returns and Allowances', value: submissionData?.incomeExpenses?.returnsAllowances },
-      { label: 'Cost of Goods Sold', value: submissionData?.incomeExpenses?.costOfGoodsSold },
+      { label: 'Gross receipts or sales', value: submissionData?.incomeExpenses?.grossReceipts },
+      { label: 'Returns and allowances', value: submissionData?.incomeExpenses?.returnsAllowances },
+      { label: 'Interest income/Trust deed income', value: submissionData?.incomeExpenses?.interestIncome },
+      { label: 'Other income From Business', value: submissionData?.incomeExpenses?.otherIncome },
+    ]
+  },
+  {
+    title: 'Cost of Goods Sold',
+    fields: [
+      { label: 'Inventory at beginning of year', value: submissionData?.incomeExpenses?.inventoryBeginning },
+      { label: 'Inventory at end of year', value: submissionData?.incomeExpenses?.inventoryEnd },
+      { label: 'Purchases', value: submissionData?.incomeExpenses?.purchases },
+      { label: 'Cost of items for personal use', value: submissionData?.incomeExpenses?.costPersonalUse },
+      { label: 'Contracted Labor', value: submissionData?.incomeExpenses?.contractedLabor },
+      { label: 'Materials and supplies', value: submissionData?.incomeExpenses?.materialsSupplies },
+      { label: 'Other costs', value: submissionData?.incomeExpenses?.otherCosts },
+    ]
+  },
+  {
+    title: 'Business Income and Expenses',
+    fields: [
       { label: 'Advertising', value: submissionData?.incomeExpenses?.advertising },
-      { label: 'Car and Truck Expenses', value: submissionData?.incomeExpenses?.carTruckExpenses },
       { label: 'Office Expenses', value: submissionData?.incomeExpenses?.officeExpenses },
-      { label: 'Professional Services', value: submissionData?.incomeExpenses?.professionalServices },
-      { label: 'Rent', value: submissionData?.incomeExpenses?.rent },
+      { label: 'Bank Fees', value: submissionData?.incomeExpenses?.bankFees },
+      { label: 'Other Interest', value: submissionData?.incomeExpenses?.otherInterest },
+      { label: 'Commissions', value: submissionData?.incomeExpenses?.commissions },
+      { label: 'Parking & Tolls', value: submissionData?.incomeExpenses?.parkingTolls },
+      { label: 'Computer Purchase', value: submissionData?.incomeExpenses?.computerPurchase },
+      { label: 'Rent - other business property', value: submissionData?.incomeExpenses?.rentOtherBusiness },
+      { label: 'Consulting/Training', value: submissionData?.incomeExpenses?.consultingTraining },
+      { label: 'Rent - vehicles machinery & equipment', value: submissionData?.incomeExpenses?.rentVehiclesMachinery },
+      { label: 'Dues and Subscriptions', value: submissionData?.incomeExpenses?.duesSubscriptions },
+      { label: 'Repairs', value: submissionData?.incomeExpenses?.repairs },
+      { label: 'Entity Creation', value: submissionData?.incomeExpenses?.entityCreation },
+      { label: 'Shipping/Postage', value: submissionData?.incomeExpenses?.shippingPostage },
+      { label: 'Food/Eat Out', value: submissionData?.incomeExpenses?.foodEatOut },
+      { label: 'Taxes - real estate', value: submissionData?.incomeExpenses?.taxesRealEstate },
+      { label: 'Health Insurance Premiums', value: submissionData?.incomeExpenses?.healthInsurancePremiums },
+      { label: 'Taxes - other', value: submissionData?.incomeExpenses?.taxesOther },
+      { label: 'Insurance other than health', value: submissionData?.incomeExpenses?.insuranceOtherHealth },
+      { label: 'Telephone', value: submissionData?.incomeExpenses?.telephone },
+      { label: 'Interest (mortgage, etc.)', value: submissionData?.incomeExpenses?.interestMortgage },
+      { label: 'Total meals', value: submissionData?.incomeExpenses?.totalMeals },
+      { label: 'Internet', value: submissionData?.incomeExpenses?.internet },
+      { label: 'Travel', value: submissionData?.incomeExpenses?.travel },
+      { label: 'Legal & Professional', value: submissionData?.incomeExpenses?.legalProfessional },
       { label: 'Utilities', value: submissionData?.incomeExpenses?.utilities },
+      { label: 'Licenses', value: submissionData?.incomeExpenses?.licenses },
+      { label: 'Wages', value: submissionData?.incomeExpenses?.wages },
+      { label: 'Merchant fees', value: submissionData?.incomeExpenses?.merchantFees },
+      { label: 'Web Fees', value: submissionData?.incomeExpenses?.webFees },
+      { label: 'Wholesale/Drop Shipper fees', value: submissionData?.incomeExpenses?.wholesaleDropShipper },
+    ]
+  },
+  {
+    title: 'Vehicle Mileage',
+    fields: [
+      ...(submissionData?.incomeExpenses?.vehicles?.length > 0 ? 
+        submissionData.incomeExpenses.vehicles.map((vehicle, index) => ({
+          label: `Vehicle ${index + 1}`,
+          value: `Description: ${vehicle.description || 'Not provided'}\nDate placed in service: ${vehicle.datePlacedInService || 'Not provided'}\nTotal miles for the year: ${vehicle.totalMiles || 'Not provided'}\nBusiness miles: ${vehicle.businessMiles || 'Not provided'}`,
+          type: 'multiline'
+        })) : 
+        [{ label: 'Vehicle Information', value: 'No vehicles reported' }]
+      )
+    ]
+  },
+  {
+    title: 'Other Expenses',
+    fields: [
+      ...(submissionData?.incomeExpenses?.otherExpenses?.length > 0 ?
+        submissionData.incomeExpenses.otherExpenses.filter(expense => expense.description || expense.amount).map((expense, index) => ({
+          label: `Other Expense ${index + 1}`,
+          value: `${expense.description || 'No description'}: $${expense.amount || '0'}`
+        })) :
+        [{ label: 'Other Expenses', value: 'No other expenses reported' }]
+      )
     ]
   },
   {
     title: 'Business Use of Home',
     fields: [
-      { label: 'Uses Home for Business', value: submissionData?.assets?.hasHomeOffice, type: 'boolean' },
+      { label: 'Has Home Office', value: submissionData?.assets?.hasHomeOffice, type: 'boolean' },
       ...(submissionData?.assets?.hasHomeOffice ? [
         { label: 'Rent', value: submissionData?.assets?.rent },
         { label: 'Utilities', value: submissionData?.assets?.utilities },
         { label: 'Insurance', value: submissionData?.assets?.insurance },
         { label: 'Janitorial', value: submissionData?.assets?.janitorial },
         { label: 'Miscellaneous', value: submissionData?.assets?.miscellaneous },
-        { label: 'Exclusive Business Use', value: submissionData?.assets?.exclusiveBusinessUse, type: 'boolean' },
-        { label: 'Size of Home', value: submissionData?.assets?.sizeOfHome },
-        { label: 'Size of Home Office', value: submissionData?.assets?.sizeOfHomeOffice },
-        { label: 'Repairs & Maintenance', value: submissionData?.assets?.repairsAndMaintenance },
-        { label: 'Other Expenses', value: submissionData?.assets?.otherExpenses?.join(', ') || 'None' },
+        { label: '% of Exclusive Business use', value: submissionData?.assets?.exclusiveBusinessUse ? `${submissionData.assets.exclusiveBusinessUse}%` : 'Not provided' },
+        { label: 'Size of Home', value: submissionData?.assets?.sizeOfHome ? `${submissionData.assets.sizeOfHome} sq ft` : 'Not provided' },
+        { label: 'Size of Home Office', value: submissionData?.assets?.sizeOfHomeOffice ? `${submissionData.assets.sizeOfHomeOffice} sq ft` : 'Not provided' },
+        { label: 'Repairs & Maintenance', value: submissionData?.assets?.repairsMaintenance },
+        { label: 'Other Expenses', value: submissionData?.assets?.otherExpenses?.filter(exp => exp).join(', ') || 'None' },
       ] : [])
     ]
   },
   {
     title: 'Taxpayer and Partner Representation',
     fields: [
-      { label: 'Taxpayer Signature', value: submissionData?.assets?.signatures?.taxpayer ? 'Signature provided' : 'Not signed' },
+      { label: 'Taxpayer Signature', value: submissionData?.assets?.signatures?.taxpayerSignature, type: 'signature' },
       { label: 'Taxpayer Date', value: submissionData?.assets?.signatures?.taxpayerDate },
-      { label: 'Partner Signature', value: submissionData?.assets?.signatures?.partner ? 'Signature provided' : 'Not signed' },
+      { label: 'Partner Signature', value: submissionData?.assets?.signatures?.partnerSignature, type: 'signature' },
       { label: 'Partner Date', value: submissionData?.assets?.signatures?.partnerDate },
     ]
   },
   {
-    title: 'Notes',
+    title: 'Additional Notes',
     fields: [
       { label: 'Notes', value: submissionData?.assets?.notes, type: 'multiline' },
     ]
