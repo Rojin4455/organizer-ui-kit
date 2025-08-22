@@ -432,20 +432,151 @@ const getPersonalFormStructure = (submissionData) => [
   },
   {
     title: 'Deductions',
-    fields: [
-      { label: 'Medical Expenses', value: submissionData?.deductions?.medicalExpenses },
-      { label: 'Charitable Contributions', value: submissionData?.deductions?.charitableContributions },
-      { label: 'State and Local Taxes', value: submissionData?.deductions?.stateLocalTaxes },
-      { label: 'Mortgage Interest', value: submissionData?.deductions?.mortgageInterest },
-      { label: 'Student Loan Interest', value: submissionData?.deductions?.studentLoanInterest },
+    subsections: [
+      {
+        title: 'Charitable Contributions',
+        fields: [
+          { label: 'Attach all copies of your Contribution Statements', value: submissionData?.deductions?.attachContributionStatements, type: 'boolean' },
+          { label: 'Miles driven for charitable purposes', value: submissionData?.deductions?.charitableMiles },
+          { label: 'Parking fees, tolls, and local transportation', value: submissionData?.deductions?.charitableParkingTolls ? `$${submissionData?.deductions?.charitableParkingTolls}` : 'None' },
+          ...(submissionData?.deductions?.charitableOrganizations?.length > 0 ? [{
+            label: 'Charitable Organizations',
+            value: submissionData.deductions.charitableOrganizations
+              .filter(org => org?.name || org?.amount)
+              .map((org, index) => `${index + 1}. ${org?.name || 'N/A'} - ${org?.amount ? `$${org.amount}` : 'No amount'}`)
+              .join('\n'),
+            type: 'multiline'
+          }] : [])
+        ]
+      },
+      {
+        title: 'Non-Cash Contributions',
+        fields: submissionData?.deductions?.nonCashOrganizations?.length > 0 ? 
+          submissionData.deductions.nonCashOrganizations
+            .filter(org => org?.name || org?.amount)
+            .map((org, index) => ({
+              label: `Non-Cash Organization ${index + 1}`,
+              value: [
+                `Name: ${org?.name || 'N/A'}`,
+                `Date: ${org?.dateOfContribution || 'N/A'}`,
+                `Amount: ${org?.amount ? `$${org.amount}` : 'N/A'}`,
+                `Address: ${org?.address || 'N/A'}, ${org?.city || 'N/A'}, ${org?.state || 'N/A'} ${org?.zip || 'N/A'}`,
+                `Description: ${org?.description || 'N/A'}`
+              ].join('\n'),
+              type: 'multiline'
+            })) : [{ label: 'No non-cash contributions recorded', value: 'None' }]
+      },
+      {
+        title: 'General Vehicle Information',
+        fields: [
+          { label: 'Description of vehicle', value: submissionData?.deductions?.vehicleDescription || 'None' },
+          { label: 'Date placed in service', value: submissionData?.deductions?.vehicleDatePlacedInService || 'None' },
+          { label: 'Total miles for the year', value: submissionData?.deductions?.vehicleTotalMiles || 'None' },
+          { label: 'Business miles', value: submissionData?.deductions?.vehicleBusinessMiles || 'None' }
+        ]
+      }
     ]
   },
   {
-    title: 'Tax Payments',
-    fields: [
-      { label: 'Federal Tax Withheld', value: submissionData?.taxPayments?.federalTaxWithheld },
-      { label: 'State Tax Withheld', value: submissionData?.taxPayments?.stateTaxWithheld },
-      { label: 'Estimated Tax Payments', value: submissionData?.taxPayments?.estimatedTaxPayments },
+    title: 'Tax Payments and Medical Expenses',
+    subsections: [
+      {
+        title: 'Medical and Dental Expenses',
+        fields: [
+          { label: 'Prescription medications', value: submissionData?.taxPayments?.medicalExpense1 ? `$${submissionData?.taxPayments?.medicalExpense1}` : 'None' },
+          { label: 'Health insurance premiums (enter Medicare B on QRG6)', value: submissionData?.taxPayments?.medicalExpense2 ? `$${submissionData?.taxPayments?.medicalExpense2}` : 'None' },
+          { label: 'Qualified long-term care premiums', value: submissionData?.taxPayments?.medicalExpense3 ? `$${submissionData?.taxPayments?.medicalExpense3}` : 'None' },
+          { label: "Taxpayer's gross long-term care premiums", value: submissionData?.taxPayments?.medicalExpense4 ? `$${submissionData?.taxPayments?.medicalExpense4}` : 'None' },
+          { label: "Spouse's gross long-term care premiums", value: submissionData?.taxPayments?.medicalExpense5 ? `$${submissionData?.taxPayments?.medicalExpense5}` : 'None' },
+          { label: "Dependent's gross long-term care premiums", value: submissionData?.taxPayments?.medicalExpense6 ? `$${submissionData?.taxPayments?.medicalExpense6}` : 'None' },
+          { label: 'Enter self-employed health insurance premiums', value: submissionData?.taxPayments?.medicalExpense7 ? `$${submissionData?.taxPayments?.medicalExpense7}` : 'None' },
+          { label: 'Insurance reimbursement', value: submissionData?.taxPayments?.medicalExpense8 ? `$${submissionData?.taxPayments?.medicalExpense8}` : 'None' },
+          { label: 'Medical savings account (MSA) distributions', value: submissionData?.taxPayments?.medicalExpense9 ? `$${submissionData?.taxPayments?.medicalExpense9}` : 'None' },
+          { label: 'Doctors, dentists, etc', value: submissionData?.taxPayments?.medicalExpense10 ? `$${submissionData?.taxPayments?.medicalExpense10}` : 'None' },
+          { label: 'Hospitals, clinics, etc', value: submissionData?.taxPayments?.medicalExpense11 ? `$${submissionData?.taxPayments?.medicalExpense11}` : 'None' },
+          { label: 'Lab and X-ray fees', value: submissionData?.taxPayments?.medicalExpense12 ? `$${submissionData?.taxPayments?.medicalExpense12}` : 'None' },
+          { label: 'Expenses for qualified long-term care', value: submissionData?.taxPayments?.medicalExpense13 ? `$${submissionData?.taxPayments?.medicalExpense13}` : 'None' },
+          { label: 'Eyeglasses and contact lenses', value: submissionData?.taxPayments?.medicalExpense14 ? `$${submissionData?.taxPayments?.medicalExpense14}` : 'None' },
+          { label: 'Medical equipment and supplies', value: submissionData?.taxPayments?.medicalExpense15 ? `$${submissionData?.taxPayments?.medicalExpense15}` : 'None' },
+          { label: 'Miles driven for medical purposes', value: submissionData?.taxPayments?.medicalExpense16 || 'None' },
+          { label: 'Ambulance fees and other medical transportation costs', value: submissionData?.taxPayments?.medicalExpense17 ? `$${submissionData?.taxPayments?.medicalExpense17}` : 'None' },
+          { label: 'Lodging', value: submissionData?.taxPayments?.medicalExpense18 ? `$${submissionData?.taxPayments?.medicalExpense18}` : 'None' },
+          { label: 'Other medical and dental expenses a.', value: submissionData?.taxPayments?.medicalExpense19 ? `$${submissionData?.taxPayments?.medicalExpense19}` : 'None' },
+          { label: 'Other medical and dental expenses b.', value: submissionData?.taxPayments?.medicalExpense20 ? `$${submissionData?.taxPayments?.medicalExpense20}` : 'None' },
+          { label: 'Other medical and dental expenses c.', value: submissionData?.taxPayments?.medicalExpense21 ? `$${submissionData?.taxPayments?.medicalExpense21}` : 'None' }
+        ]
+      },
+      {
+        title: 'Tax Payments',
+        fields: [
+          { label: 'Real estate taxes paid on principal residence', value: submissionData?.taxPayments?.taxPayment1 ? `$${submissionData?.taxPayments?.taxPayment1}` : 'None' },
+          { label: 'Real estate taxes paid on additional homes or land (Not Rentals)', value: submissionData?.taxPayments?.taxPayment2 ? `$${submissionData?.taxPayments?.taxPayment2}` : 'None' },
+          { label: 'Auto registration fees based on the value of the vehicle', value: submissionData?.taxPayments?.taxPayment3 ? `$${submissionData?.taxPayments?.taxPayment3}` : 'None' },
+          { label: 'Other personal property taxes', value: submissionData?.taxPayments?.taxPayment4 ? `$${submissionData?.taxPayments?.taxPayment4}` : 'None' },
+          { label: 'Other taxes', value: submissionData?.taxPayments?.taxPayment5 ? `$${submissionData?.taxPayments?.taxPayment5}` : 'None' }
+        ]
+      },
+      {
+        title: 'Current Year Estimated Tax Payments',
+        fields: [
+          ...[1, 2, 3, 4, 5, 6, 7].map(index => {
+            const quarterNames = [
+              'Qtr 1 due by 04/15 of current year',
+              'Qtr 2 due by 06/15 of current year', 
+              'Qtr 3 due by 09/15 of current year',
+              'Qtr 4 due by 01/15 of following year',
+              'Additional payments (a)',
+              'Additional payments (b)',
+              'Prior year overpayment applied to current year'
+            ];
+            
+            const federalDate = submissionData?.taxPayments?.[`federalDate${index}`];
+            const federalAmount = submissionData?.taxPayments?.[`federalAmount${index}`];
+            const stateDate = submissionData?.taxPayments?.[`stateDate${index}`];
+            const stateAmount = submissionData?.taxPayments?.[`stateAmount${index}`];
+            const stateId = submissionData?.taxPayments?.[`stateId${index}`];
+            const localDate = submissionData?.taxPayments?.[`localDate${index}`];
+            const localAmount = submissionData?.taxPayments?.[`localAmount${index}`];
+            const localId = submissionData?.taxPayments?.[`localId${index}`];
+            
+            const hasData = federalDate || federalAmount || stateDate || stateAmount || stateId || localDate || localAmount || localId;
+            
+            if (!hasData) return null;
+            
+            return {
+              label: quarterNames[index - 1] || `Quarter ${index}`,
+              value: [
+                federalDate ? `Federal Date: ${federalDate}` : null,
+                federalAmount ? `Federal Amount: $${federalAmount}` : null,
+                stateDate ? `State Date: ${stateDate}` : null,
+                stateAmount ? `State Amount: $${stateAmount}` : null,
+                stateId ? `State ID: ${stateId}` : null,
+                localDate ? `Local Date: ${localDate}` : null,
+                localAmount ? `Local Amount: $${localAmount}` : null,
+                localId ? `Local ID: ${localId}` : null
+              ].filter(Boolean).join('\n') || 'No data entered',
+              type: 'multiline'
+            };
+          }).filter(Boolean),
+          ...(submissionData?.taxPayments && (submissionData.taxPayments.federalDate1 || submissionData.taxPayments.federalAmount1 || submissionData.taxPayments.stateDate1 || submissionData.taxPayments.stateAmount1 || submissionData.taxPayments.localDate1 || submissionData.taxPayments.localAmount1) === undefined ? 
+            [{ label: 'No estimated tax payments recorded', value: 'None' }] : [])
+        ]
+      },
+      {
+        title: 'Notes and Additional Information',
+        fields: [
+          { label: 'Additional Notes', value: submissionData?.taxPayments?.notes, type: 'multiline' }
+        ]
+      },
+      {
+        title: 'Taxpayer and Spouse Representation',
+        fields: [
+          { label: 'Taxpayer Signature', value: submissionData?.taxPayments?.taxpayerSignature ? 'Signature provided' : 'No signature' },
+          { label: 'Taxpayer Signature Date', value: submissionData?.taxPayments?.taxpayerDate || 'No date provided' },
+          { label: 'Spouse Signature', value: submissionData?.taxPayments?.spouseSignature ? 'Signature provided' : 'No signature' },
+          { label: 'Spouse Signature Date', value: submissionData?.taxPayments?.spouseDate || 'No date provided' }
+        ]
+      }
     ]
   }
 ];
