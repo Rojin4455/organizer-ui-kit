@@ -325,13 +325,109 @@ const getPersonalFormStructure = (submissionData) => [
   },
   {
     title: 'Income',
-    fields: [
-      { label: 'Has W-2 Forms', value: submissionData?.income?.hasW2, type: 'boolean' },
-      { label: 'Has 1099 Forms', value: submissionData?.income?.has1099, type: 'boolean' },
-      { label: 'Has Other Income', value: submissionData?.income?.hasOtherIncome, type: 'boolean' },
-      { label: 'Unemployment Income', value: submissionData?.income?.unemploymentIncome },
-      { label: 'Social Security Income', value: submissionData?.income?.socialSecurityIncome },
-      { label: 'Retirement Income', value: submissionData?.income?.retirementIncome },
+    subsections: [
+      {
+        title: 'Standard Forms',
+        fields: [
+          // W-2 Forms
+          { label: 'W-2 (Year End Wages statement from Employer)', value: submissionData?.income?.hasW2, type: 'boolean' },
+          ...(submissionData?.income?.hasW2 ? [
+            { label: 'W-2 Count', value: submissionData?.income?.w2Count }
+          ] : []),
+          
+          // 1099-R Forms
+          { label: '1099 R (Distribution from Pension, Annuities, Retirement, or Profit sharing)', value: submissionData?.income?.has1099R, type: 'boolean' },
+          ...(submissionData?.income?.has1099R ? [
+            { label: '1099-R Count', value: submissionData?.income?.form1099RCount },
+            { label: 'Rollover Explanation', value: submissionData?.income?.rolloverExplanation, type: 'multiline' },
+            { label: 'Partial Rollover Explanation', value: submissionData?.income?.partialRolloverExplanation, type: 'multiline' }
+          ] : []),
+          
+          // 1098 (Home Mortgage Interest)
+          { label: '1098- (Home Mortgage Interest)', value: submissionData?.income?.has1098, type: 'boolean' },
+          ...(submissionData?.income?.has1098 ? [
+            { label: '1098 Count', value: submissionData?.income?.form1098Count },
+            { label: 'Mortgage/Rental List', value: submissionData?.income?.mortgageRentalList, type: 'multiline' }
+          ] : []),
+          
+          // 1098-T
+          { label: '1098 T (Education and Tuition Fees)', value: submissionData?.income?.has1098T, type: 'boolean' },
+          ...(submissionData?.income?.has1098T ? [
+            { label: '1098-T Count', value: submissionData?.income?.form1098TCount },
+            { label: 'Financial Institution Name', value: submissionData?.income?.educationInstitution }
+          ] : []),
+          
+          // 1098 (Student loan interest)
+          { label: '1098 (Student loan interest)', value: submissionData?.income?.has1098StudentLoan, type: 'boolean' },
+          ...(submissionData?.income?.has1098StudentLoan ? [
+            { label: 'Student Loan 1098 Count', value: submissionData?.income?.form1098StudentLoanCount }
+          ] : []),
+          
+          // 1099 Misc
+          { label: '1099 Misc (Income from contracted work)', value: submissionData?.income?.has1099Misc, type: 'boolean' },
+          ...(submissionData?.income?.has1099Misc ? [
+            { label: '1099 Misc Count', value: submissionData?.income?.form1099MiscCount }
+          ] : []),
+          
+          // W-2 G
+          { label: 'W-2 G (Winnings from Gambling, you must possess the form)', value: submissionData?.income?.hasW2G, type: 'boolean' },
+          ...(submissionData?.income?.hasW2G ? [
+            { label: 'W-2 G Count', value: submissionData?.income?.w2GCount }
+          ] : []),
+          
+          // SSA/RRB Forms
+          { label: 'SSA Forms or RRB Forms (Social Security Benefit forms and Railroad benefits forms)', value: submissionData?.income?.hasSSA, type: 'boolean' },
+          ...(submissionData?.income?.hasSSA ? [
+            { label: 'SSA/RRB Count', value: submissionData?.income?.ssaCount }
+          ] : []),
+          
+          // 1099 G Forms
+          { label: '1099 G Forms (Government payments or Unemployment)', value: submissionData?.income?.has1099G, type: 'boolean' },
+          ...(submissionData?.income?.has1099G ? [
+            { label: '1099 G Count', value: submissionData?.income?.form1099GCount }
+          ] : []),
+          
+          // 1099 INT
+          { label: '1099 INT- (Interest Income)', value: submissionData?.income?.has1099Int, type: 'boolean' },
+          ...(submissionData?.income?.has1099Int ? [
+            { label: '1099 INT Count', value: submissionData?.income?.form1099IntCount }
+          ] : []),
+          
+          // 1099 DIV
+          { label: '1099 DIV (Dividend Income)', value: submissionData?.income?.has1099Div, type: 'boolean' },
+          ...(submissionData?.income?.has1099Div ? [
+            { label: '1099 DIV Count', value: submissionData?.income?.form1099DivCount }
+          ] : []),
+          
+          // 1099-B
+          { label: '1099-B (Stock Sales, Currency Trading, or Other Trading Activities)', value: submissionData?.income?.has1099B, type: 'boolean' },
+          ...(submissionData?.income?.has1099B ? [
+            { label: '1099-B Count', value: submissionData?.income?.form1099BCount }
+          ] : []),
+          
+          // Crypto Currency
+          { label: 'Did you exchange, send, receive, or acquire any virtual or crypto currency?', value: submissionData?.income?.hasCrypto, type: 'boolean' }
+        ]
+      },
+      {
+        title: 'Other Income',
+        fields: [
+          { label: 'Alimony received (Taxpayer)', value: submissionData?.income?.alimonyReceivedTaxpayer ? `$${submissionData?.income?.alimonyReceivedTaxpayer}` : 'None' },
+          { label: 'Alimony received (Spouse)', value: submissionData?.income?.alimonyReceivedSpouse ? `$${submissionData?.income?.alimonyReceivedSpouse}` : 'None' },
+          { label: 'Jury duty pay (Taxpayer)', value: submissionData?.income?.juryDutyPayTaxpayer ? `$${submissionData?.income?.juryDutyPayTaxpayer}` : 'None' },
+          { label: 'Jury duty pay (Spouse)', value: submissionData?.income?.juryDutyPaySpouse ? `$${submissionData?.income?.juryDutyPaySpouse}` : 'None' },
+          { label: 'Prizes, Bonuses, Awards (Taxpayer)', value: submissionData?.income?.prizesAndAwardsTaxpayer ? `$${submissionData?.income?.prizesAndAwardsTaxpayer}` : 'None' },
+          { label: 'Prizes, Bonuses, Awards (Spouse)', value: submissionData?.income?.prizesAndAwardsSpouse ? `$${submissionData?.income?.prizesAndAwardsSpouse}` : 'None' },
+          { label: 'Investment Interest (Taxpayer)', value: submissionData?.income?.investmentInterestTaxpayer ? `$${submissionData?.income?.investmentInterestTaxpayer}` : 'None' },
+          { label: 'Investment Interest (Spouse)', value: submissionData?.income?.investmentInterestSpouse ? `$${submissionData?.income?.investmentInterestSpouse}` : 'None' },
+          { label: 'Other Income 1 (Taxpayer)', value: submissionData?.income?.otherIncome1Taxpayer ? `$${submissionData?.income?.otherIncome1Taxpayer}` : 'None' },
+          { label: 'Other Income 1 (Spouse)', value: submissionData?.income?.otherIncome1Spouse ? `$${submissionData?.income?.otherIncome1Spouse}` : 'None' },
+          { label: 'Other Income 2 (Taxpayer)', value: submissionData?.income?.otherIncome2Taxpayer ? `$${submissionData?.income?.otherIncome2Taxpayer}` : 'None' },
+          { label: 'Other Income 2 (Spouse)', value: submissionData?.income?.otherIncome2Spouse ? `$${submissionData?.income?.otherIncome2Spouse}` : 'None' },
+          { label: 'Other Income 3 (Taxpayer)', value: submissionData?.income?.otherIncome3Taxpayer ? `$${submissionData?.income?.otherIncome3Taxpayer}` : 'None' },
+          { label: 'Other Income 3 (Spouse)', value: submissionData?.income?.otherIncome3Spouse ? `$${submissionData?.income?.otherIncome3Spouse}` : 'None' }
+        ]
+      }
     ]
   },
   {
