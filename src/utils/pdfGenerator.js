@@ -847,16 +847,16 @@ const getBusinessFormStructure = (submissionData) => [
     fields: [
       { label: 'Has Home Office', value: submissionData?.assets?.hasHomeOffice, type: 'boolean' },
       ...(submissionData?.assets?.hasHomeOffice ? [
-        { label: 'Rent', value: submissionData?.assets?.rent },
-        { label: 'Utilities', value: submissionData?.assets?.utilities },
-        { label: 'Insurance', value: submissionData?.assets?.insurance },
-        { label: 'Janitorial', value: submissionData?.assets?.janitorial },
-        { label: 'Miscellaneous', value: submissionData?.assets?.miscellaneous },
+        { label: 'Rent', value: submissionData?.assets?.rent ? `$${submissionData.assets.rent}` : 'Not provided' },
+        { label: 'Utilities', value: submissionData?.assets?.utilities ? `$${submissionData.assets.utilities}` : 'Not provided' },
+        { label: 'Insurance', value: submissionData?.assets?.insurance ? `$${submissionData.assets.insurance}` : 'Not provided' },
+        { label: 'Janitorial', value: submissionData?.assets?.janitorial ? `$${submissionData.assets.janitorial}` : 'Not provided' },
+        { label: 'Miscellaneous', value: submissionData?.assets?.miscellaneous ? `$${submissionData.assets.miscellaneous}` : 'Not provided' },
         { label: '% of Exclusive Business use', value: submissionData?.assets?.exclusiveBusinessUse ? `${submissionData.assets.exclusiveBusinessUse}%` : 'Not provided' },
         { label: 'Size of Home', value: submissionData?.assets?.sizeOfHome ? `${submissionData.assets.sizeOfHome} sq ft` : 'Not provided' },
         { label: 'Size of Home Office', value: submissionData?.assets?.sizeOfHomeOffice ? `${submissionData.assets.sizeOfHomeOffice} sq ft` : 'Not provided' },
-        { label: 'Repairs & Maintenance', value: submissionData?.assets?.repairsMaintenance },
-        { label: 'Other Expenses', value: submissionData?.assets?.otherExpenses?.filter(exp => exp).join(', ') || 'None' },
+        { label: 'Repairs & Maintenance', value: submissionData?.assets?.repairsMaintenance ? `$${submissionData.assets.repairsMaintenance}` : 'Not provided' },
+        { label: 'Other Expenses', value: submissionData?.assets?.otherExpenses?.filter(exp => exp && exp.trim()).join(', ') || 'None' },
       ] : [])
     ]
   },
@@ -864,15 +864,15 @@ const getBusinessFormStructure = (submissionData) => [
     title: 'Taxpayer and Partner Representation',
     fields: [
       { label: 'Taxpayer Signature', value: submissionData?.assets?.signatures?.taxpayerSignature, type: 'signature' },
-      { label: 'Taxpayer Date', value: submissionData?.assets?.signatures?.taxpayerDate },
+      { label: 'Taxpayer Date', value: submissionData?.assets?.signatures?.taxpayerDate || 'Not provided' },
       { label: 'Partner Signature', value: submissionData?.assets?.signatures?.partnerSignature, type: 'signature' },
-      { label: 'Partner Date', value: submissionData?.assets?.signatures?.partnerDate },
+      { label: 'Partner Date', value: submissionData?.assets?.signatures?.partnerDate || 'Not provided' },
     ]
   },
   {
     title: 'Additional Notes',
     fields: [
-      { label: 'Notes', value: submissionData?.assets?.notes, type: 'multiline' },
+      { label: 'Notes', value: submissionData?.assets?.notes || 'No additional notes provided', type: 'multiline' },
     ]
   }
 ];
