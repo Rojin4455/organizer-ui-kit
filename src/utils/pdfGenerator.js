@@ -642,27 +642,22 @@ const getRentalFormStructure = (submissionData) => [
       {
         title: 'Property Income',
         fields: [
-          { label: 'Rents received', value: submissionData?.incomeExpenses?.income?.rentsReceived },
+          { label: 'Rents received', value: submissionData?.incomeExpenses?.rentsReceived || submissionData?.rentsReceived ? `$${submissionData?.incomeExpenses?.rentsReceived || submissionData?.rentsReceived}` : 'Not provided' },
         ]
       },
       {
         title: 'Expenses',
         fields: [
-          { label: 'Advertising', value: submissionData?.incomeExpenses?.expenses?.advertising },
-          { label: 'Appliances', value: submissionData?.incomeExpenses?.expenses?.appliances },
-          { label: 'Association dues', value: submissionData?.incomeExpenses?.expenses?.associationDues },
-          { label: 'Auto and travel', value: submissionData?.incomeExpenses?.expenses?.autoAndTravel },
-          { label: 'Cleaning/Maintenance', value: submissionData?.incomeExpenses?.expenses?.cleaningMaintenance },
-          { label: 'Commissions', value: submissionData?.incomeExpenses?.expenses?.commissions },
-          { label: 'Insurance', value: submissionData?.incomeExpenses?.expenses?.insurance },
-          { label: 'Professional fees', value: submissionData?.incomeExpenses?.expenses?.professionalFees },
-          { label: 'Mortgage interest', value: submissionData?.incomeExpenses?.expenses?.mortgageInterest },
-          { label: 'Other Interest', value: submissionData?.incomeExpenses?.expenses?.otherInterest },
-          { label: 'Repairs and Maintenance', value: submissionData?.incomeExpenses?.expenses?.repairsMaintenance },
-          { label: 'Taxes', value: submissionData?.incomeExpenses?.expenses?.taxes },
-          { label: 'Utilities', value: submissionData?.incomeExpenses?.expenses?.utilities },
-          { label: 'Improvements', value: submissionData?.incomeExpenses?.expenses?.improvements },
-          { label: 'Other Expenses', value: submissionData?.incomeExpenses?.expenses?.other?.map(item => `${item.description}: $${item.amount}`).join('\n') || 'None', type: 'multiline' },
+          { label: 'Advertising', value: submissionData?.incomeExpenses?.advertising || submissionData?.advertising ? `$${submissionData?.incomeExpenses?.advertising || submissionData?.advertising}` : 'Not provided' },
+          { label: 'Association dues', value: submissionData?.incomeExpenses?.associationDues || submissionData?.associationDues ? `$${submissionData?.incomeExpenses?.associationDues || submissionData?.associationDues}` : 'Not provided' },
+          { label: 'Auto and travel', value: submissionData?.incomeExpenses?.autoAndTravel || submissionData?.autoAndTravel ? `$${submissionData?.incomeExpenses?.autoAndTravel || submissionData?.autoAndTravel}` : 'Not provided' },
+          { label: 'Cleaning/Maintenance', value: submissionData?.incomeExpenses?.cleaningMaintenance || submissionData?.cleaningMaintenance ? `$${submissionData?.incomeExpenses?.cleaningMaintenance || submissionData?.cleaningMaintenance}` : 'Not provided' },
+          { label: 'Insurance', value: submissionData?.incomeExpenses?.insurance || submissionData?.insurance ? `$${submissionData?.incomeExpenses?.insurance || submissionData?.insurance}` : 'Not provided' },
+          { label: 'Professional fees', value: submissionData?.incomeExpenses?.professionalFees || submissionData?.professionalFees ? `$${submissionData?.incomeExpenses?.professionalFees || submissionData?.professionalFees}` : 'Not provided' },
+          { label: 'Mortgage interest', value: submissionData?.incomeExpenses?.mortgageInterest || submissionData?.mortgageInterest ? `$${submissionData?.incomeExpenses?.mortgageInterest || submissionData?.mortgageInterest}` : 'Not provided' },
+          { label: 'Repairs and Maintenance', value: submissionData?.incomeExpenses?.repairsMaintenance || submissionData?.repairsMaintenance ? `$${submissionData?.incomeExpenses?.repairsMaintenance || submissionData?.repairsMaintenance}` : 'Not provided' },
+          { label: 'Taxes', value: submissionData?.incomeExpenses?.taxes || submissionData?.taxes ? `$${submissionData?.incomeExpenses?.taxes || submissionData?.taxes}` : 'Not provided' },
+          { label: 'Utilities', value: submissionData?.incomeExpenses?.utilities || submissionData?.utilities ? `$${submissionData?.incomeExpenses?.utilities || submissionData?.utilities}` : 'Not provided' },
         ]
       }
     ]
@@ -670,16 +665,16 @@ const getRentalFormStructure = (submissionData) => [
   {
     title: 'Notes',
     fields: [
-      { label: 'Notes', value: submissionData?.notes?.notes, type: 'multiline' },
+      { label: 'Notes', value: submissionData?.notes?.notes || submissionData?.notes || 'No additional notes provided', type: 'multiline' },
     ]
   },
   {
     title: 'Signatures',
     fields: [
-      { label: 'Taxpayer Signature', value: submissionData?.signatures?.taxpayer ? 'Signature provided' : 'Not signed' },
-      { label: 'Taxpayer Date', value: submissionData?.signatures?.taxpayerDate },
-      { label: 'Partner Signature', value: submissionData?.signatures?.partner ? 'Signature provided' : 'Not signed' },
-      { label: 'Partner Date', value: submissionData?.signatures?.partnerDate },
+      { label: 'Taxpayer Signature', value: submissionData?.signatures?.taxpayer || submissionData?.taxpayerSignature, type: 'signature' },
+      { label: 'Taxpayer Date', value: submissionData?.signatures?.taxpayerDate || submissionData?.taxpayerDate || 'Not provided' },
+      { label: 'Partner Signature', value: submissionData?.signatures?.partner || submissionData?.partnerSignature, type: 'signature' },
+      { label: 'Partner Date', value: submissionData?.signatures?.partnerDate || submissionData?.partnerDate || 'Not provided' },
     ]
   }
 ];
