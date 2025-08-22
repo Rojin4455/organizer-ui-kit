@@ -21,42 +21,46 @@ const wrapText = (doc, text, maxWidth) => {
   return Array.isArray(lines) ? lines : [lines];
 };
 
-// Helper function to add text with consistent formatting
+// Helper function to add text with consistent formatting and automatic page breaks
 const addFormattedText = (doc, text, x, y, options = {}) => {
   const {
     fontSize = 10,
     fontStyle = 'normal',
     maxWidth = PAGE_WIDTH - (2 * MARGIN),
-    align = 'left'
+    align = 'left',
+    color = [0, 0, 0]
   } = options;
   
   doc.setFontSize(fontSize);
   doc.setFont('helvetica', fontStyle);
+  doc.setTextColor(color[0], color[1], color[2]);
   
   const wrappedLines = wrapText(doc, text, maxWidth);
   let currentY = y;
   
   wrappedLines.forEach((line, index) => {
-    if (currentY + LINE_HEIGHT > PAGE_HEIGHT - MARGIN) {
-      doc.addPage();
-      currentY = 30;
-    }
-    
-    doc.text(line, x, currentY, { align });
+    currentY = checkPageSpace(doc, currentY, LINE_HEIGHT);
+    doc.text(line.trim(), x, currentY, { align });
     currentY += LINE_HEIGHT;
   });
   
   return currentY;
 };
 
-// Helper function to format values for PDF
+// Helper function to format values for PDF with proper boolean formatting
 const formatValue = (value, type = 'text') => {
   if (value === null || value === undefined || value === '') {
     return '_____';
   }
 
   if (type === 'boolean') {
-    return value ? '☑ Yes' : '☐ No';
+    if (value === true || value === 'yes' || value === 'Yes') {
+      return '☑ Yes';
+    } else if (value === false || value === 'no' || value === 'No') {
+      return '☐ No';
+    } else {
+      return '☐ No';
+    }
   }
 
   if (type === 'secure') {
@@ -641,36 +645,67 @@ export const generatePDFFromFormData = (formData, formInfo) => {
 
         // Subsection fields
         subsection.fields.forEach(field => {
-          yPosition = checkPageSpace(doc, yPosition, 15);
+          yPosition = checkPageSpace(doc, yPosition, 20);
 
-          // For multiline fields, show label and value separately
           if (field.type === 'multiline') {
-            // Field label
+            // Field label - bold style
             yPosition = addFormattedText(doc, field.label + ':', MARGIN + 10, yPosition, {
-              fontSize: 11,
+              fontSize: 10,
               fontStyle: 'bold',
-              maxWidth: PAGE_WIDTH - 2 * MARGIN - 20
+              maxWidth: PAGE_WIDTH - 2 * MARGIN - 20,
+              color: [60, 60, 60]
             });
-            yPosition += 2;
+            yPosition += 3;
 
-            // Field value
+            // Field value - normal style with indentation
             const formattedValue = formatValue(field.value, field.type);
             yPosition = addFormattedText(doc, formattedValue, MARGIN + 15, yPosition, {
               fontSize: 10,
               fontStyle: 'normal',
-              maxWidth: PAGE_WIDTH - 2 * MARGIN - 25
+              maxWidth: PAGE_WIDTH - 2 * MARGIN - 25,
+              color: [0, 0, 0]
             });
             yPosition += 5;
           } else {
-            // Field label and value on same line for simple fields
+            // Single line - question and answer together
             const formattedValue = formatValue(field.value, field.type);
-            const fieldText = `${field.label}: ${formattedValue}`;
-            yPosition = addFormattedText(doc, fieldText, MARGIN + 10, yPosition, {
+            const questionText = field.label;
+            const answerText = formattedValue;
+            
+            // Add question
+            yPosition = addFormattedText(doc, questionText, MARGIN + 10, yPosition, {
               fontSize: 10,
               fontStyle: 'normal',
-              maxWidth: PAGE_WIDTH - 2 * MARGIN - 20
+              maxWidth: PAGE_WIDTH - 2 * MARGIN - 80,
+              color: [60, 60, 60]
             });
-            yPosition += 3;
+            
+            // Add answer on same or next line if question wrapped
+            const questionLines = wrapText(doc, questionText, PAGE_WIDTH - 2 * MARGIN - 80);
+            const lastLineY = yPosition - LINE_HEIGHT;
+            
+            // Check if answer fits on the same line as the last line of question
+            doc.setFontSize(10);
+            const lastQuestionLine = questionLines[questionLines.length - 1] || '';
+            const lastLineWidth = doc.getTextWidth(lastQuestionLine);
+            const answerWidth = doc.getTextWidth(': ' + answerText);
+            const availableWidth = PAGE_WIDTH - 2 * MARGIN - 20 - lastLineWidth;
+            
+            if (answerWidth <= availableWidth && questionLines.length === 1) {
+              // Answer fits on same line
+              doc.setTextColor(0, 0, 0);
+              doc.setFont('helvetica', 'normal');
+              doc.text(': ' + answerText, MARGIN + 10 + lastLineWidth, lastLineY);
+            } else {
+              // Answer goes on next line
+              yPosition = addFormattedText(doc, ': ' + answerText, MARGIN + 15, yPosition, {
+                fontSize: 10,
+                fontStyle: 'normal',
+                maxWidth: PAGE_WIDTH - 2 * MARGIN - 25,
+                color: [0, 0, 0]
+              });
+            }
+            yPosition += 4;
           }
         });
 
@@ -682,34 +717,65 @@ export const generatePDFFromFormData = (formData, formInfo) => {
       section.fields.forEach(field => {
         yPosition = checkPageSpace(doc, yPosition, 20);
 
-        // For multiline fields, show label and value separately
         if (field.type === 'multiline') {
-          // Field label
+          // Field label - bold style
           yPosition = addFormattedText(doc, field.label + ':', MARGIN, yPosition, {
-            fontSize: 11,
+            fontSize: 10,
             fontStyle: 'bold',
-            maxWidth: PAGE_WIDTH - 2 * MARGIN
+            maxWidth: PAGE_WIDTH - 2 * MARGIN,
+            color: [60, 60, 60]
           });
-          yPosition += 2;
+          yPosition += 3;
 
-          // Field value
+          // Field value - normal style with indentation
           const formattedValue = formatValue(field.value, field.type);
           yPosition = addFormattedText(doc, formattedValue, MARGIN + 10, yPosition, {
             fontSize: 10,
             fontStyle: 'normal',
-            maxWidth: PAGE_WIDTH - 2 * MARGIN - 10
+            maxWidth: PAGE_WIDTH - 2 * MARGIN - 10,
+            color: [0, 0, 0]
           });
           yPosition += 5;
         } else {
-          // Field label and value on same line for simple fields
+          // Single line - question and answer together
           const formattedValue = formatValue(field.value, field.type);
-          const fieldText = `${field.label}: ${formattedValue}`;
-          yPosition = addFormattedText(doc, fieldText, MARGIN, yPosition, {
+          const questionText = field.label;
+          const answerText = formattedValue;
+          
+          // Add question
+          yPosition = addFormattedText(doc, questionText, MARGIN, yPosition, {
             fontSize: 10,
             fontStyle: 'normal',
-            maxWidth: PAGE_WIDTH - 2 * MARGIN
+            maxWidth: PAGE_WIDTH - 2 * MARGIN - 60,
+            color: [60, 60, 60]
           });
-          yPosition += 3;
+          
+          // Add answer on same or next line if question wrapped
+          const questionLines = wrapText(doc, questionText, PAGE_WIDTH - 2 * MARGIN - 60);
+          const lastLineY = yPosition - LINE_HEIGHT;
+          
+          // Check if answer fits on the same line as the last line of question
+          doc.setFontSize(10);
+          const lastQuestionLine = questionLines[questionLines.length - 1] || '';
+          const lastLineWidth = doc.getTextWidth(lastQuestionLine);
+          const answerWidth = doc.getTextWidth(': ' + answerText);
+          const availableWidth = PAGE_WIDTH - 2 * MARGIN - lastLineWidth;
+          
+          if (answerWidth <= availableWidth && questionLines.length === 1) {
+            // Answer fits on same line
+            doc.setTextColor(0, 0, 0);
+            doc.setFont('helvetica', 'normal');
+            doc.text(': ' + answerText, MARGIN + lastLineWidth, lastLineY);
+          } else {
+            // Answer goes on next line
+            yPosition = addFormattedText(doc, ': ' + answerText, MARGIN + 10, yPosition, {
+              fontSize: 10,
+              fontStyle: 'normal',
+              maxWidth: PAGE_WIDTH - 2 * MARGIN - 10,
+              color: [0, 0, 0]
+            });
+          }
+          yPosition += 4;
         }
       });
     }
