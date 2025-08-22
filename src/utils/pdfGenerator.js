@@ -183,10 +183,111 @@ const getPersonalFormStructure = (submissionData) => [
   },
   {
     title: 'General Questions',
-    fields: [
-      { label: 'Foreign Bank Account', value: submissionData?.generalQuestions?.foreignBankAccount, type: 'boolean' },
-      { label: 'Healthcare Coverage', value: submissionData?.generalQuestions?.healthcareCoverage, type: 'boolean' },
-      { label: 'Presidential Election Campaign Fund', value: submissionData?.generalQuestions?.presidentialCampaignFund, type: 'boolean' },
+    subsections: [
+      {
+        title: 'Personal Information',
+        fields: [
+          { label: '1. Did you move your residence more than 50 miles due to a change of employment?', value: submissionData?.generalQuestions?.movedResidence, type: 'boolean' },
+          { label: '2. Did you sell your primary residence in the current year?', value: submissionData?.generalQuestions?.soldPrimaryResidence, type: 'boolean' },
+        ]
+      },
+      {
+        title: 'Dependent Information',
+        fields: [
+          { label: '3. Do you have dependents who must file?', value: submissionData?.generalQuestions?.dependentsMustFile, type: 'boolean' },
+          { label: '4. Do you have children under age 14 with investment income greater than $1,600?', value: submissionData?.generalQuestions?.childrenUnder14WithInvestment, type: 'boolean' },
+          { label: '5. Are any of your dependents not U.S. citizens or residents?', value: submissionData?.generalQuestions?.dependentsNotUSCitizens, type: 'boolean' },
+          { label: '6. Did you provide over half the support for any other person during the current year?', value: submissionData?.generalQuestions?.providedOverHalfSupport, type: 'boolean' },
+          { label: '7. Did you incur adoption expenses during the current year?', value: submissionData?.generalQuestions?.adoptionExpenses, type: 'boolean' },
+        ]
+      },
+      {
+        title: 'Items Related to Income/Losses',
+        fields: [
+          { label: '8. Did you receive any disability payments in the current year?', value: submissionData?.generalQuestions?.disabilityPayments, type: 'boolean' },
+          { label: '9. Did you sell and/or purchase a principal residence in the current year?', value: submissionData?.generalQuestions?.soldPurchasedResidence, type: 'boolean' },
+          { label: '10. Did you receive/pay alimony payments?', value: submissionData?.generalQuestions?.alimonyPayments, type: 'boolean' },
+        ]
+      },
+      {
+        title: 'Prior Year Tax Returns',
+        fields: [
+          { label: '11. Were you notified by the Internal Revenue Service or state taxing authority of changes to a prior year\'s return?', value: submissionData?.generalQuestions?.irsNotification, type: 'boolean' },
+          ...(submissionData?.generalQuestions?.irsNotification === 'yes' ? [
+            { label: 'IRS Notification Details', value: submissionData?.generalQuestions?.irsNotificationDetails, type: 'multiline' }
+          ] : []),
+          { label: '12. Were there changes to a prior year\'s income, deductions, credits, etc which would require filing an amended return?', value: submissionData?.generalQuestions?.priorYearChanges, type: 'boolean' },
+          ...(submissionData?.generalQuestions?.priorYearChanges === 'yes' ? [
+            { label: 'Prior Year Changes Details', value: submissionData?.generalQuestions?.priorYearChangesDetails, type: 'multiline' }
+          ] : []),
+        ]
+      },
+      {
+        title: 'Foreign Bank Accounts and Taxes',
+        fields: [
+          { label: '13. Did you have foreign income or pay any foreign taxes in the current year?', value: submissionData?.generalQuestions?.foreignIncome, type: 'boolean' },
+          { label: '14. At any time during the tax year, did you have an interest in or a signature or other authority over a bank account, or other financial account in a foreign country?', value: submissionData?.generalQuestions?.foreignBankAccount, type: 'boolean' },
+          { label: '15. Were you the grantor of or transferor to a foreign trust which existed during the tax year?', value: submissionData?.generalQuestions?.foreignTrust, type: 'boolean' },
+        ]
+      },
+      {
+        title: 'Gifts to Trusts or Tuition Plans',
+        fields: [
+          { label: '16. Did you or your spouse make gifts of over $14,000 to an individual or contribute to a prepaid tuition plan?', value: submissionData?.generalQuestions?.giftsOverLimit, type: 'boolean' },
+        ]
+      },
+      {
+        title: 'Electronic Filing and Direct Deposit',
+        fields: [
+          { label: '17. If your tax return is eligible for Electronic Filing, would you like to file electronically?', value: submissionData?.generalQuestions?.electronicFiling, type: 'boolean' },
+          { label: '18. Would you like direct deposit for your refund?', value: submissionData?.generalQuestions?.directDeposit, type: 'boolean' },
+          ...(submissionData?.generalQuestions?.directDeposit === 'yes' ? [
+            { label: 'Bank Name', value: submissionData?.generalQuestions?.bankName },
+            { label: 'Routing Number', value: submissionData?.generalQuestions?.routingNumber },
+            { label: 'Account Number', value: submissionData?.generalQuestions?.accountNumber, type: 'secure' },
+            { label: 'Account Type', value: submissionData?.generalQuestions?.accountType },
+            { label: 'Voided Check Attached', value: submissionData?.generalQuestions?.voidedCheckAttached, type: 'boolean' },
+          ] : []),
+        ]
+      },
+      {
+        title: 'Investments/Business',
+        fields: [
+          { label: '19. Did you buy or sell any stocks or bonds in the current year?', value: submissionData?.generalQuestions?.stocksBonds, type: 'boolean' },
+          { label: '20. Did you start a business, purchase a rental property or farm, or acquire interests in partnerships or S corporations?', value: submissionData?.generalQuestions?.startedBusiness, type: 'boolean' },
+          { label: '21. At any time during the tax year, did you receive, sell, exchange, or otherwise dispose of any financial interest in any virtual currency?', value: submissionData?.generalQuestions?.virtualCurrency, type: 'boolean' },
+          { label: '22. Did you purchase any business equipment or make any capital improvements to business property?', value: submissionData?.generalQuestions?.businessEquipment, type: 'boolean' },
+          { label: '23. Did you use part of your home for business purposes or to care for daycare recipients?', value: submissionData?.generalQuestions?.homeOfficeExpenses, type: 'boolean' },
+          { label: '24. Did you use a vehicle for business purposes (other than commuting)?', value: submissionData?.generalQuestions?.businessVehicle, type: 'boolean' },
+        ]
+      },
+      {
+        title: 'Healthcare and Insurance',
+        fields: [
+          { label: '25. Did you have qualifying health care coverage for all 12 months of the tax year?', value: submissionData?.generalQuestions?.healthInsurance, type: 'boolean' },
+          { label: '26. Did you contribute to a Health Savings Account (HSA)?', value: submissionData?.generalQuestions?.healthSavingsAccount, type: 'boolean' },
+          { label: '27. Did you receive advance payments of the premium tax credit?', value: submissionData?.generalQuestions?.premiumTaxCredit, type: 'boolean' },
+          { label: '28. Did you pay premiums for long-term care insurance?', value: submissionData?.generalQuestions?.longTermCareInsurance, type: 'boolean' },
+        ]
+      },
+      {
+        title: 'Education and Student Loans',
+        fields: [
+          { label: '29. Did you, your spouse, or dependents attend a post-secondary school during the tax year?', value: submissionData?.generalQuestions?.educationExpenses, type: 'boolean' },
+          { label: '30. Did you pay interest on qualified student loans?', value: submissionData?.generalQuestions?.studentLoanInterest, type: 'boolean' },
+          { label: '31. Are you eligible for education credits (American Opportunity, Lifetime Learning)?', value: submissionData?.generalQuestions?.educationCredits, type: 'boolean' },
+          { label: '32. Did you contribute to or receive distributions from an education savings account (529 plan)?', value: submissionData?.generalQuestions?.educationSavings, type: 'boolean' },
+        ]
+      },
+      {
+        title: 'Retirement and Savings',
+        fields: [
+          { label: '33. Did you make contributions to an IRA for the tax year?', value: submissionData?.generalQuestions?.iraContributions, type: 'boolean' },
+          { label: '34. Did you receive any distributions from retirement plans, annuities, or IRAs?', value: submissionData?.generalQuestions?.retirement401k, type: 'boolean' },
+          { label: '35. Did you roll over any retirement plan distributions?', value: submissionData?.generalQuestions?.retirementPlanRollover, type: 'boolean' },
+          { label: '36. Did you contribute to a SEP-IRA or Simple IRA?', value: submissionData?.generalQuestions?.sepIraContribution, type: 'boolean' },
+        ]
+      }
     ]
   },
   {
