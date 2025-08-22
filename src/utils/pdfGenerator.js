@@ -67,6 +67,10 @@ const formatValue = (value, type = 'text') => {
     return value ? '***-**-****' : '_____';
   }
 
+  if (type === 'signature') {
+    return value ? 'SIGNATURE_IMAGE' : 'No signature provided';
+  }
+
   if (type === 'multiline') {
     return String(value);
   }
@@ -564,17 +568,25 @@ const getPersonalFormStructure = (submissionData) => [
       },
       {
         title: 'Notes and Additional Information',
-        fields: [
-          { label: 'Additional Notes', value: submissionData?.taxPayments?.notes, type: 'multiline' }
-        ]
+        fields: (() => {
+          const notes = [];
+          // Collect all note fields (note1, note2, etc.)
+          for (let i = 1; i <= 10; i++) {
+            const noteValue = submissionData?.taxPayments?.[`note${i}`];
+            if (noteValue && noteValue.trim()) {
+              notes.push({ label: `Note ${i}`, value: noteValue, type: 'multiline' });
+            }
+          }
+          return notes.length > 0 ? notes : [{ label: 'Additional Notes', value: 'No additional notes provided' }];
+        })()
       },
       {
         title: 'Taxpayer and Spouse Representation',
         fields: [
-          { label: 'Taxpayer Signature', value: submissionData?.taxPayments?.taxpayerSignature ? 'Signature provided' : 'No signature' },
-          { label: 'Taxpayer Signature Date', value: submissionData?.taxPayments?.taxpayerDate || 'No date provided' },
-          { label: 'Spouse Signature', value: submissionData?.taxPayments?.spouseSignature ? 'Signature provided' : 'No signature' },
-          { label: 'Spouse Signature Date', value: submissionData?.taxPayments?.spouseDate || 'No date provided' }
+          { label: 'Taxpayer Signature', value: submissionData?.taxPayments?.taxpayerSignature, type: 'signature' },
+          { label: 'Taxpayer Signature Date', value: submissionData?.taxPayments?.taxpayerSignatureDate || 'No date provided' },
+          { label: 'Spouse Signature', value: submissionData?.taxPayments?.spouseSignature, type: 'signature' },
+          { label: 'Spouse Signature Date', value: submissionData?.taxPayments?.spouseSignatureDate || 'No date provided' }
         ]
       }
     ]
@@ -893,6 +905,41 @@ export const generatePDFFromFormData = (formData, formInfo) => {
               color: [0, 0, 0]
             });
             yPosition += 5;
+          } else if (field.type === 'signature') {
+            // Field label - bold style
+            yPosition = addFormattedText(doc, field.label + ':', MARGIN + 10, yPosition, {
+              fontSize: 10,
+              fontStyle: 'bold',
+              maxWidth: PAGE_WIDTH - 2 * MARGIN - 20,
+              color: [60, 60, 60]
+            });
+            yPosition += 3;
+
+            if (field.value && field.value.startsWith('data:image')) {
+              try {
+                // Add signature image
+                yPosition = checkPageSpace(doc, yPosition, 40);
+                doc.addImage(field.value, 'PNG', MARGIN + 15, yPosition, 60, 25);
+                yPosition += 30;
+              } catch (error) {
+                console.warn('Failed to add signature image:', error);
+                yPosition = addFormattedText(doc, 'Signature provided (image could not be embedded)', MARGIN + 15, yPosition, {
+                  fontSize: 10,
+                  fontStyle: 'italic',
+                  maxWidth: PAGE_WIDTH - 2 * MARGIN - 25,
+                  color: [100, 100, 100]
+                });
+                yPosition += 5;
+              }
+            } else {
+              yPosition = addFormattedText(doc, 'No signature provided', MARGIN + 15, yPosition, {
+                fontSize: 10,
+                fontStyle: 'italic',
+                maxWidth: PAGE_WIDTH - 2 * MARGIN - 25,
+                color: [150, 150, 150]
+              });
+              yPosition += 5;
+            }
           } else {
             // Single line - question and answer together
             const formattedValue = formatValue(field.value, field.type);
@@ -963,6 +1010,41 @@ export const generatePDFFromFormData = (formData, formInfo) => {
             color: [0, 0, 0]
           });
           yPosition += 5;
+        } else if (field.type === 'signature') {
+          // Field label - bold style
+          yPosition = addFormattedText(doc, field.label + ':', MARGIN, yPosition, {
+            fontSize: 10,
+            fontStyle: 'bold',
+            maxWidth: PAGE_WIDTH - 2 * MARGIN,
+            color: [60, 60, 60]
+          });
+          yPosition += 3;
+
+          if (field.value && field.value.startsWith('data:image')) {
+            try {
+              // Add signature image
+              yPosition = checkPageSpace(doc, yPosition, 40);
+              doc.addImage(field.value, 'PNG', MARGIN + 10, yPosition, 60, 25);
+              yPosition += 30;
+            } catch (error) {
+              console.warn('Failed to add signature image:', error);
+              yPosition = addFormattedText(doc, 'Signature provided (image could not be embedded)', MARGIN + 10, yPosition, {
+                fontSize: 10,
+                fontStyle: 'italic',
+                maxWidth: PAGE_WIDTH - 2 * MARGIN - 10,
+                color: [100, 100, 100]
+              });
+              yPosition += 5;
+            }
+          } else {
+            yPosition = addFormattedText(doc, 'No signature provided', MARGIN + 10, yPosition, {
+              fontSize: 10,
+              fontStyle: 'italic',
+              maxWidth: PAGE_WIDTH - 2 * MARGIN - 10,
+              color: [150, 150, 150]
+            });
+            yPosition += 5;
+          }
         } else {
           // Single line - question and answer together
           const formattedValue = formatValue(field.value, field.type);
