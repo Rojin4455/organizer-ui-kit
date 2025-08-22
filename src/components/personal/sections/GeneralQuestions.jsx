@@ -293,13 +293,119 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
           <Grid item xs={12} md={6}>
             {renderYesNoQuestion(
               'stocksBonds',
-              '1. Did you buy or sell any stocks or bonds in the current year?'
+              '19. Did you buy or sell any stocks or bonds in the current year?'
+            )}
+            {renderYesNoQuestion(
+              'startedBusiness',
+              '20. Did you start a business, purchase a rental property or farm, or acquire interests in partnerships or S corporations?'
+            )}
+            {renderYesNoQuestion(
+              'virtualCurrency',
+              '21. At any time during the tax year, did you receive, sell, exchange, or otherwise dispose of any financial interest in any virtual currency?'
             )}
           </Grid>
           <Grid item xs={12} md={6}>
             {renderYesNoQuestion(
-              'startedBusiness',
-              '2. Did you start a business, purchase a rental property or farm, or acquire interests in partnerships or S corporations?'
+              'businessEquipment',
+              '22. Did you purchase any business equipment or make any capital improvements to business property?'
+            )}
+            {renderYesNoQuestion(
+              'homeOfficeExpenses',
+              '23. Did you use part of your home for business purposes or to care for daycare recipients?'
+            )}
+            {renderYesNoQuestion(
+              'businessVehicle',
+              '24. Did you use a vehicle for business purposes (other than commuting)?'
+            )}
+          </Grid>
+        </Grid>
+      </FormSection>
+
+      {/* Healthcare and Insurance Section */}
+      <FormSection
+        title="Healthcare and Insurance"
+        isExpanded
+        sx={{ mb: 3 }}
+      >
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            {renderYesNoQuestion(
+              'healthInsurance',
+              '25. Did you have qualifying health care coverage for all 12 months of the tax year?'
+            )}
+            {renderYesNoQuestion(
+              'healthSavingsAccount',
+              '26. Did you contribute to a Health Savings Account (HSA)?'
+            )}
+          </Grid>
+          <Grid item xs={12} md={6}>
+            {renderYesNoQuestion(
+              'premiumTaxCredit',
+              '27. Did you receive advance payments of the premium tax credit?'
+            )}
+            {renderYesNoQuestion(
+              'longTermCareInsurance',
+              '28. Did you pay premiums for long-term care insurance?'
+            )}
+          </Grid>
+        </Grid>
+      </FormSection>
+
+      {/* Education and Student Loans Section */}
+      <FormSection
+        title="Education and Student Loans"
+        isExpanded
+        sx={{ mb: 3 }}
+      >
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            {renderYesNoQuestion(
+              'educationExpenses',
+              '29. Did you, your spouse, or dependents attend a post-secondary school during the tax year?'
+            )}
+            {renderYesNoQuestion(
+              'studentLoanInterest',
+              '30. Did you pay interest on qualified student loans?'
+            )}
+          </Grid>
+          <Grid item xs={12} md={6}>
+            {renderYesNoQuestion(
+              'educationCredits',
+              '31. Are you eligible for education credits (American Opportunity, Lifetime Learning)?'
+            )}
+            {renderYesNoQuestion(
+              'educationSavings',
+              '32. Did you contribute to or receive distributions from an education savings account (529 plan)?'
+            )}
+          </Grid>
+        </Grid>
+      </FormSection>
+
+      {/* Retirement and Savings Section */}
+      <FormSection
+        title="Retirement and Savings"
+        isExpanded
+        sx={{ mb: 3 }}
+      >
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            {renderYesNoQuestion(
+              'iraContributions',
+              '33. Did you make contributions to an IRA for the tax year?'
+            )}
+            {renderYesNoQuestion(
+              'retirement401k',
+              '34. Did you receive any distributions from retirement plans, annuities, or IRAs?'
+            )}
+          </Grid>
+          <Grid item xs={12} md={6}>
+            {renderYesNoQuestion(
+              'retirementPlanRollover',
+              '35. Did you roll over any retirement plan distributions?'
+            )}
+            {renderYesNoQuestion(
+              'sepIraContribution',
+              '36. Did you contribute to a SEP-IRA or Simple IRA?'
             )}
           </Grid>
         </Grid>
