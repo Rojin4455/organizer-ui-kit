@@ -452,7 +452,7 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
         <Divider sx={{ my: 3 }} />
 
         <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
-          NOTES: (additional information)
+          Tell us More About Yourself and Notes
         </Typography>
         
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 4 }}>
