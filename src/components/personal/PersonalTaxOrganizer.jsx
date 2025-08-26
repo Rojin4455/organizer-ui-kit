@@ -98,11 +98,7 @@ export const PersonalTaxOrganizer = ({
     },
     {
       id: 'dependents',
-      label: (
-        <TooltipWrapper content="A Dependent Is someone who you provide for financially (not married to). The Dependent is normally making under the taxable threshold of $15,200 unless in college">
-          <span>Dependents</span>
-        </TooltipWrapper>
-      ),
+      label: 'Dependents',
       description: 'Information about dependents and child care expenses',
       content: (
         <DependentInfo
