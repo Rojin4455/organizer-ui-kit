@@ -354,6 +354,15 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
             fullWidth
           />
           <TextField
+            label="Software"
+            placeholder="e.g., software subscriptions, SaaS tools, business applications"
+            type="number"
+            value={data.software || ''}
+            onChange={(e) => handleChange('software', e.target.value)}
+            InputProps={{ startAdornment: '$' }}
+            fullWidth
+          />
+          <TextField
             label="Wholesale/Drop Shipper fees"
             placeholder="e.g., wholesale supplier fees, drop shipping costs"
             type="number"
@@ -361,7 +370,6 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
             onChange={(e) => handleChange('wholesaleDropShipper', e.target.value)}
             InputProps={{ startAdornment: '$' }}
             fullWidth
-            sx={{ gridColumn: { md: 'span 2' } }}
           />
         </Box>
       </FormSection>
