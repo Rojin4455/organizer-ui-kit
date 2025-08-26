@@ -77,11 +77,9 @@ export const DependentInfo = ({ data = [], onChange }) => {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <FormSection title="Dependents (Children & Others)">
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <TooltipWrapper content="A Dependent Is someone who you provide for financially (not married to). The Dependent is normally making under the taxable threshold of $15,200 unless in college">
-            <Typography variant="h6">
-              Dependents ({dependents.length})
-            </Typography>
-          </TooltipWrapper>
+          <Typography variant="h6">
+            Dependents ({dependents.length})
+          </Typography>
           <Button
             startIcon={<AddIcon />}
             onClick={addDependent}
@@ -186,9 +184,11 @@ export const DependentInfo = ({ data = [], onChange }) => {
 
       <FormSection title="Child and Dependent Care Expenses">
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">
-            Care Expenses ({careExpenses.length})
-          </Typography>
+          <TooltipWrapper content="Has to be a legitimate daycare or someone who you are issuing a 1099-NEC to report the expense">
+            <Typography variant="h6">
+              Care Expenses ({careExpenses.length})
+            </Typography>
+          </TooltipWrapper>
           <Button
             startIcon={<AddIcon />}
             onClick={addCareExpense}
