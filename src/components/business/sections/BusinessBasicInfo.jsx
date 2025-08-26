@@ -137,7 +137,7 @@ export const BusinessBasicInfo = ({ data, onChange }) => {
             </Box>
 
             {/* Business Address */}
-            <TooltipWrapper content="Make sure to put the address that the business is registered under with the Secretary of State)">
+            <TooltipWrapper content="Make sure to put the address that the business is registered under with the Secretary of State">
               <TextField
                 label="Business Address"
                 value={data.businessAddress || ''}
