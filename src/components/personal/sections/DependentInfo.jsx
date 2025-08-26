@@ -77,9 +77,11 @@ export const DependentInfo = ({ data = [], onChange }) => {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <FormSection title="Dependents (Children & Others)">
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">
-            Dependents ({dependents.length})
-          </Typography>
+          <TooltipWrapper content="A Dependent Is someone who you provide for financially (not married to). The Dependent is normally making under the taxable threshold of $15,200 unless in college">
+            <Typography variant="h6">
+              Dependents ({dependents.length})
+            </Typography>
+          </TooltipWrapper>
           <Button
             startIcon={<AddIcon />}
             onClick={addDependent}
