@@ -273,6 +273,18 @@ export const DeductionsInfo = ({ data, onChange }) => {
                   />
                 </TableCell>
               </TableRow>
+              <TableRow>
+                <TableCell>22. Business miles</TableCell>
+                <TableCell>
+                  <TextField
+                    size="small"
+                    type="number"
+                    value={data.vehicleBusinessMiles || ''}
+                    onChange={(e) => handleChange('vehicleBusinessMiles', e.target.value)}
+                    fullWidth
+                  />
+                </TableCell>
+              </TableRow>
             </TableBody>
           </Table>
         </TableContainer>
