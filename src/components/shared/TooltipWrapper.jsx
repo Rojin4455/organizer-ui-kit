@@ -11,7 +11,7 @@ export const TooltipWrapper = ({ children, content, ...props }) => {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Box component="span" sx={{ display: 'inline-block', width: '100%' }}>
+          <Box component="span" sx={{ display: 'inline-flex' }}>
             {children}
           </Box>
         </TooltipTrigger>
