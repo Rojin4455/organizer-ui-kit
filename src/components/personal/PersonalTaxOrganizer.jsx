@@ -24,6 +24,7 @@ import { DeductionsInfo } from './sections/DeductionsInfo';
 import { TaxPaymentsInfo } from './sections/TaxPaymentsInfo';
 import { GeneralQuestions } from './sections/GeneralQuestions';
 import { ReviewSubmit } from './sections/ReviewSubmit';
+import { TooltipWrapper } from '../shared/TooltipWrapper';
 
 
 export const PersonalTaxOrganizer = ({
@@ -97,7 +98,11 @@ export const PersonalTaxOrganizer = ({
     },
     {
       id: 'dependents',
-      label: 'Dependents',
+      label: (
+        <TooltipWrapper content="A Dependent Is someone who you provide for financially (not married to). The Dependent is normally making under the taxable threshold of $15,200 unless in college">
+          <span>Dependents</span>
+        </TooltipWrapper>
+      ),
       description: 'Information about dependents and child care expenses',
       content: (
         <DependentInfo
