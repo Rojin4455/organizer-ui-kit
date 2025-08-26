@@ -17,6 +17,7 @@ import {
   Button,
 } from '@mui/material';
 import { FormSection } from '../../shared/FormSection';
+import { TooltipWrapper } from '../../shared/TooltipWrapper';
 
 export const GeneralQuestions = ({ data = {}, onChange }) => {
   const [businessOrganizerDialog, setBusinessOrganizerDialog] = useState(false);
@@ -269,13 +270,14 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
             )}
           </Grid>
           <Grid item xs={12} md={6}>
-            {renderYesNoQuestion(
-              'directDeposit',
-              '18. The Internal Revenue Service is able to deposit many refunds directly into taxpayers\' accounts. If you receive a refund, would you like direct deposit?'
-            )}
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
-              Note: Direct Deposit will usually take 2-3 weeks, mail could take 2-3 months
-            </Typography>
+            <TooltipWrapper content="Direct Deposit will usually take 2-3 weeks, mail could take 2-3 months">
+              <Box>
+                {renderYesNoQuestion(
+                  'directDeposit',
+                  '18. The Internal Revenue Service is able to deposit many refunds directly into taxpayers\' accounts. If you receive a refund, would you like direct deposit?'
+                )}
+              </Box>
+            </TooltipWrapper>
           </Grid>
           
           {data.directDeposit === 'yes' && (
