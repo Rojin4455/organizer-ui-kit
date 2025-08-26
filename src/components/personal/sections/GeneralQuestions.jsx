@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -10,15 +10,27 @@ import {
   TextField,
   Grid,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
 } from '@mui/material';
 import { FormSection } from '../../shared/FormSection';
 
 export const GeneralQuestions = ({ data = {}, onChange }) => {
+  const [businessOrganizerDialog, setBusinessOrganizerDialog] = useState(false);
+
   const handleChange = (field, value) => {
     onChange({
       ...data,
       [field]: value,
     });
+
+    // Show business organizer popup for investments question 2
+    if (field === 'startedBusiness' && value === 'yes') {
+      setBusinessOrganizerDialog(true);
+    }
   };
 
   const renderYesNoQuestion = (field, question, showDetails = false, detailsField = null) => (
@@ -70,6 +82,22 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
             {renderYesNoQuestion(
               'soldPrimaryResidence',
               '2. Did you sell your primary residence in the current year?'
+            )}
+            {data.soldPrimaryResidence === 'yes' && (
+              <Box sx={{ mt: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Property Address"
+                  placeholder="Enter the address of the property sold"
+                  value={data.soldPropertyAddress || ''}
+                  onChange={(e) => handleChange('soldPropertyAddress', e.target.value)}
+                  size="small"
+                  sx={{ mb: 2 }}
+                />
+                <Typography variant="body2" color="text.secondary">
+                  Please upload the closing documents for this property sale.
+                </Typography>
+              </Box>
             )}
           </Grid>
         </Grid>
@@ -195,6 +223,34 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
               'giftsOverLimit',
               '16. Did you or your spouse make gifts of over $14,000 to an individual or contribute to a prepaid tuition plan?'
             )}
+            {data.giftsOverLimit === 'yes' && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+                  Gift Details
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Gift recipient (who did the gift go to?)"
+                      value={data.giftRecipient || ''}
+                      onChange={(e) => handleChange('giftRecipient', e.target.value)}
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Gift amount"
+                      type="number"
+                      value={data.giftAmount || ''}
+                      onChange={(e) => handleChange('giftAmount', e.target.value)}
+                      size="small"
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
           </Grid>
         </Grid>
       </FormSection>
@@ -217,6 +273,9 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
               'directDeposit',
               '18. The Internal Revenue Service is able to deposit many refunds directly into taxpayers\' accounts. If you receive a refund, would you like direct deposit?'
             )}
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
+              Note: Direct Deposit will usually take 2-3 weeks, mail could take 2-3 months
+            </Typography>
           </Grid>
           
           {data.directDeposit === 'yes' && (
@@ -304,6 +363,26 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
           </Grid>
         </Grid>
       </FormSection>
+
+      {/* Business Organizer Dialog */}
+      <Dialog 
+        open={businessOrganizerDialog} 
+        onClose={() => setBusinessOrganizerDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Business Organizer Required</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Please make sure to fill out the Business Organizer form for your business, rental property, or farm interests.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBusinessOrganizerDialog(false)} color="primary">
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
