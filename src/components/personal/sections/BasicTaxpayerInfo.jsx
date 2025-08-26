@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { SecureTextField } from '../../shared/SecureTextField';
 import { FormSection } from '../../shared/FormSection';
+import { TooltipWrapper } from '../../shared/TooltipWrapper';
 
 export const BasicTaxpayerInfo = ({ data, onChange }) => {
   const handleChange = (field, value) => {
@@ -147,8 +148,12 @@ export const BasicTaxpayerInfo = ({ data, onChange }) => {
             label="Filing Status"
           >
             <MenuItem value="single">Single</MenuItem>
-            <MenuItem value="marriedJointly">Married Filing Jointly</MenuItem>
-            <MenuItem value="marriedSeparately">Married Filing Separately</MenuItem>
+            <TooltipWrapper content="If this is your initial year of marriage, you can file married filing jointly as long as you were wed before December 31.">
+              <MenuItem value="marriedJointly">Married Filing Jointly</MenuItem>
+            </TooltipWrapper>
+            <TooltipWrapper content="Please make sure to fill out spouse's information as the IRS will require it.">
+              <MenuItem value="marriedSeparately">Married Filing Separately</MenuItem>
+            </TooltipWrapper>
             <MenuItem value="headOfHousehold">Head of Household</MenuItem>
             <MenuItem value="qualifyingWidow">Qualifying Widow(er)</MenuItem>
           </Select>
@@ -157,13 +162,15 @@ export const BasicTaxpayerInfo = ({ data, onChange }) => {
 
       <FormSection title="Contact Information">
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-          <TextField
-            label="Street Address"
-            value={data.streetAddress || ''}
-            onChange={(e) => handleChange('streetAddress', e.target.value)}
-            fullWidth
-            sx={{ gridColumn: { md: '1 / -1' } }}
-          />
+          <TooltipWrapper content="Make sure this is the address where you can receive IRS correspondence.">
+            <TextField
+              label="Street Address"
+              value={data.streetAddress || ''}
+              onChange={(e) => handleChange('streetAddress', e.target.value)}
+              fullWidth
+              sx={{ gridColumn: { md: '1 / -1' } }}
+            />
+          </TooltipWrapper>
           <TextField
             label="City"
             value={data.city || ''}
