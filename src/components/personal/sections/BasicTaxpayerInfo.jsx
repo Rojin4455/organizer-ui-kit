@@ -148,12 +148,16 @@ export const BasicTaxpayerInfo = ({ data, onChange }) => {
             label="Filing Status"
           >
             <MenuItem value="single">Single</MenuItem>
-            <TooltipWrapper content="If this is your initial year of marriage, you can file married filing jointly as long as you were wed before December 31.">
-              <MenuItem value="marriedJointly">Married Filing Jointly</MenuItem>
-            </TooltipWrapper>
-            <TooltipWrapper content="Please make sure to fill out spouse's information as the IRS will require it.">
-              <MenuItem value="marriedSeparately">Married Filing Separately</MenuItem>
-            </TooltipWrapper>
+            <MenuItem value="marriedJointly">
+              <TooltipWrapper content="If this is your initial year of marriage, you can file married filing jointly as long as you were wed before December 31.">
+                <span>Married Filing Jointly</span>
+              </TooltipWrapper>
+            </MenuItem>
+            <MenuItem value="marriedSeparately">
+              <TooltipWrapper content="Please make sure to fill out spouse's information as the IRS will require it.">
+                <span>Married Filing Separately</span>
+              </TooltipWrapper>
+            </MenuItem>
             <MenuItem value="headOfHousehold">Head of Household</MenuItem>
             <MenuItem value="qualifyingWidow">Qualifying Widow(er)</MenuItem>
           </Select>
