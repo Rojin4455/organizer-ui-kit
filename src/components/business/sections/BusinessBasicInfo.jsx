@@ -18,6 +18,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { SecureTextField } from '../../shared/SecureTextField';
 import { FormSection } from '../../shared/FormSection';
+import { TooltipWrapper } from '../../shared/TooltipWrapper';
 
 export const BusinessBasicInfo = ({ data, onChange }) => {
   const handleChange = (field, value) => {
@@ -136,12 +137,14 @@ export const BusinessBasicInfo = ({ data, onChange }) => {
             </Box>
 
             {/* Business Address */}
-            <TextField
-              label="Business Address"
-              value={data.businessAddress || ''}
-              onChange={(e) => handleChange('businessAddress', e.target.value)}
-              fullWidth
-            />
+            <TooltipWrapper content="Make sure to put the address that the business is registered under with the Secretary of State)">
+              <TextField
+                label="Business Address"
+                value={data.businessAddress || ''}
+                onChange={(e) => handleChange('businessAddress', e.target.value)}
+                fullWidth
+              />
+            </TooltipWrapper>
 
             {/* City, State, Zip, Country */}
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr 1fr' }, gap: 2 }}>
