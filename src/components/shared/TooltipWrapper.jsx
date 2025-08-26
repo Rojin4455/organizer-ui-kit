@@ -15,7 +15,7 @@ export const TooltipWrapper = ({ children, content, ...props }) => {
             {children}
           </Box>
         </TooltipTrigger>
-        <TooltipContent side="top" align="center">
+        <TooltipContent side="top" align="start">
           <p>{content}</p>
         </TooltipContent>
       </Tooltip>
