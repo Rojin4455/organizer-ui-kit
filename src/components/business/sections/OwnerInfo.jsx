@@ -131,12 +131,19 @@ export const OwnerInfo = ({ data, onChange }) => {
                   />
                 </Box>
 
-                {/* Work Tel and Ownership Percentage */}
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+                {/* Work Tel, Email, and Ownership Percentage */}
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' }, gap: 2 }}>
                   <TextField
                     label="Work Tel"
                     value={owner.workTel || ''}
                     onChange={(e) => handleOwnerChange(index, 'workTel', e.target.value)}
+                    fullWidth
+                  />
+                  <TextField
+                    label="Email Address"
+                    value={owner.email || ''}
+                    onChange={(e) => handleOwnerChange(index, 'email', e.target.value)}
+                    type="email"
                     fullWidth
                   />
                   <TextField

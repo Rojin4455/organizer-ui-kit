@@ -11,6 +11,7 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
+  TextField,
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
@@ -21,7 +22,10 @@ import {
   Security as SecurityIcon,
 } from '@mui/icons-material';
 
-export const ReviewSubmit = ({ data }) => {
+export const ReviewSubmit = ({ data, onChange }) => {
+  const handleChange = (field, value) => {
+    onChange({ ...data, [field]: value });
+  };
   const getSummaryData = () => {
     const summary = {
       taxpayerName: `${data.basicInfo?.firstName || ''} ${data.basicInfo?.lastName || ''}`.trim(),
@@ -213,6 +217,22 @@ export const ReviewSubmit = ({ data }) => {
           </Typography>
         </Alert>
       )}
+
+      {/* Tell us More About Yourself and Notes */}
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Tell us More About Yourself and Notes
+        </Typography>
+        <TextField
+          fullWidth
+          multiline
+          rows={6}
+          placeholder="Please share any additional information about yourself, your family, business, or tax situation that would be helpful for your tax preparer to know..."
+          value={data.personalNotes || ''}
+          onChange={(e) => handleChange('personalNotes', e.target.value)}
+          variant="outlined"
+        />
+      </Paper>
 
       {/* Final Instructions */}
       <Paper sx={{ p: 3, backgroundColor: '#f0f9ff', border: '1px solid #bae6fd' }}>

@@ -155,12 +155,6 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
               '9. Did you sell and/or purchase a principal residence in the current year? (Attach copies of your purchase and/or sale escrow statements.)'
             )}
           </Grid>
-          <Grid item xs={12} md={6}>
-            {renderYesNoQuestion(
-              'alimonyPayments',
-              '10. Did you receive/pay alimony payments?'
-            )}
-          </Grid>
         </Grid>
       </FormSection>
 
