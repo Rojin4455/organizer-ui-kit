@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, TextField, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import { Box, TextField, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, FormControlLabel, Checkbox, Alert } from '@mui/material';
 import { FormSection } from '../../shared/FormSection';
 
 export const BusinessIncomeExpenses = ({ data, onChange }) => {
@@ -14,7 +14,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
   };
 
   const handleOtherExpenseChange = (index, field, value) => {
-    const otherExpenses = data.otherExpenses || [{}, {}, {}, {}];
+    const otherExpenses = data.otherExpenses || [{}, {}, {}, {}, {}, {}, {}, {}, {}];
     otherExpenses[index] = { ...otherExpenses[index], [field]: value };
     onChange({ ...data, otherExpenses });
   };
@@ -58,70 +58,29 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
         </Box>
       </FormSection>
 
-      <FormSection title="Cost of Goods Sold">
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-          <TextField
-            label="Inventory at beginning of year"
-            type="number"
-            value={data.inventoryBeginning || ''}
-            onChange={(e) => handleChange('inventoryBeginning', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-          <TextField
-            label="Inventory at end of year"
-            type="number"
-            value={data.inventoryEnd || ''}
-            onChange={(e) => handleChange('inventoryEnd', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-          <TextField
-            label="Purchases"
-            type="number"
-            value={data.purchases || ''}
-            onChange={(e) => handleChange('purchases', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-          <TextField
-            label="Cost of items for personal use"
-            type="number"
-            value={data.costPersonalUse || ''}
-            onChange={(e) => handleChange('costPersonalUse', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-          <TextField
-            label="Contracted Labor (do not include payments to yourself)"
-            type="number"
-            value={data.contractedLabor || ''}
-            onChange={(e) => handleChange('contractedLabor', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-          <TextField
-            label="Materials and supplies"
-            type="number"
-            value={data.materialsSupplies || ''}
-            onChange={(e) => handleChange('materialsSupplies', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-          <TextField
-            label="Other costs"
-            type="number"
-            value={data.otherCosts || ''}
-            onChange={(e) => handleChange('otherCosts', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-        </Box>
+      <FormSection title="QuickBooks Usage">
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={data.usesQuickbooks || false}
+              onChange={(e) => handleChange('usesQuickbooks', e.target.checked)}
+            />
+          }
+          label="Do you use QuickBooks?"
+        />
+        
+        {data.usesQuickbooks && (
+          <Alert severity="info" sx={{ mt: 2 }}>
+            <Typography variant="body2">
+              Since you use QuickBooks, you can skip the expense section below and simply upload your Profit & Loss Statement and Balance Sheet to SmartVault.
+            </Typography>
+          </Alert>
+        )}
       </FormSection>
 
-      <FormSection title="Business Income and Expenses (Cont.)">
+      <FormSection title="Business Expenses">
         <Typography variant="body2" sx={{ mb: 2, fontStyle: 'italic' }}>
-          Because IRS some expenses do not apply, please leave that category blank.
+          Please categorize your business expenses below. If an expense category does not apply to your business, please leave that field blank.
         </Typography>
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
           <TextField
@@ -512,7 +471,7 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           *Other:
         </Typography>
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-          {[0, 1, 2, 3].map((index) => (
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((index) => (
             <Box key={index} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
               <TextField
                 placeholder="Description"
