@@ -253,9 +253,7 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
                 '7. Qtr 2 due by 06/15 of current year',
                 '8. Qtr 3 due by 09/15 of current year',
                 '9. Qtr 4 due by 01/15 of following year',
-                '10. a. Additional payments',
-                'b. Additional payments',
-                '11. Prior year overpayment applied to current year',
+                '10. Prior year overpayment applied to current year',
               ].map((quarter, index) => (
                 <TableRow 
                   key={index} 
