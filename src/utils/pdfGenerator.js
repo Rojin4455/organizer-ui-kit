@@ -117,7 +117,7 @@ const getPersonalFormStructure = (submissionData) => [
     fields: [
       { label: 'First Name', value: submissionData?.basicInfo?.firstName },
       { label: 'Last Name', value: submissionData?.basicInfo?.lastName },
-      { label: 'Social Security Number', value: submissionData?.basicInfo?.ssn, type: 'secure' },
+      { label: 'Social Security Number', value: submissionData?.basicInfo?.ssn },
       { label: 'Date of Birth', value: submissionData?.basicInfo?.dateOfBirth },
       { label: 'Occupation', value: submissionData?.basicInfo?.occupation },
       { label: 'Cell Phone', value: submissionData?.basicInfo?.cellPhone },
@@ -130,7 +130,7 @@ const getPersonalFormStructure = (submissionData) => [
       ...(submissionData?.basicInfo?.hasSpouse ? [
         { label: 'Spouse First Name', value: submissionData?.basicInfo?.spouseFirstName },
         { label: 'Spouse Last Name', value: submissionData?.basicInfo?.spouseLastName },
-        { label: 'Spouse SSN', value: submissionData?.basicInfo?.spouseSSN, type: 'secure' },
+        { label: 'Spouse SSN', value: submissionData?.basicInfo?.spouseSSN },
         { label: 'Spouse Date of Birth', value: submissionData?.basicInfo?.spouseDateOfBirth },
         { label: 'Spouse Occupation', value: submissionData?.basicInfo?.spouseOccupation },
         { label: 'Spouse Cell Phone', value: submissionData?.basicInfo?.spouseCellPhone },
@@ -281,7 +281,7 @@ const getPersonalFormStructure = (submissionData) => [
           ...(submissionData?.generalQuestions?.directDeposit === 'yes' ? [
             { label: 'Bank Name', value: submissionData?.generalQuestions?.bankName },
             { label: 'Routing Number', value: submissionData?.generalQuestions?.routingNumber },
-            { label: 'Account Number', value: submissionData?.generalQuestions?.accountNumber, type: 'secure' },
+            { label: 'Account Number', value: submissionData?.generalQuestions?.accountNumber },
             { label: 'Account Type', value: submissionData?.generalQuestions?.accountType },
             { label: 'Voided Check Attached', value: submissionData?.generalQuestions?.voidedCheckAttached, type: 'boolean' },
           ] : []),
@@ -613,7 +613,7 @@ const getRentalFormStructure = (submissionData) => [
         { label: 'State', value: submissionData?.entityInfo?.state },
         { label: 'Zip', value: submissionData?.entityInfo?.zip },
         { label: 'County', value: submissionData?.entityInfo?.county },
-        { label: 'Employer Identification Number', value: submissionData?.entityInfo?.ein, type: 'secure' },
+        { label: 'Employer Identification Number', value: submissionData?.entityInfo?.ein },
       ])
     ]
   },
@@ -736,7 +736,7 @@ const getBusinessFormStructure = (submissionData) => [
       {
         title: 'EIN and Registration',
         fields: [
-          { label: 'Employer Identification Number (EIN)', value: submissionData?.basicInfo?.ein, type: 'secure' },
+          { label: 'Employer Identification Number (EIN)', value: submissionData?.basicInfo?.ein },
           { label: 'State Business Registered In', value: submissionData?.basicInfo?.stateRegistered },
         ]
       },

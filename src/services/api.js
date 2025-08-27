@@ -1,5 +1,5 @@
 // API service for Django backend integration
-const API_BASE_URL = import.meta.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://organizers.advancedtaxgroup.com/api';
 
 class ApiService {
   constructor() {
