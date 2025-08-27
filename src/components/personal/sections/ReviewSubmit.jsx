@@ -234,6 +234,22 @@ export const ReviewSubmit = ({ data, onChange }) => {
         />
       </Paper>
 
+      {/* Additional Note */}
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Additional Note
+        </Typography>
+        <TextField
+          fullWidth
+          multiline
+          rows={4}
+          placeholder="Any additional notes or comments..."
+          value={data.additionalNote || ''}
+          onChange={(e) => handleChange('additionalNote', e.target.value)}
+          variant="outlined"
+        />
+      </Paper>
+
       {/* Final Instructions */}
       <Paper sx={{ p: 3, backgroundColor: '#f0f9ff', border: '1px solid #bae6fd' }}>
         <Typography variant="h6" gutterBottom color="primary">
