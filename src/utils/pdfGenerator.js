@@ -413,25 +413,6 @@ const getPersonalFormStructure = (submissionData) => [
           { label: 'Did you exchange, send, receive, or acquire any virtual or crypto currency?', value: submissionData?.income?.hasCrypto, type: 'boolean' }
         ]
       },
-      {
-        title: 'Other Income',
-        fields: [
-          { label: 'Alimony received (Taxpayer)', value: submissionData?.income?.alimonyReceivedTaxpayer ? `$${submissionData?.income?.alimonyReceivedTaxpayer}` : 'None' },
-          { label: 'Alimony received (Spouse)', value: submissionData?.income?.alimonyReceivedSpouse ? `$${submissionData?.income?.alimonyReceivedSpouse}` : 'None' },
-          { label: 'Jury duty pay (Taxpayer)', value: submissionData?.income?.juryDutyPayTaxpayer ? `$${submissionData?.income?.juryDutyPayTaxpayer}` : 'None' },
-          { label: 'Jury duty pay (Spouse)', value: submissionData?.income?.juryDutyPaySpouse ? `$${submissionData?.income?.juryDutyPaySpouse}` : 'None' },
-          { label: 'Prizes, Bonuses, Awards (Taxpayer)', value: submissionData?.income?.prizesAndAwardsTaxpayer ? `$${submissionData?.income?.prizesAndAwardsTaxpayer}` : 'None' },
-          { label: 'Prizes, Bonuses, Awards (Spouse)', value: submissionData?.income?.prizesAndAwardsSpouse ? `$${submissionData?.income?.prizesAndAwardsSpouse}` : 'None' },
-          { label: 'Investment Interest (Taxpayer)', value: submissionData?.income?.investmentInterestTaxpayer ? `$${submissionData?.income?.investmentInterestTaxpayer}` : 'None' },
-          { label: 'Investment Interest (Spouse)', value: submissionData?.income?.investmentInterestSpouse ? `$${submissionData?.income?.investmentInterestSpouse}` : 'None' },
-          { label: 'Other Income 1 (Taxpayer)', value: submissionData?.income?.otherIncome1Taxpayer ? `$${submissionData?.income?.otherIncome1Taxpayer}` : 'None' },
-          { label: 'Other Income 1 (Spouse)', value: submissionData?.income?.otherIncome1Spouse ? `$${submissionData?.income?.otherIncome1Spouse}` : 'None' },
-          { label: 'Other Income 2 (Taxpayer)', value: submissionData?.income?.otherIncome2Taxpayer ? `$${submissionData?.income?.otherIncome2Taxpayer}` : 'None' },
-          { label: 'Other Income 2 (Spouse)', value: submissionData?.income?.otherIncome2Spouse ? `$${submissionData?.income?.otherIncome2Spouse}` : 'None' },
-          { label: 'Other Income 3 (Taxpayer)', value: submissionData?.income?.otherIncome3Taxpayer ? `$${submissionData?.income?.otherIncome3Taxpayer}` : 'None' },
-          { label: 'Other Income 3 (Spouse)', value: submissionData?.income?.otherIncome3Spouse ? `$${submissionData?.income?.otherIncome3Spouse}` : 'None' }
-        ]
-      }
     ]
   },
   {
@@ -470,15 +451,6 @@ const getPersonalFormStructure = (submissionData) => [
               type: 'multiline'
             })) : [{ label: 'No non-cash contributions recorded', value: 'None' }]
       },
-      {
-        title: 'General Vehicle Information',
-        fields: [
-          { label: 'Description of vehicle', value: submissionData?.deductions?.vehicleDescription || 'None' },
-          { label: 'Date placed in service', value: submissionData?.deductions?.vehicleDatePlacedInService || 'None' },
-          { label: 'Total miles for the year', value: submissionData?.deductions?.vehicleTotalMiles || 'None' },
-          { label: 'Business miles', value: submissionData?.deductions?.vehicleBusinessMiles || 'None' }
-        ]
-      }
     ]
   },
   {
@@ -772,15 +744,9 @@ const getBusinessFormStructure = (submissionData) => [
     ]
   },
   {
-    title: 'Cost of Goods Sold',
+    title: 'QuickBooks Information',
     fields: [
-      { label: 'Inventory at beginning of year', value: submissionData?.incomeExpenses?.inventoryBeginning },
-      { label: 'Inventory at end of year', value: submissionData?.incomeExpenses?.inventoryEnd },
-      { label: 'Purchases', value: submissionData?.incomeExpenses?.purchases },
-      { label: 'Cost of items for personal use', value: submissionData?.incomeExpenses?.costPersonalUse },
-      { label: 'Contracted Labor', value: submissionData?.incomeExpenses?.contractedLabor },
-      { label: 'Materials and supplies', value: submissionData?.incomeExpenses?.materialsSupplies },
-      { label: 'Other costs', value: submissionData?.incomeExpenses?.otherCosts },
+      { label: 'Do you use QuickBooks?', value: submissionData?.incomeExpenses?.usesQuickBooks, type: 'boolean' },
     ]
   },
   {
@@ -817,6 +783,7 @@ const getBusinessFormStructure = (submissionData) => [
       { label: 'Merchant fees', value: submissionData?.incomeExpenses?.merchantFees },
       { label: 'Web Fees', value: submissionData?.incomeExpenses?.webFees },
       { label: 'Wholesale/Drop Shipper fees', value: submissionData?.incomeExpenses?.wholesaleDropShipper },
+      { label: 'Software', value: submissionData?.incomeExpenses?.software },
     ]
   },
   {
@@ -841,7 +808,13 @@ const getBusinessFormStructure = (submissionData) => [
           value: `${expense.description || 'No description'}: $${expense.amount || '0'}`
         })) :
         [{ label: 'Other Expenses', value: 'No other expenses reported' }]
-      )
+      ),
+      // Additional expense fields as requested
+      { label: 'Other Expense A', value: submissionData?.incomeExpenses?.otherExpenseA ? `${submissionData?.incomeExpenses?.otherExpenseADescription || 'No description'}: $${submissionData?.incomeExpenses?.otherExpenseA}` : 'None' },
+      { label: 'Other Expense B', value: submissionData?.incomeExpenses?.otherExpenseB ? `${submissionData?.incomeExpenses?.otherExpenseBDescription || 'No description'}: $${submissionData?.incomeExpenses?.otherExpenseB}` : 'None' },
+      { label: 'Other Expense C', value: submissionData?.incomeExpenses?.otherExpenseC ? `${submissionData?.incomeExpenses?.otherExpenseCDescription || 'No description'}: $${submissionData?.incomeExpenses?.otherExpenseC}` : 'None' },
+      { label: 'Other Expense D', value: submissionData?.incomeExpenses?.otherExpenseD ? `${submissionData?.incomeExpenses?.otherExpenseDDescription || 'No description'}: $${submissionData?.incomeExpenses?.otherExpenseD}` : 'None' },
+      { label: 'Other Expense E', value: submissionData?.incomeExpenses?.otherExpenseE ? `${submissionData?.incomeExpenses?.otherExpenseEDescription || 'No description'}: $${submissionData?.incomeExpenses?.otherExpenseE}` : 'None' }
     ]
   },
   {
