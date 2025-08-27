@@ -590,6 +590,13 @@ const getPersonalFormStructure = (submissionData) => [
         ]
       }
     ]
+  },
+  {
+    title: 'Personal Notes',
+    fields: [
+      { label: 'Tell us More About Yourself and Notes', value: submissionData?.personalNotes || 'No personal notes provided', type: 'multiline' },
+      { label: 'Additional Note', value: submissionData?.additionalNote || 'No additional note provided', type: 'multiline' }
+    ]
   }
 ];
 
