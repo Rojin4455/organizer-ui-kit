@@ -194,8 +194,33 @@ export const TaxOrganizerApp = ({
     console.log("saved Data Before: ", data)
     try {
       setIsLoading(true);
+      
       // Build payload with simplified structure
       const payload = { form_type: selectedOrganizer || 'personal', status: isCompleted ? 'submitted' : 'drafted', ...data };
+      
+      // Generate PDF if form is being completed
+      let pdfBase64 = null;
+      if (isCompleted) {
+        try {
+          const { generatePDFFromFormData } = await import('../utils/pdfGenerator');
+          const formInfo = {
+            form_type: selectedOrganizer || 'personal',
+            id: formId || 'new',
+            status: 'submitted',
+            submitted_at: new Date().toISOString()
+          };
+          
+          const doc = generatePDFFromFormData({ submission_data: data }, formInfo);
+          pdfBase64 = doc.output('datauristring').split(',')[1]; // Get base64 without data URI prefix
+          
+          // Add PDF to payload
+          payload.pdf_data = pdfBase64;
+        } catch (pdfError) {
+          console.warn('Failed to generate PDF:', pdfError);
+          // Continue with form submission even if PDF generation fails
+        }
+      }
+      
       // Create or update submission
       const response = formId
         ? await apiService.updateTaxFormSubmission(formId, payload.form_type, payload)

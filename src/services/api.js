@@ -60,6 +60,26 @@ class ApiService {
   // New unified Tax Form Submission APIs (simplified backend)
   async createTaxFormSubmission(payload) {
     console.log("payloaddd: ", payload);
+    
+    // If PDF data is included, use multipart form data for better handling
+    if (payload.pdf_data) {
+      const formData = new FormData();
+      
+      // Add form data
+      Object.keys(payload).forEach(key => {
+        if (key !== 'pdf_data') {
+          formData.append(key, typeof payload[key] === 'object' ? JSON.stringify(payload[key]) : payload[key]);
+        }
+      });
+      
+      // Add PDF as base64 string
+      formData.append('pdf_data', payload.pdf_data);
+      
+      return this.request('/survey/submit-tax-form/', {
+        method: 'POST',
+        body: formData, // Don't set Content-Type for FormData
+      });
+    }
   
     return this.request('/survey/submit-tax-form/', {
       method: 'POST',
@@ -72,12 +92,34 @@ class ApiService {
 
   async updateTaxFormSubmission(formId, formType, payload) {
     // PUT /survey/submit-tax-form/{id}/?type={formType}
+    
+    // If PDF data is included, use multipart form data for better handling
+    if (payload.pdf_data) {
+      const formData = new FormData();
+      
+      // Add form data
+      Object.keys(payload).forEach(key => {
+        if (key !== 'pdf_data') {
+          formData.append(key, typeof payload[key] === 'object' ? JSON.stringify(payload[key]) : payload[key]);
+        }
+      });
+      
+      // Add PDF as base64 string
+      formData.append('pdf_data', payload.pdf_data);
+      
+      return this.request(`/survey/submit-tax-form/${formId}/?type=${encodeURIComponent(formType)}`, {
+        method: 'PUT',
+        body: formData, // Don't set Content-Type for FormData
+      });
+    }
+    
     return this.request(`/survey/submit-tax-form/${formId}/?type=${encodeURIComponent(formType)}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(payload),    });
+      body: JSON.stringify(payload),
+    });
   }
 
   async getSubmission(formId, formType) {
