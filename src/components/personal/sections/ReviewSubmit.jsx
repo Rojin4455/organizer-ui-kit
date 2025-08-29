@@ -235,7 +235,7 @@ export const ReviewSubmit = ({ data, onChange }) => {
       </Paper>
 
       {/* Additional Note */}
-      <Paper sx={{ p: 3 }}>
+      {/* <Paper sx={{ p: 3 }}>
         <Typography variant="h6" gutterBottom>
           Additional Note
         </Typography>
@@ -248,7 +248,7 @@ export const ReviewSubmit = ({ data, onChange }) => {
           onChange={(e) => handleChange('additionalNote', e.target.value)}
           variant="outlined"
         />
-      </Paper>
+      </Paper> */}
 
       {/* Final Instructions */}
       <Paper sx={{ p: 3, backgroundColor: '#f0f9ff', border: '1px solid #bae6fd' }}>
