@@ -59,60 +59,115 @@ class ApiService {
 
   // New unified Tax Form Submission APIs (simplified backend)
   async createTaxFormSubmission(payload) {
-    console.log("payloaddd: ", payload);
+    console.log("Creating submission with payload: ", payload);
     
-    // If PDF data is included, use multipart form data for better handling
-    if (payload.pdf_data) {
-      const formData = new FormData();
-      
-      // Add form data
-      Object.keys(payload).forEach(key => {
-        if (key !== 'pdf_data') {
-          formData.append(key, typeof payload[key] === 'object' ? JSON.stringify(payload[key]) : payload[key]);
-        }
-      });
-      
-      // Add PDF as base64 string
-      formData.append('pdf_data', payload.pdf_data);
-      
-      return this.request('/survey/submit-tax-form/', {
-        method: 'POST',
-        body: formData, // Don't set Content-Type for FormData
-      });
-    }
-  
+    // Always send as JSON for simplicity and consistency
     return this.request('/survey/submit-tax-form/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(payload),  // Ensure it's a JSON string
+      body: JSON.stringify(payload),
     });
   }
 
   async updateTaxFormSubmission(formId, formType, payload) {
-    // PUT /survey/submit-tax-form/{id}/?type={formType}
+    console.log("Updating submission with payload: ", payload);
+    console.log("PDF data present: ", !!payload.pdf_data);
     
-    // If PDF data is included, use multipart form data for better handling
+    // Always send as JSON for simplicity and consistency
+    return this.request(`/survey/submit-tax-form/${formId}/?type=${encodeURIComponent(formType)}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+  }
+
+// Alternative approach using FormData (if you prefer multipart)
+// Only use this if the JSON approach above doesn't work
+async createTaxFormSubmissionMultipart(payload) {
+    console.log("Creating submission with payload: ", payload);
+    
     if (payload.pdf_data) {
       const formData = new FormData();
       
-      // Add form data
+      // Add all non-PDF data
       Object.keys(payload).forEach(key => {
         if (key !== 'pdf_data') {
-          formData.append(key, typeof payload[key] === 'object' ? JSON.stringify(payload[key]) : payload[key]);
+          const value = payload[key];
+          if (typeof value === 'object' && value !== null) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, value || '');
+          }
         }
       });
       
-      // Add PDF as base64 string
+      // Add PDF data
       formData.append('pdf_data', payload.pdf_data);
       
-      return this.request(`/survey/submit-tax-form/${formId}/?type=${encodeURIComponent(formType)}`, {
-        method: 'PUT',
-        body: formData, // Don't set Content-Type for FormData
+      // Debug: Log FormData contents
+      console.log("FormData contents:");
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + (pair[1].length > 100 ? '[PDF DATA]' : pair[1]));
+      }
+      
+      return this.request('/survey/submit-tax-form/', {
+        method: 'POST',
+        body: formData,
+        // Explicitly don't set Content-Type - let browser set it with boundary
       });
     }
     
+    // Fallback to JSON if no PDF
+    return this.request('/survey/submit-tax-form/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateTaxFormSubmissionMultipart(formId, formType, payload) {
+    console.log("Updating submission with payload: ", payload);
+    
+    if (payload.pdf_data) {
+      const formData = new FormData();
+      
+      // Add all non-PDF data
+      Object.keys(payload).forEach(key => {
+        if (key !== 'pdf_data') {
+          const value = payload[key];
+          if (typeof value === 'object' && value !== null) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, value || '');
+          }
+        }
+      });
+      
+      // Add PDF data
+      formData.append('pdf_data', payload.pdf_data);
+      
+      console.log("PDF data present, size: ", payload.pdf_data.length);
+      
+      // Debug: Log FormData contents
+      console.log("FormData contents:");
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + (pair[1].length > 100 ? '[PDF DATA]' : pair[1]));
+      }
+      
+      return this.request(`/survey/submit-tax-form/${formId}/?type=${encodeURIComponent(formType)}`, {
+        method: 'PUT',
+        body: formData,
+        // Explicitly don't set Content-Type - let browser set it with boundary
+      });
+    }
+    
+    // Fallback to JSON if no PDF
     return this.request(`/survey/submit-tax-form/${formId}/?type=${encodeURIComponent(formType)}`, {
       method: 'PUT',
       headers: {
