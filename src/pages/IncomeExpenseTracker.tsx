@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, X, Search, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { businessLogo } from '../assets';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -126,7 +127,7 @@ const IncomeExpenseTracker = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-blue-900 text-white p-6">
+      {/* <div className="bg-blue-900 text-white p-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Button 
             variant="ghost" 
@@ -158,7 +159,40 @@ const IncomeExpenseTracker = () => {
         <div className="max-w-7xl mx-auto mt-6">
           <h2 className="text-2xl font-bold text-center">SELF-EMPLOYED INCOME & EXPENSE LOG</h2>
         </div>
-      </div>
+      </div> */}
+
+
+
+      <Card className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground overflow-hidden">
+          <CardHeader className="pb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                
+                <div className="bg-white rounded-lg p-3 shadow-lg">
+                  <img src={businessLogo} alt="ATG Advanced Tax Group" className="h-10 w-auto" loading="eager" />
+                </div>
+                
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight">Advanced Tax Group</h1>
+                  <p className="text-primary-foreground/80 text-sm">Professional Tax Services</p>
+
+                </div>
+                
+              </div>
+              
+              <div className="text-right">
+                <div className="text-4xl font-bold">2025</div>
+                <div className="text-primary-foreground/80 text-sm">Tax Year</div>
+              </div>
+            </div>
+            <div className="mt-6 text-center">
+              <CardTitle className="text-3xl font-bold tracking-wide">
+                SELF-EMPLOYED INCOME & EXPENSE LOG
+              </CardTitle>
+            </div>
+            
+          </CardHeader>
+        </Card>
 
       <div className="max-w-7xl mx-auto p-6 space-y-8">
         {/* Income Section */}
