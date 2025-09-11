@@ -242,6 +242,27 @@ async createTaxFormSubmissionMultipart(payload) {
       },
     });
   }
+
+  // Tracker Finance Data APIs
+  async getTrackerData() {
+    return this.request('/tracker/finance-data/', {
+      method: 'GET',
+    });
+  }
+
+  async saveTrackerData(data) {
+    return this.request('/tracker/finance-data/', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  async updateTrackerData(data) {
+    return this.request('/tracker/finance-data/', {
+      method: 'PUT',
+      body: data,
+    });
+  }
 }
 
 export const apiService = new ApiService();

@@ -1,12 +1,14 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, X, Search, ArrowLeft } from 'lucide-react';
+import { Plus, X, Search, ArrowLeft, Save } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { businessLogo } from '../assets';
+import { apiService } from '../services/api';
+import { toast } from '@/hooks/use-toast';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -74,6 +76,65 @@ const IncomeExpenseTracker = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [customExpenseLabel, setCustomExpenseLabel] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Load data on component mount
+  useEffect(() => {
+    loadTrackerData();
+  }, []);
+
+  const loadTrackerData = async () => {
+    setLoading(true);
+    try {
+      const response = await apiService.getTrackerData();
+      if (response.income && response.expenses) {
+        setIncomeRows(response.income);
+        setExpenseRows(response.expenses);
+        toast({
+          title: "Data loaded",
+          description: "Your tracker data has been loaded successfully.",
+        });
+      }
+    } catch (error) {
+      console.error('Error loading tracker data:', error);
+      // If no data found (404 or similar), just keep the default empty state
+      if (error.message && !error.message.includes('404')) {
+        toast({
+          title: "Error",
+          description: "Failed to load tracker data. Using default empty state.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveTrackerData = async () => {
+    setSaving(true);
+    try {
+      const data = {
+        income: incomeRows,
+        expenses: expenseRows
+      };
+      
+      await apiService.saveTrackerData(data);
+      toast({
+        title: "Saved",
+        description: "Your tracker data has been saved successfully.",
+      });
+    } catch (error) {
+      console.error('Error saving tracker data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save tracker data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const updateIncomeValue = useCallback((rowId: string, monthIndex: number, value: string) => {
     const numValue = parseFloat(value) || 0;
@@ -190,7 +251,7 @@ const IncomeExpenseTracker = () => {
 
 
 
-      <div className="bg-white border-b shadow-sm">
+        <div className="bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Button 
@@ -212,9 +273,19 @@ const IncomeExpenseTracker = () => {
               </div>
             </div>
 
-            <div className="text-right">
-              <div className="text-2xl font-bold text-primary">2025</div>
-              <div className="text-sm text-muted-foreground">Tax Year</div>
+            <div className="flex items-center gap-4">
+              <Button 
+                onClick={saveTrackerData}
+                disabled={saving}
+                className="gap-2"
+              >
+                <Save className="h-4 w-4" />
+                {saving ? 'Saving...' : 'Save Data'}
+              </Button>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-primary">2025</div>
+                <div className="text-sm text-muted-foreground">Tax Year</div>
+              </div>
             </div>
           </div>
           
