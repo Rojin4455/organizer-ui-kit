@@ -253,14 +253,20 @@ async createTaxFormSubmissionMultipart(payload) {
   async saveTrackerData(data) {
     return this.request('/tracker/finance-data/', {
       method: 'POST',
-      body: data,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
     });
   }
 
   async updateTrackerData(data) {
     return this.request('/tracker/finance-data/', {
       method: 'PUT',
-      body: data,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
     });
   }
 }
