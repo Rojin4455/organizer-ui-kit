@@ -269,6 +269,12 @@ async createTaxFormSubmissionMultipart(payload) {
       body: JSON.stringify(data),
     });
   }
+
+  async deleteTrackerData() {
+    return this.request('/tracker/finance-data/', {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const apiService = new ApiService();

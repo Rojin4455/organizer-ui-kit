@@ -3,8 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, X, Search, ArrowLeft, Save } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Plus, X, Search, ArrowLeft, Save, Download, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import jsPDF from 'jspdf';
 import { cn } from '@/lib/utils';
 import { businessLogo } from '../assets';
 import { apiService } from '../services/api';
@@ -78,6 +80,7 @@ const IncomeExpenseTracker = () => {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Load data on component mount
   useEffect(() => {
@@ -134,6 +137,156 @@ const IncomeExpenseTracker = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const resetTrackerData = async () => {
+    setDeleting(true);
+    try {
+      await apiService.deleteTrackerData();
+      
+      // Reset to default state
+      setIncomeRows([
+        { id: '1099', label: '1099', values: new Array(12).fill(0) },
+        { id: 'other-income', label: 'Other Income', values: new Array(12).fill(0) }
+      ]);
+      setExpenseRows([
+        { id: 'accounting', label: 'Accounting Fees', values: new Array(12).fill(0), removable: true },
+        { id: 'bank-fees', label: 'Bank and Credit Card Fees', values: new Array(12).fill(0), removable: true },
+        { id: 'misc', label: 'Miscellaneous - Other PLEASE DESCRIBE', values: new Array(12).fill(0), removable: true }
+      ]);
+      
+      toast({
+        title: "Reset Complete",
+        description: "All tracker data has been deleted and reset to default.",
+      });
+    } catch (error) {
+      console.error('Error resetting tracker data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reset tracker data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const downloadPDF = () => {
+    const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    
+    // Header
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('SELF-EMPLOYED INCOME & EXPENSE LOG', pageWidth / 2, 20, { align: 'center' });
+    
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Advanced Tax Group - 2025 Tax Year', pageWidth / 2, 30, { align: 'center' });
+    
+    let yPos = 45;
+    const colWidth = 18;
+    const labelWidth = 50;
+    const startX = 10;
+    
+    // Income Section
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INCOME', startX, yPos);
+    yPos += 10;
+    
+    // Income table headers
+    doc.setFontSize(10);
+    doc.text('', startX, yPos);
+    MONTHS.forEach((month, index) => {
+      doc.text(month.substring(0, 3), startX + labelWidth + (index * colWidth), yPos);
+    });
+    doc.text('TOTAL', startX + labelWidth + (12 * colWidth), yPos);
+    yPos += 5;
+    
+    // Income rows
+    incomeRows.forEach(row => {
+      doc.setFont('helvetica', 'normal');
+      doc.text(row.label, startX, yPos);
+      row.values.forEach((value, index) => {
+        doc.text(formatCurrency(value), startX + labelWidth + (index * colWidth), yPos);
+      });
+      const rowTotal = row.values.reduce((sum, val) => sum + val, 0);
+      doc.text(formatCurrency(rowTotal), startX + labelWidth + (12 * colWidth), yPos);
+      yPos += 5;
+    });
+    
+    // Income totals
+    doc.setFont('helvetica', 'bold');
+    doc.text('Total Income', startX, yPos);
+    totalIncome.forEach((total, index) => {
+      doc.text(formatCurrency(total), startX + labelWidth + (index * colWidth), yPos);
+    });
+    const grandTotalIncome = totalIncome.reduce((sum, val) => sum + val, 0);
+    doc.text(formatCurrency(grandTotalIncome), startX + labelWidth + (12 * colWidth), yPos);
+    yPos += 15;
+    
+    // Expenses Section
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('EXPENSES', startX, yPos);
+    yPos += 10;
+    
+    // Expense table headers
+    doc.setFontSize(10);
+    doc.text('', startX, yPos);
+    MONTHS.forEach((month, index) => {
+      doc.text(month.substring(0, 3), startX + labelWidth + (index * colWidth), yPos);
+    });
+    doc.text('TOTAL', startX + labelWidth + (12 * colWidth), yPos);
+    yPos += 5;
+    
+    // Expense rows
+    expenseRows.forEach(row => {
+      doc.setFont('helvetica', 'normal');
+      doc.text(row.label.length > 30 ? row.label.substring(0, 30) + '...' : row.label, startX, yPos);
+      row.values.forEach((value, index) => {
+        doc.text(formatCurrency(value), startX + labelWidth + (index * colWidth), yPos);
+      });
+      const rowTotal = row.values.reduce((sum, val) => sum + val, 0);
+      doc.text(formatCurrency(rowTotal), startX + labelWidth + (12 * colWidth), yPos);
+      yPos += 5;
+    });
+    
+    // Expense totals
+    doc.setFont('helvetica', 'bold');
+    doc.text('Total Expenses', startX, yPos);
+    totalExpenses.forEach((total, index) => {
+      doc.text(formatCurrency(total), startX + labelWidth + (index * colWidth), yPos);
+    });
+    const grandTotalExpenses = totalExpenses.reduce((sum, val) => sum + val, 0);
+    doc.text(formatCurrency(grandTotalExpenses), startX + labelWidth + (12 * colWidth), yPos);
+    yPos += 15;
+    
+    // Net Income Section
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('NET INCOME (Income - Expenses)', startX, yPos);
+    yPos += 10;
+    
+    doc.setFontSize(10);
+    doc.text('', startX, yPos);
+    MONTHS.forEach((month, index) => {
+      doc.text(month.substring(0, 3), startX + labelWidth + (index * colWidth), yPos);
+    });
+    doc.text('TOTAL', startX + labelWidth + (12 * colWidth), yPos);
+    yPos += 5;
+    
+    doc.text('Net Income', startX, yPos);
+    netIncome.forEach((net, index) => {
+      doc.text(formatCurrency(net), startX + labelWidth + (index * colWidth), yPos);
+    });
+    const grandNetIncome = netIncome.reduce((sum, val) => sum + val, 0);
+    doc.text(formatCurrency(grandNetIncome), startX + labelWidth + (12 * colWidth), yPos);
+    
+    // Save the PDF
+    doc.save('income-expense-tracker-2025.pdf');
   };
 
   const updateIncomeValue = useCallback((rowId: string, monthIndex: number, value: string) => {
@@ -275,6 +428,42 @@ const IncomeExpenseTracker = () => {
 
             <div className="flex items-center gap-4">
               <Button 
+                onClick={downloadPDF}
+                variant="outline"
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download PDF
+              </Button>
+              
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="destructive"
+                    disabled={deleting}
+                    className="gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {deleting ? 'Resetting...' : 'Reset All Data'}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure you want to reset all data?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete all your income and expense data and reset the tracker to its default state.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={resetTrackerData} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Yes, reset all data
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              
+              <Button 
                 onClick={saveTrackerData}
                 disabled={saving}
                 className="gap-2"
@@ -282,6 +471,7 @@ const IncomeExpenseTracker = () => {
                 <Save className="h-4 w-4" />
                 {saving ? 'Saving...' : 'Save Data'}
               </Button>
+              
               <div className="text-right">
                 <div className="text-2xl font-bold text-primary">2025</div>
                 <div className="text-sm text-muted-foreground">Tax Year</div>
