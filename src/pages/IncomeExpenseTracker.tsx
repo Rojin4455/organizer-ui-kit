@@ -208,223 +208,217 @@ const IncomeExpenseTracker = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Income Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold">Income</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 min-w-[200px]"></th>
-                    {MONTHS.map(month => (
-                      <th key={month} className="text-center p-3 min-w-[100px] text-sm font-medium bg-muted rounded-sm">
-                        {month}
-                      </th>
-                    ))}
-                    <th className="text-center p-3 min-w-[120px] bg-blue-900 text-white rounded-sm font-bold">
-                      TOTAL
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {incomeRows.map(row => (
-                    <tr key={row.id} className="border-b">
-                      <td className="p-3 font-medium">{row.label}</td>
-                      {row.values.map((value, monthIndex) => (
-                        <td key={monthIndex} className="p-2">
-                          <Input
-                            type="number"
-                            value={value || ''}
-                            onChange={(e) => updateIncomeValue(row.id, monthIndex, e.target.value)}
-                            className="w-full text-center"
-                            placeholder="0.00"
-                          />
-                        </td>
-                      ))}
-                      <td className="p-3 text-center font-semibold">
-                        {formatCurrency(row.values.reduce((sum, val) => sum + val, 0))}
-                      </td>
-                    </tr>
+        <div className="bg-white rounded-lg border">
+          <div className="p-4 border-b">
+            <h3 className="text-lg font-semibold text-foreground">Income</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <div className="min-w-[1200px]">
+              {/* Header Row */}
+              <div className="grid grid-cols-14 gap-1 p-4 border-b bg-muted/30">
+                <div className="text-sm font-medium"></div>
+                {MONTHS.map(month => (
+                  <div key={month} className="text-center text-sm font-medium bg-muted rounded px-2 py-1">
+                    {month}
+                  </div>
+                ))}
+                <div className="text-center text-sm font-bold bg-primary text-primary-foreground rounded px-2 py-1">
+                  TOTAL
+                </div>
+              </div>
+              
+              {/* Income Rows */}
+              {incomeRows.map((row, rowIndex) => (
+                <div key={row.id} className={`grid grid-cols-14 gap-1 p-4 border-b ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-muted/10'}`}>
+                  <div className="text-sm font-medium flex items-center">{row.label}</div>
+                  {row.values.map((value, monthIndex) => (
+                    <Input
+                      key={monthIndex}
+                      type="number"
+                      step="0.01"
+                      value={value || ''}
+                      onChange={(e) => updateIncomeValue(row.id, monthIndex, e.target.value)}
+                      className="text-center text-sm h-8"
+                      placeholder="0.00"
+                    />
                   ))}
-                  <tr className="bg-muted font-bold">
-                    <td className="p-3">Total Income</td>
-                    {totalIncome.map((total, index) => (
-                      <td key={index} className="p-3 text-center">
-                        {formatCurrency(total)}
-                      </td>
-                    ))}
-                    <td className="p-3 text-center bg-blue-900 text-white rounded-sm">
-                      {formatCurrency(totalIncome.reduce((sum, val) => sum + val, 0))}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                  <div className="text-center text-sm font-semibold bg-muted rounded px-2 py-1 flex items-center justify-center">
+                    {formatCurrency(row.values.reduce((sum, val) => sum + val, 0))}
+                  </div>
+                </div>
+              ))}
+              
+              {/* Total Income Row */}
+              <div className="grid grid-cols-14 gap-1 p-4 bg-muted/20 font-semibold">
+                <div className="text-sm flex items-center">Total Income</div>
+                {totalIncome.map((total, index) => (
+                  <div key={index} className="text-center text-sm bg-muted rounded px-2 py-1 flex items-center justify-center">
+                    {formatCurrency(total)}
+                  </div>
+                ))}
+                <div className="text-center text-sm font-bold bg-primary text-primary-foreground rounded px-2 py-1 flex items-center justify-center">
+                  {formatCurrency(totalIncome.reduce((sum, val) => sum + val, 0))}
+                </div>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Expenses Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold flex items-center justify-between">
-              Expenses
-              <div className="relative">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowExpenseDropdown(!showExpenseDropdown)}
-                  className="gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add expense category...
-                </Button>
-                
-                {showExpenseDropdown && (
-                  <div className="absolute top-full mt-2 right-0 w-80 bg-white border rounded-md shadow-lg z-50">
-                    <div className="p-3 border-b">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Search expense categories..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
-                    <div className="max-h-60 overflow-y-auto">
-                      {filteredCategories.map(category => (
-                        <button
-                          key={category.id}
-                          onClick={() => addExpenseCategory(category)}
-                          className="w-full text-left p-3 hover:bg-muted text-sm border-b last:border-b-0"
-                        >
-                          {category.label}
-                        </button>
-                      ))}
+        <div className="bg-white rounded-lg border">
+          <div className="p-4 border-b flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-foreground">Expenses</h3>
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowExpenseDropdown(!showExpenseDropdown)}
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add expense category...
+              </Button>
+              
+              {showExpenseDropdown && (
+                <div className="absolute top-full mt-2 right-0 w-80 bg-white border rounded-md shadow-lg z-50">
+                  <div className="p-3 border-b">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search expense categories..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
                     </div>
                   </div>
-                )}
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 min-w-[200px]"></th>
-                    {MONTHS.map(month => (
-                      <th key={month} className="text-center p-3 min-w-[100px] text-sm font-medium bg-muted rounded-sm">
-                        {month}
-                      </th>
+                  <div className="max-h-60 overflow-y-auto">
+                    {filteredCategories.map(category => (
+                      <button
+                        key={category.id}
+                        onClick={() => addExpenseCategory(category)}
+                        className="w-full text-left p-3 hover:bg-muted text-sm border-b last:border-b-0"
+                      >
+                        {category.label}
+                      </button>
                     ))}
-                    <th className="text-center p-3 min-w-[120px] bg-blue-900 text-white rounded-sm font-bold">
-                      TOTAL
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {expenseRows.map(row => (
-                    <tr key={row.id} className="border-b">
-                      <td className="p-3 font-medium">
-                        <div className="flex items-center justify-between">
-                          <span>{row.label}</span>
-                          {row.removable && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeExpenseCategory(row.id)}
-                              className="h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                      {row.values.map((value, monthIndex) => (
-                        <td key={monthIndex} className="p-2">
-                          <Input
-                            type="number"
-                            value={value || ''}
-                            onChange={(e) => updateExpenseValue(row.id, monthIndex, e.target.value)}
-                            className="w-full text-center"
-                            placeholder="0.00"
-                          />
-                        </td>
-                      ))}
-                      <td className="p-3 text-center font-semibold">
-                        {formatCurrency(row.values.reduce((sum, val) => sum + val, 0))}
-                      </td>
-                    </tr>
-                  ))}
-                  <tr className="bg-muted font-bold">
-                    <td className="p-3">Total Expenses</td>
-                    {totalExpenses.map((total, index) => (
-                      <td key={index} className="p-3 text-center">
-                        {formatCurrency(total)}
-                      </td>
-                    ))}
-                    <td className="p-3 text-center bg-blue-900 text-white rounded-sm">
-                      {formatCurrency(totalExpenses.reduce((sum, val) => sum + val, 0))}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                  </div>
+                </div>
+              )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="overflow-x-auto">
+            <div className="min-w-[1200px]">
+              {/* Header Row */}
+              <div className="grid grid-cols-14 gap-1 p-4 border-b bg-muted/30">
+                <div className="text-sm font-medium"></div>
+                {MONTHS.map(month => (
+                  <div key={month} className="text-center text-sm font-medium bg-muted rounded px-2 py-1">
+                    {month}
+                  </div>
+                ))}
+                <div className="text-center text-sm font-bold bg-primary text-primary-foreground rounded px-2 py-1">
+                  TOTAL
+                </div>
+              </div>
+              
+              {/* Expense Rows */}
+              {expenseRows.map((row, rowIndex) => (
+                <div key={row.id} className={`grid grid-cols-14 gap-1 p-4 border-b ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-muted/10'}`}>
+                  <div className="text-sm font-medium flex items-center justify-between">
+                    <span className="flex-1 mr-2">{row.label}</span>
+                    {row.removable && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeExpenseCategory(row.id)}
+                        className="h-5 w-5 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                  {row.values.map((value, monthIndex) => (
+                    <Input
+                      key={monthIndex}
+                      type="number"
+                      step="0.01"
+                      value={value || ''}
+                      onChange={(e) => updateExpenseValue(row.id, monthIndex, e.target.value)}
+                      className="text-center text-sm h-8"
+                      placeholder="0.00"
+                    />
+                  ))}
+                  <div className="text-center text-sm font-semibold bg-muted rounded px-2 py-1 flex items-center justify-center">
+                    {formatCurrency(row.values.reduce((sum, val) => sum + val, 0))}
+                  </div>
+                </div>
+              ))}
+              
+              {/* Total Expenses Row */}
+              <div className="grid grid-cols-14 gap-1 p-4 bg-muted/20 font-semibold">
+                <div className="text-sm flex items-center">Total Expenses</div>
+                {totalExpenses.map((total, index) => (
+                  <div key={index} className="text-center text-sm bg-muted rounded px-2 py-1 flex items-center justify-center">
+                    {formatCurrency(total)}
+                  </div>
+                ))}
+                <div className="text-center text-sm font-bold bg-primary text-primary-foreground rounded px-2 py-1 flex items-center justify-center">
+                  {formatCurrency(totalExpenses.reduce((sum, val) => sum + val, 0))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Net Income Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold">Net Income (Income - Expenses)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 min-w-[200px]"></th>
-                    {MONTHS.map(month => (
-                      <th key={month} className="text-center p-3 min-w-[100px] text-sm font-medium bg-muted rounded-sm">
-                        {month}
-                      </th>
-                    ))}
-                    <th className="text-center p-3 min-w-[120px] bg-blue-900 text-white rounded-sm font-bold">
-                      TOTAL
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="p-3 font-medium">Net Income (Income - Expenses)</td>
-                    {netIncome.map((net, index) => (
-                      <td key={index} className={cn(
-                        "p-3 text-center font-bold rounded-sm",
-                        net >= 0 ? "bg-green-500 text-white" : "bg-red-500 text-white"
-                      )}>
-                        {formatCurrency(net)}
-                      </td>
-                    ))}
-                    <td className={cn(
-                      "p-3 text-center font-bold rounded-sm",
-                      netIncome.reduce((sum, val) => sum + val, 0) >= 0 
-                        ? "bg-green-500 text-white" 
-                        : "bg-red-500 text-white"
-                    )}>
-                      {formatCurrency(netIncome.reduce((sum, val) => sum + val, 0))}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+        <div className="bg-white rounded-lg border">
+          <div className="p-4 border-b">
+            <h3 className="text-lg font-semibold text-foreground">Net Income (Income - Expenses)</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <div className="min-w-[1200px]">
+              {/* Header Row */}
+              <div className="grid grid-cols-14 gap-1 p-4 border-b bg-muted/30">
+                <div className="text-sm font-medium"></div>
+                {MONTHS.map(month => (
+                  <div key={month} className="text-center text-sm font-medium bg-muted rounded px-2 py-1">
+                    {month}
+                  </div>
+                ))}
+                <div className="text-center text-sm font-bold bg-primary text-primary-foreground rounded px-2 py-1">
+                  TOTAL
+                </div>
+              </div>
+              
+              {/* Net Income Row */}
+              <div className="grid grid-cols-14 gap-1 p-4">
+                <div className="text-sm font-medium flex items-center">Net Income (Income - Expenses)</div>
+                {netIncome.map((net, index) => (
+                  <div 
+                    key={index} 
+                    className={cn(
+                      "text-center text-sm font-bold rounded px-2 py-1 flex items-center justify-center",
+                      net >= 0 ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                    )}
+                  >
+                    {formatCurrency(net)}
+                  </div>
+                ))}
+                <div className={cn(
+                  "text-center text-sm font-bold rounded px-2 py-1 flex items-center justify-center",
+                  netIncome.reduce((sum, val) => sum + val, 0) >= 0 
+                    ? "bg-green-500 text-white" 
+                    : "bg-red-500 text-white"
+                )}>
+                  {formatCurrency(netIncome.reduce((sum, val) => sum + val, 0))}
+                </div>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
