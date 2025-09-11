@@ -14,25 +14,33 @@ const MONTHS = [
 ];
 
 const EXPENSE_CATEGORIES = [
-  'Advertising & Marketing',
-  'Business Credit Card Interest',
-  'Business Licenses & Permits',
-  'Cell Phone',
-  'Computer Supplies/Service',
-  'Consulting',
-  'Cost of Goods Sold (ONLY ENTER AMOUNTS HERE IF YOU SELL PRODUCTS)',
-  'Dues & Membership Fees',
-  'Equipment Rental',
-  'Insurance',
-  'Legal & Professional Services',
-  'Meals & Entertainment',
-  'Office Supplies',
-  'Rent or Lease',
-  'Repairs & Maintenance',
-  'Travel',
-  'Utilities',
-  'Vehicle Expenses',
-  'Other Business Expenses'
+  { id: 'accounting-fees', label: 'Accounting Fees' },
+  { id: 'advertising-marketing', label: 'Advertising & Marketing' },
+  { id: 'bank-credit-fees', label: 'Bank and Credit Card Fees' },
+  { id: 'business-credit-interest', label: 'Business Credit Card Interest' },
+  { id: 'business-licenses', label: 'Business Licenses & Permits' },
+  { id: 'cell-phone', label: 'Cell Phone' },
+  { id: 'computer-supplies', label: 'Computer Supplies/Service' },
+  { id: 'consulting', label: 'Consulting' },
+  { id: 'cost-goods-sold', label: 'Cost of Goods Sold (ONLY ENTER AMOUNTS HERE IF YOU SELL PRODUCTS)' },
+  { id: 'dues-membership', label: 'Dues & Membership Fees' },
+  { id: 'equipment-rental', label: 'Equipment Rental' },
+  { id: 'office-supplies', label: 'Office Supplies' },
+  { id: 'legal-fees', label: 'Legal Fees' },
+  { id: 'meals', label: 'Meals' },
+  { id: 'postage-delivery', label: 'Postage and Delivery' },
+  { id: 'printing-reproduction', label: 'Printing and Reproduction' },
+  { id: 'rent', label: 'Rent (ENTER AMOUNTS HERE IF YOU ARE RENTING AN OFFICE OR STORAGE UNIT OUTSIDE THE HOME)' },
+  { id: 'software-apps', label: 'Software/Apps' },
+  { id: 'sponsorships', label: 'Sponsorships' },
+  { id: 'subcontractors', label: 'Subcontractors/Consultants/Outside Services' },
+  { id: 'travel', label: 'Travel (Airfare, Hotel, etc. DO NOT ENTER MILEAGE)' },
+  { id: 'uniforms', label: 'Uniforms - Purchase & Cleaning' },
+  { id: 'misc-home-office', label: 'Miscellaneous- Home/Office Phone' },
+  { id: 'misc-internet', label: 'Miscellaneous- Internet' },
+  { id: 'misc-utilities', label: 'Miscellaneous- Utilities' },
+  { id: 'misc-other1', label: 'Miscellaneous- Other PLEASE DESCRIBE' },
+  { id: 'misc-other2', label: 'Miscellaneous- Other PLEASE DESCRIBE' }
 ];
 
 interface IncomeRow {
@@ -87,11 +95,11 @@ const IncomeExpenseTracker = () => {
     );
   }, []);
 
-  const addExpenseCategory = useCallback((category: string) => {
+  const addExpenseCategory = useCallback((category: { id: string; label: string }) => {
     const newId = `expense-${Date.now()}`;
     setExpenseRows(prev => [...prev, {
       id: newId,
-      label: category,
+      label: category.label,
       values: new Array(12).fill(0),
       removable: true
     }]);
@@ -120,8 +128,10 @@ const IncomeExpenseTracker = () => {
     }).format(value);
   };
 
+  const usedCategoryLabels = expenseRows.map(row => row.label);
   const filteredCategories = EXPENSE_CATEGORIES.filter(cat => 
-    cat.toLowerCase().includes(searchTerm.toLowerCase())
+    cat.label.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    !usedCategoryLabels.includes(cat.label)
   );
 
   return (
@@ -163,36 +173,40 @@ const IncomeExpenseTracker = () => {
 
 
 
-      <Card className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground overflow-hidden">
-          <CardHeader className="pb-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                
-                <div className="bg-white rounded-lg p-3 shadow-lg">
-                  <img src={businessLogo} alt="ATG Advanced Tax Group" className="h-10 w-auto" loading="eager" />
-                </div>
-                
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight">Advanced Tax Group</h1>
-                  <p className="text-primary-foreground/80 text-sm">Professional Tax Services</p>
-
-                </div>
-                
-              </div>
-              
-              <div className="text-right">
-                <div className="text-4xl font-bold">2025</div>
-                <div className="text-primary-foreground/80 text-sm">Tax Year</div>
-              </div>
-            </div>
-            <div className="mt-6 text-center">
-              <CardTitle className="text-3xl font-bold tracking-wide">
-                SELF-EMPLOYED INCOME & EXPENSE LOG
-              </CardTitle>
-            </div>
+      <div className="bg-white border-b shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate('/')}
+              className="text-primary hover:bg-primary/10 gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Forms
+            </Button>
             
-          </CardHeader>
-        </Card>
+            <div className="flex items-center space-x-4">
+              <div className="bg-primary/5 rounded-lg p-2">
+                <img src={businessLogo} alt="ATG Advanced Tax Group" className="h-8 w-auto" loading="eager" />
+              </div>
+              <div className="text-center">
+                <h1 className="text-lg font-bold text-primary">Advanced Tax Group</h1>
+                <p className="text-sm text-muted-foreground">Professional Tax Services</p>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <div className="text-2xl font-bold text-primary">2025</div>
+              <div className="text-sm text-muted-foreground">Tax Year</div>
+            </div>
+          </div>
+          
+          <div className="mt-4 text-center">
+            <h2 className="text-2xl font-bold text-foreground">SELF-EMPLOYED INCOME & EXPENSE LOG</h2>
+            <p className="text-sm text-muted-foreground mt-1">Track your business income and expenses throughout the year</p>
+          </div>
+        </div>
+      </div>
 
       <div className="max-w-7xl mx-auto p-6 space-y-8">
         {/* Income Section */}
@@ -285,11 +299,11 @@ const IncomeExpenseTracker = () => {
                     <div className="max-h-60 overflow-y-auto">
                       {filteredCategories.map(category => (
                         <button
-                          key={category}
+                          key={category.id}
                           onClick={() => addExpenseCategory(category)}
                           className="w-full text-left p-3 hover:bg-muted text-sm border-b last:border-b-0"
                         >
-                          {category}
+                          {category.label}
                         </button>
                       ))}
                     </div>
