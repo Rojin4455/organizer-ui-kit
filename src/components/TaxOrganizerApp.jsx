@@ -26,7 +26,9 @@ import {
   AccountBalance as TaxIcon,
   Save as SaveIcon,
   Settings as SettingsIcon,
+  TrendingUp as TrendingUpIcon,
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { PersonalTaxOrganizer } from './personal/PersonalTaxOrganizer';
 import { BusinessTaxOrganizer } from './business/BusinessTaxOrganizer';
 import { RentalPropertyOrganizer } from './rental/RentalPropertyOrganizer';
@@ -126,6 +128,7 @@ export const TaxOrganizerApp = ({
   onSave,
   initialData = {},
 }) => {
+  const navigate = useNavigate();
   const [selectedOrganizer, setSelectedOrganizer] = useState(null);
   const [savedData, setSavedData] = useState(initialData);
   const [currentUserId, setCurrentUserId] = useState(null);
@@ -504,6 +507,30 @@ export const TaxOrganizerApp = ({
                     <Chip size="small" label="Rental Income" variant="outlined" />
                     <Chip size="small" label="Expenses" variant="outlined" />
                     <Chip size="small" label="Owner Details" variant="outlined" />
+                  </Box>
+                </CardContent>
+              </CardActionArea>
+            </Card>
+
+            <Card sx={{ width: { xs: '100%', md: '400px' }, height: '100%' }}>
+              <CardActionArea
+                onClick={() => navigate('/income-expense-tracker')}
+                sx={{ height: '100%', p: 3 }}
+              >
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <TrendingUpIcon sx={{ fontSize: 64, color: '#8b5cf6', mb: 2 }} />
+                  <Typography variant="h4" component="h2" gutterBottom>
+                    Income & Expense Tracker
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                    Track your self-employed income and expenses throughout the year 
+                    with automatic calculations and monthly breakdowns.
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
+                    <Chip size="small" label="Monthly Tracking" variant="outlined" />
+                    <Chip size="small" label="Auto Calculations" variant="outlined" />
+                    <Chip size="small" label="Expense Categories" variant="outlined" />
+                    <Chip size="small" label="Net Income" variant="outlined" />
                   </Box>
                 </CardContent>
               </CardActionArea>
