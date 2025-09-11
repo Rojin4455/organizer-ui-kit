@@ -72,6 +72,8 @@ const IncomeExpenseTracker = () => {
 
   const [showExpenseDropdown, setShowExpenseDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [customExpenseLabel, setCustomExpenseLabel] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
 
   const updateIncomeValue = useCallback((rowId: string, monthIndex: number, value: string) => {
     const numValue = parseFloat(value) || 0;
@@ -106,6 +108,21 @@ const IncomeExpenseTracker = () => {
     setShowExpenseDropdown(false);
     setSearchTerm('');
   }, []);
+
+  const addCustomExpenseCategory = useCallback(() => {
+    if (customExpenseLabel.trim()) {
+      const newId = `custom-expense-${Date.now()}`;
+      setExpenseRows(prev => [...prev, {
+        id: newId,
+        label: customExpenseLabel.trim(),
+        values: new Array(12).fill(0),
+        removable: true
+      }]);
+      setCustomExpenseLabel('');
+      setShowCustomInput(false);
+      setShowExpenseDropdown(false);
+    }
+  }, [customExpenseLabel]);
 
   const removeExpenseCategory = useCallback((rowId: string) => {
     setExpenseRows(prev => prev.filter(row => row.id !== rowId));
@@ -306,6 +323,58 @@ const IncomeExpenseTracker = () => {
                           {category.label}
                         </button>
                       ))}
+                      
+                      {/* Custom expense input section */}
+                      <div className="border-t bg-muted/50">
+                        {!showCustomInput ? (
+                          <button
+                            onClick={() => setShowCustomInput(true)}
+                            className="w-full text-left p-3 hover:bg-muted text-sm font-medium text-primary"
+                          >
+                            <Plus className="inline h-4 w-4 mr-2" />
+                            Add Custom Expense Category
+                          </button>
+                        ) : (
+                          <div className="p-3 space-y-2">
+                            <Input
+                              placeholder="Enter custom expense category..."
+                              value={customExpenseLabel}
+                              onChange={(e) => setCustomExpenseLabel(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  addCustomExpenseCategory();
+                                } else if (e.key === 'Escape') {
+                                  setShowCustomInput(false);
+                                  setCustomExpenseLabel('');
+                                }
+                              }}
+                              className="text-sm"
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={addCustomExpenseCategory}
+                                disabled={!customExpenseLabel.trim()}
+                                className="flex-1"
+                              >
+                                Add
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setShowCustomInput(false);
+                                  setCustomExpenseLabel('');
+                                }}
+                                className="flex-1"
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
