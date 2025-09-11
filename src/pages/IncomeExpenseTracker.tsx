@@ -1,9 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, X, Search, ArrowLeft } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Plus, X, ArrowLeft, Check, ChevronsUpDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { businessLogo } from '../assets';
@@ -11,6 +13,11 @@ import { businessLogo } from '../assets';
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+const INCOME_CATEGORIES = [
+  { id: '1099', label: '1099' },
+  { id: 'other-income', label: 'Other Income' }
 ];
 
 const EXPENSE_CATEGORIES = [
@@ -43,83 +50,61 @@ const EXPENSE_CATEGORIES = [
   { id: 'misc-other2', label: 'Miscellaneous- Other PLEASE DESCRIBE' }
 ];
 
-interface IncomeRow {
-  id: string;
-  label: string;
-  values: number[];
-}
-
-interface ExpenseRow {
-  id: string;
-  label: string;
-  values: number[];
-  removable: boolean;
-}
-
 const IncomeExpenseTracker = () => {
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
   
-  const [incomeRows, setIncomeRows] = useState<IncomeRow[]>([
-    { id: '1099', label: '1099', values: new Array(12).fill(0) },
-    { id: 'other-income', label: 'Other Income', values: new Array(12).fill(0) }
-  ]);
+  const [incomeData, setIncomeData] = useState<Record<string, Record<string, number>>>({});
+  const [expenseData, setExpenseData] = useState<Record<string, Record<string, number>>>({});
+  const [selectedExpenseCategories, setSelectedExpenseCategories] = useState<string[]>([]);
 
-  const [expenseRows, setExpenseRows] = useState<ExpenseRow[]>([
-    { id: 'accounting', label: 'Accounting Fees', values: new Array(12).fill(0), removable: true },
-    { id: 'bank-fees', label: 'Bank and Credit Card Fees', values: new Array(12).fill(0), removable: true },
-    { id: 'misc', label: 'Miscellaneous - Other PLEASE DESCRIBE', values: new Array(12).fill(0), removable: true }
-  ]);
-
-  const [showExpenseDropdown, setShowExpenseDropdown] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const updateIncomeValue = useCallback((rowId: string, monthIndex: number, value: string) => {
+  const updateValue = useCallback((data: Record<string, Record<string, number>>, setData: React.Dispatch<React.SetStateAction<Record<string, Record<string, number>>>>, categoryId: string, month: string, value: string) => {
     const numValue = parseFloat(value) || 0;
-    setIncomeRows(prev => 
-      prev.map(row => 
-        row.id === rowId 
-          ? { ...row, values: row.values.map((v, i) => i === monthIndex ? numValue : v) }
-          : row
-      )
-    );
+    setData(prev => ({
+      ...prev,
+      [categoryId]: {
+        ...prev[categoryId],
+        [month]: numValue
+      }
+    }));
   }, []);
 
-  const updateExpenseValue = useCallback((rowId: string, monthIndex: number, value: string) => {
-    const numValue = parseFloat(value) || 0;
-    setExpenseRows(prev => 
-      prev.map(row => 
-        row.id === rowId 
-          ? { ...row, values: row.values.map((v, i) => i === monthIndex ? numValue : v) }
-          : row
-      )
-    );
+  const addExpenseCategory = useCallback((categoryId: string) => {
+    if (!selectedExpenseCategories.includes(categoryId)) {
+      setSelectedExpenseCategories(prev => [...prev, categoryId]);
+    }
+  }, [selectedExpenseCategories]);
+
+  const removeExpenseCategory = useCallback((categoryId: string) => {
+    setSelectedExpenseCategories(prev => prev.filter(id => id !== categoryId));
+    setExpenseData(prev => {
+      const newData = { ...prev };
+      delete newData[categoryId];
+      return newData;
+    });
   }, []);
 
-  const addExpenseCategory = useCallback((category: { id: string; label: string }) => {
-    const newId = `expense-${Date.now()}`;
-    setExpenseRows(prev => [...prev, {
-      id: newId,
-      label: category.label,
-      values: new Array(12).fill(0),
-      removable: true
-    }]);
-    setShowExpenseDropdown(false);
-    setSearchTerm('');
+  const getCategoryTotal = useCallback((data: Record<string, Record<string, number>>, categoryId: string) => {
+    const categoryData = data[categoryId] || {};
+    return Object.values(categoryData).reduce((sum, value) => sum + (value || 0), 0);
   }, []);
 
-  const removeExpenseCategory = useCallback((rowId: string) => {
-    setExpenseRows(prev => prev.filter(row => row.id !== rowId));
+  const getMonthTotal = useCallback((data: Record<string, Record<string, number>>, month: string) => {
+    return Object.values(data).reduce((sum, categoryData) => {
+      return sum + (categoryData[month] || 0);
+    }, 0);
   }, []);
 
-  const calculateTotals = useCallback((rows: { values: number[] }[]) => {
-    return MONTHS.map((_, monthIndex) => 
-      rows.reduce((sum, row) => sum + (row.values[monthIndex] || 0), 0)
-    );
-  }, []);
+  const getMonthTotalForSelected = useCallback((month: string) => {
+    return selectedExpenseCategories.reduce((sum, categoryId) => {
+      return sum + (expenseData[categoryId]?.[month] || 0);
+    }, 0);
+  }, [selectedExpenseCategories, expenseData]);
 
-  const totalIncome = calculateTotals(incomeRows);
-  const totalExpenses = calculateTotals(expenseRows);
-  const netIncome = totalIncome.map((income, index) => income - totalExpenses[index]);
+  // Calculate totals
+  const totalIncome = INCOME_CATEGORIES.reduce((sum, category) => sum + getCategoryTotal(incomeData, category.id), 0);
+  const totalExpenses = selectedExpenseCategories.reduce((sum, categoryId) => sum + getCategoryTotal(expenseData, categoryId), 0);
+  const netIncome = totalIncome - totalExpenses;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -128,51 +113,8 @@ const IncomeExpenseTracker = () => {
     }).format(value);
   };
 
-  const usedCategoryLabels = expenseRows.map(row => row.label);
-  const filteredCategories = EXPENSE_CATEGORIES.filter(cat => 
-    cat.label.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    !usedCategoryLabels.includes(cat.label)
-  );
-
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      {/* <div className="bg-blue-900 text-white p-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/')}
-            className="text-white hover:bg-blue-800"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Forms
-          </Button>
-          
-          <div className="text-center flex-1">
-            <div className="flex items-center justify-center gap-4">
-              <div className="bg-white text-blue-900 px-4 py-2 rounded-lg font-bold">
-                ATG
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">Advanced Tax Group</h1>
-                <p className="text-sm opacity-90">Professional Tax Services</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="text-right">
-            <div className="text-2xl font-bold">2025</div>
-            <div className="text-sm opacity-90">Tax Year</div>
-          </div>
-        </div>
-        
-        <div className="max-w-7xl mx-auto mt-6">
-          <h2 className="text-2xl font-bold text-center">SELF-EMPLOYED INCOME & EXPENSE LOG</h2>
-        </div>
-      </div> */}
-
-
-
       <div className="bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -212,216 +154,238 @@ const IncomeExpenseTracker = () => {
         {/* Income Section */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl font-semibold">Income</CardTitle>
+            <CardTitle className="text-xl text-primary">Income</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 min-w-[200px]"></th>
+              <div className="grid grid-cols-14 gap-2 min-w-[1200px]">
+                {/* Headers */}
+                <div className="font-semibold text-sm"></div>
+                {MONTHS.map(month => (
+                  <div key={month} className="font-semibold text-sm text-center p-2 bg-accent rounded">
+                    {month}
+                  </div>
+                ))}
+                <div className="font-semibold text-sm text-center p-2 bg-primary text-primary-foreground rounded">
+                  TOTAL
+                </div>
+
+                {/* Income Categories */}
+                {INCOME_CATEGORIES.map(category => (
+                  <div key={category.id} className="contents">
+                    <Label className="text-sm font-medium p-2 flex items-center">
+                      {category.label}
+                    </Label>
                     {MONTHS.map(month => (
-                      <th key={month} className="text-center p-3 min-w-[100px] text-sm font-medium bg-muted rounded-sm">
-                        {month}
-                      </th>
+                      <Input
+                        key={`${category.id}-${month}`}
+                        type="number"
+                        step="0.01"
+                        className="text-center"
+                        placeholder="0.00"
+                        value={incomeData[category.id]?.[month] || ''}
+                        onChange={(e) => updateValue(incomeData, setIncomeData, category.id, month, e.target.value)}
+                      />
                     ))}
-                    <th className="text-center p-3 min-w-[120px] bg-blue-900 text-white rounded-sm font-bold">
-                      TOTAL
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {incomeRows.map(row => (
-                    <tr key={row.id} className="border-b">
-                      <td className="p-3 font-medium">{row.label}</td>
-                      {row.values.map((value, monthIndex) => (
-                        <td key={monthIndex} className="p-2">
-                          <Input
-                            type="number"
-                            value={value || ''}
-                            onChange={(e) => updateIncomeValue(row.id, monthIndex, e.target.value)}
-                            className="w-full text-center"
-                            placeholder="0.00"
-                          />
-                        </td>
-                      ))}
-                      <td className="p-3 text-center font-semibold">
-                        {formatCurrency(row.values.reduce((sum, val) => sum + val, 0))}
-                      </td>
-                    </tr>
+                    <div className="p-2 bg-muted rounded text-center font-semibold">
+                      {formatCurrency(getCategoryTotal(incomeData, category.id))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Total Income Row */}
+                <div className="contents">
+                  <Label className="text-sm font-bold p-2 flex items-center bg-secondary rounded">
+                    Total Income
+                  </Label>
+                  {MONTHS.map(month => (
+                    <div key={`total-income-${month}`} className="p-2 bg-secondary rounded text-center font-semibold">
+                      {formatCurrency(getMonthTotal(incomeData, month))}
+                    </div>
                   ))}
-                  <tr className="bg-muted font-bold">
-                    <td className="p-3">Total Income</td>
-                    {totalIncome.map((total, index) => (
-                      <td key={index} className="p-3 text-center">
-                        {formatCurrency(total)}
-                      </td>
-                    ))}
-                    <td className="p-3 text-center bg-blue-900 text-white rounded-sm">
-                      {formatCurrency(totalIncome.reduce((sum, val) => sum + val, 0))}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                  <div className="p-2 bg-primary text-primary-foreground rounded text-center font-bold">
+                    {formatCurrency(totalIncome)}
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Expenses Section */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold flex items-center justify-between">
-              Expenses
-              <div className="relative">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="text-xl text-primary">Expenses</CardTitle>
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  size="sm"
-                  onClick={() => setShowExpenseDropdown(!showExpenseDropdown)}
-                  className="gap-2"
+                  role="combobox"
+                  aria-expanded={open}
+                  className="w-[300px] justify-between"
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="mr-2 h-4 w-4" />
                   Add expense category...
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
-                
-                {showExpenseDropdown && (
-                  <div className="absolute top-full mt-2 right-0 w-80 bg-white border rounded-md shadow-lg z-50">
-                    <div className="p-3 border-b">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Search expense categories..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
-                    <div className="max-h-60 overflow-y-auto">
-                      {filteredCategories.map(category => (
-                        <button
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0">
+                <Command>
+                  <CommandInput placeholder="Search expense categories..." />
+                  <CommandList>
+                    <CommandEmpty>No expense category found.</CommandEmpty>
+                    <CommandGroup>
+                      {EXPENSE_CATEGORIES
+                        .filter(category => !selectedExpenseCategories.includes(category.id))
+                        .map((category) => (
+                        <CommandItem
                           key={category.id}
-                          onClick={() => addExpenseCategory(category)}
-                          className="w-full text-left p-3 hover:bg-muted text-sm border-b last:border-b-0"
+                          value={category.label}
+                          onSelect={() => {
+                            addExpenseCategory(category.id);
+                            setOpen(false);
+                          }}
                         >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              "opacity-0"
+                            )}
+                          />
                           {category.label}
-                        </button>
+                        </CommandItem>
                       ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardTitle>
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 min-w-[200px]"></th>
-                    {MONTHS.map(month => (
-                      <th key={month} className="text-center p-3 min-w-[100px] text-sm font-medium bg-muted rounded-sm">
-                        {month}
-                      </th>
-                    ))}
-                    <th className="text-center p-3 min-w-[120px] bg-blue-900 text-white rounded-sm font-bold">
-                      TOTAL
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {expenseRows.map(row => (
-                    <tr key={row.id} className="border-b">
-                      <td className="p-3 font-medium">
-                        <div className="flex items-center justify-between">
-                          <span>{row.label}</span>
-                          {row.removable && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeExpenseCategory(row.id)}
-                              className="h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                      {row.values.map((value, monthIndex) => (
-                        <td key={monthIndex} className="p-2">
-                          <Input
-                            type="number"
-                            value={value || ''}
-                            onChange={(e) => updateExpenseValue(row.id, monthIndex, e.target.value)}
-                            className="w-full text-center"
-                            placeholder="0.00"
-                          />
-                        </td>
-                      ))}
-                      <td className="p-3 text-center font-semibold">
-                        {formatCurrency(row.values.reduce((sum, val) => sum + val, 0))}
-                      </td>
-                    </tr>
+            {selectedExpenseCategories.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No expense categories selected. Use the "Add expense category" button above to get started.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <div className="grid grid-cols-14 gap-2 min-w-[1200px]">
+                  {/* Headers */}
+                  <div className="font-semibold text-sm"></div>
+                  {MONTHS.map(month => (
+                    <div key={month} className="font-semibold text-sm text-center p-2 bg-accent rounded">
+                      {month}
+                    </div>
                   ))}
-                  <tr className="bg-muted font-bold">
-                    <td className="p-3">Total Expenses</td>
-                    {totalExpenses.map((total, index) => (
-                      <td key={index} className="p-3 text-center">
-                        {formatCurrency(total)}
-                      </td>
+                  <div className="font-semibold text-sm text-center p-2 bg-primary text-primary-foreground rounded">
+                    TOTAL
+                  </div>
+
+                  {/* Selected Expense Categories */}
+                  {selectedExpenseCategories.map(categoryId => {
+                    const category = EXPENSE_CATEGORIES.find(cat => cat.id === categoryId);
+                    if (!category) return null;
+                    
+                    return (
+                      <div key={category.id} className="contents">
+                        <div className="text-xs font-medium p-2 flex items-center justify-between bg-muted rounded">
+                          <span className="flex-1">{category.label}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                            onClick={() => removeExpenseCategory(category.id)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        {MONTHS.map(month => (
+                          <Input
+                            key={`${category.id}-${month}`}
+                            type="number"
+                            step="0.01"
+                            className="text-center"
+                            placeholder="0.00"
+                            value={expenseData[category.id]?.[month] || ''}
+                            onChange={(e) => updateValue(expenseData, setExpenseData, category.id, month, e.target.value)}
+                          />
+                        ))}
+                        <div className="p-2 bg-muted rounded text-center font-semibold">
+                          {formatCurrency(getCategoryTotal(expenseData, category.id))}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Total Expenses Row */}
+                  <div className="contents">
+                    <Label className="text-sm font-bold p-2 flex items-center bg-secondary rounded">
+                      Total Expenses
+                    </Label>
+                    {MONTHS.map(month => (
+                      <div key={`total-expenses-${month}`} className="p-2 bg-secondary rounded text-center font-semibold">
+                        {formatCurrency(getMonthTotalForSelected(month))}
+                      </div>
                     ))}
-                    <td className="p-3 text-center bg-blue-900 text-white rounded-sm">
-                      {formatCurrency(totalExpenses.reduce((sum, val) => sum + val, 0))}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                    <div className="p-2 bg-primary text-primary-foreground rounded text-center font-bold">
+                      {formatCurrency(totalExpenses)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Net Income Section */}
+        {/* Net Income Calculation Row */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl font-semibold">Net Income (Income - Expenses)</CardTitle>
+            <CardTitle className="text-xl text-primary">Net Income (Income - Expenses)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 min-w-[200px]"></th>
-                    {MONTHS.map(month => (
-                      <th key={month} className="text-center p-3 min-w-[100px] text-sm font-medium bg-muted rounded-sm">
-                        {month}
-                      </th>
-                    ))}
-                    <th className="text-center p-3 min-w-[120px] bg-blue-900 text-white rounded-sm font-bold">
-                      TOTAL
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="p-3 font-medium">Net Income (Income - Expenses)</td>
-                    {netIncome.map((net, index) => (
-                      <td key={index} className={cn(
-                        "p-3 text-center font-bold rounded-sm",
-                        net >= 0 ? "bg-green-500 text-white" : "bg-red-500 text-white"
-                      )}>
-                        {formatCurrency(net)}
-                      </td>
-                    ))}
-                    <td className={cn(
-                      "p-3 text-center font-bold rounded-sm",
-                      netIncome.reduce((sum, val) => sum + val, 0) >= 0 
-                        ? "bg-green-500 text-white" 
-                        : "bg-red-500 text-white"
-                    )}>
-                      {formatCurrency(netIncome.reduce((sum, val) => sum + val, 0))}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div className="grid grid-cols-14 gap-2 min-w-[1200px]">
+                {/* Headers */}
+                <div className="font-semibold text-sm"></div>
+                {MONTHS.map(month => (
+                  <div key={month} className="font-semibold text-sm text-center p-2 bg-accent rounded">
+                    {month}
+                  </div>
+                ))}
+                <div className="font-semibold text-sm text-center p-2 bg-primary text-primary-foreground rounded">
+                  TOTAL
+                </div>
+
+                {/* Net Income Row */}
+                <div className="contents">
+                  <Label className="text-sm font-bold p-2 flex items-center bg-success/10 rounded">
+                    Net Income (Income - Expenses)
+                  </Label>
+                  {MONTHS.map(month => {
+                    const monthIncome = getMonthTotal(incomeData, month);
+                    const monthExpenses = getMonthTotalForSelected(month);
+                    const monthlyNet = monthIncome - monthExpenses;
+                    return (
+                      <div 
+                        key={`net-income-${month}`} 
+                        className={`p-2 rounded text-center font-bold ${
+                          monthlyNet >= 0 
+                            ? 'bg-success text-success-foreground' 
+                            : 'bg-destructive text-destructive-foreground'
+                        }`}
+                      >
+                        {formatCurrency(monthlyNet)}
+                      </div>
+                    );
+                  })}
+                  <div className={`p-2 rounded text-center font-bold ${
+                    netIncome >= 0 
+                      ? 'bg-success text-success-foreground' 
+                      : 'bg-destructive text-destructive-foreground'
+                  }`}>
+                    {formatCurrency(netIncome)}
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
