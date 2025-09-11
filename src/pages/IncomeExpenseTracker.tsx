@@ -91,7 +91,8 @@ const IncomeExpenseTracker = () => {
     setLoading(true);
     try {
       const response = await apiService.getTrackerData();
-      if (response.income && response.expenses) {
+      if (response.income && response.expenses && 
+          (response.income.length > 0 || response.expenses.length > 0)) {
         setIncomeRows(response.income);
         setExpenseRows(response.expenses);
         toast({
