@@ -83,9 +83,9 @@ const IncomeExpenseTracker = () => {
   const [deleting, setDeleting] = useState(false);
 
   // Load data on component mount
-  useEffect(() => {
-    loadTrackerData();
-  }, []);
+  // useEffect(() => {
+  //   loadTrackerData();
+  // }, []);
 
   const loadTrackerData = async () => {
     setLoading(true);
@@ -367,126 +367,113 @@ const IncomeExpenseTracker = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      {/* <div className="bg-blue-900 text-white p-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/')}
-            className="text-white hover:bg-blue-800"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Forms
-          </Button>
-          
-          <div className="text-center flex-1">
-            <div className="flex items-center justify-center gap-4">
-              <div className="bg-white text-blue-900 px-4 py-2 rounded-lg font-bold">
-                ATG
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">Advanced Tax Group</h1>
-                <p className="text-sm opacity-90">Professional Tax Services</p>
-              </div>
-            </div>
+    
+
+
+
+<div className="bg-white border-b shadow-sm">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    {/* Responsive grid: stack on mobile, 3-cols on md+ */}
+    <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-4">
+      
+      {/* Left: Back Button */}
+      <div className="flex justify-center md:justify-start">
+        <Button 
+          variant="ghost" 
+          onClick={() => navigate('/')}
+          className="text-primary hover:bg-primary gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Forms
+        </Button>
+      </div>
+
+      {/* Center: Logo & Company Info */}
+      <div className="flex flex-col items-center text-center">
+        <div className="flex items-center gap-3">
+          <div className="bg-primary/5 rounded-lg p-2 flex-shrink-0">
+            <img src={businessLogo} alt="ATG Advanced Tax Group" className="h-8 w-auto" />
           </div>
-
-          <div className="text-right">
-            <div className="text-2xl font-bold">2025</div>
-            <div className="text-sm opacity-90">Tax Year</div>
-          </div>
-        </div>
-        
-        <div className="max-w-7xl mx-auto mt-6">
-          <h2 className="text-2xl font-bold text-center">SELF-EMPLOYED INCOME & EXPENSE LOG</h2>
-        </div>
-      </div> */}
-
-
-
-        <div className="bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/')}
-              className="text-primary hover:bg-primary/10 gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Forms
-            </Button>
-            
-            <div className="flex items-center space-x-4">
-              <div className="bg-primary/5 rounded-lg p-2">
-                <img src={businessLogo} alt="ATG Advanced Tax Group" className="h-8 w-auto" loading="eager" />
-              </div>
-              <div className="text-center">
-                <h1 className="text-lg font-bold text-primary">Advanced Tax Group</h1>
-                <p className="text-sm text-muted-foreground">Professional Tax Services</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <Button 
-                onClick={downloadPDF}
-                variant="outline"
-                className="gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Download PDF
-              </Button>
-              
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button 
-                    variant="destructive"
-                    disabled={deleting}
-                    className="gap-2"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    {deleting ? 'Resetting...' : 'Reset All Data'}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure you want to reset all data?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete all your income and expense data and reset the tracker to its default state.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={resetTrackerData} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                      Yes, reset all data
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              
-              <Button 
-                onClick={saveTrackerData}
-                disabled={saving}
-                className="gap-2"
-              >
-                <Save className="h-4 w-4" />
-                {saving ? 'Saving...' : 'Save Data'}
-              </Button>
-              
-              <div className="text-right">
-                <div className="text-2xl font-bold text-primary">2025</div>
-                <div className="text-sm text-muted-foreground">Tax Year</div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mt-4 text-center">
-            <h2 className="text-2xl font-bold text-foreground">SELF-EMPLOYED INCOME & EXPENSE LOG</h2>
-            <p className="text-sm text-muted-foreground mt-1">Track your business income and expenses throughout the year</p>
+          <div>
+            <h1 className="text-lg font-bold text-primary">Advanced Tax Group</h1>
+            <p className="text-sm text-muted-foreground">Professional Tax Services</p>
           </div>
         </div>
       </div>
 
+      {/* Right: Tax Year */}
+      <div className="flex justify-center md:justify-end text-center md:text-right">
+        <div>
+          <div className="text-2xl font-bold text-primary">2025</div>
+          <div className="text-sm text-muted-foreground">Tax Year</div>
+        </div>
+      </div>
+    </div>
+
+    {/* Title */}
+    <div className="mt-4 text-center">
+  <h2 className="text-2xl font-bold text-foreground">
+    SELF-EMPLOYED INCOME & EXPENSE LOG
+  </h2>
+  <p className="text-sm text-muted-foreground mt-1">
+    Track your business income and expenses throughout the year
+  </p>
+</div>
+
+{/* Action Buttons */}
+{/* <div className="mt-6 flex flex-col sm:flex-row justify-center sm:justify-end gap-3">
+  <Button 
+    onClick={downloadPDF}
+    variant="outline"
+    className="gap-2"
+  >
+    <Download className="h-4 w-4" />
+    Download PDF
+  </Button>
+
+  <AlertDialog>
+    <AlertDialogTrigger asChild>
+      <Button 
+        variant="destructive"
+        disabled={deleting}
+        className="gap-2"
+      >
+        <Trash2 className="h-4 w-4" />
+        {deleting ? 'Resetting...' : 'Reset All Data'}
+      </Button>
+    </AlertDialogTrigger>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>
+          Are you sure you want to reset all data?
+        </AlertDialogTitle>
+        <AlertDialogDescription>
+          This action cannot be undone. This will permanently delete all your income and expense data and reset the tracker to its default state.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction 
+          onClick={resetTrackerData} 
+          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+        >
+          Yes, reset all data
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+
+  <Button 
+    onClick={saveTrackerData}
+    disabled={saving}
+    className="gap-2"
+  >
+    <Save className="h-4 w-4" />
+    {saving ? 'Saving...' : 'Save Data'}
+  </Button>
+</div> */}
+  </div>
+    
       <div className="max-w-7xl mx-auto p-6 space-y-8">
         {/* Income Section */}
         <Card>
