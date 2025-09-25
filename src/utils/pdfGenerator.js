@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import { businessLogo } from '../assets';
 
 const PAGE_HEIGHT = 297; // A4 height in mm
 const PAGE_WIDTH = 210; // A4 width in mm
@@ -860,11 +861,18 @@ export const generatePDFFromFormData = (formData, formInfo) => {
   doc.setFillColor(240, 240, 240);
   doc.rect(0, 0, PAGE_WIDTH, 25, 'F');
   
+  // Add logo
+  try {
+    doc.addImage(businessLogo, 'PNG', MARGIN, 5, 25, 15); // x, y, width, height
+  } catch (error) {
+    console.warn('Could not add logo to PDF:', error);
+  }
+  
   doc.setFontSize(20);
   doc.setFont(undefined, 'bold');
   doc.setTextColor(0, 0, 0);
   const formType = formInfo?.form_type || 'Tax';
-  doc.text(`${formType.charAt(0).toUpperCase() + formType.slice(1)} Tax Organizer`, MARGIN, 15);
+  doc.text(`${formType.charAt(0).toUpperCase() + formType.slice(1)} Tax Organizer`, MARGIN + 30, 15);
 
   // Add form metadata
   yPosition = 35;
