@@ -177,6 +177,13 @@ const IncomeExpenseTracker = () => {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     
+    // Add logo
+    try {
+      doc.addImage(businessLogo, 'PNG', 10, 5, 30, 20); // x, y, width, height
+    } catch (error) {
+      console.warn('Could not add logo to PDF:', error);
+    }
+    
     // Header
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
