@@ -32,6 +32,6 @@ export const generateViewLink = (formId, formType) => {
 };
 
 export const generatePDFLink = (userId, formType) => {
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://organizers.advancedtaxgroup.com/api';
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://tools.advancedtaxgroup.com/api';
   return `${apiBaseUrl}/${formType}-tax/${userId}/pdf/`;
 };

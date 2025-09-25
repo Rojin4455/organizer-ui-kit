@@ -1,4 +1,4 @@
 // Main logo export for the application
-import businessLogo from './business-logo.png';
+import businessLogo from './New-log.png';
 
 export { businessLogo };

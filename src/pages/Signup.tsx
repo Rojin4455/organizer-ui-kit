@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { signupUser, clearError } from '../store/authSlice';
-import businessLogo from '../assets/business-logo.png';
+import businessLogo from '../assets/New-log.png';
 
 const Signup = () => {
   const [formData, setFormData] = useState({

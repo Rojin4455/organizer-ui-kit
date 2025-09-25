@@ -83,9 +83,9 @@ const IncomeExpenseTracker = () => {
   const [deleting, setDeleting] = useState(false);
 
   // Load data on component mount
-  // useEffect(() => {
-  //   loadTrackerData();
-  // }, []);
+  useEffect(() => {
+    loadTrackerData();
+  }, []);
 
   const loadTrackerData = async () => {
     setLoading(true);
@@ -372,7 +372,7 @@ const IncomeExpenseTracker = () => {
 
 
 <div className="bg-white border-b shadow-sm">
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+  <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
     {/* Responsive grid: stack on mobile, 3-cols on md+ */}
     <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-4">
       
@@ -421,7 +421,7 @@ const IncomeExpenseTracker = () => {
 </div>
 
 {/* Action Buttons */}
-{/* <div className="mt-6 flex flex-col sm:flex-row justify-center sm:justify-end gap-3">
+<div className="mt-6 flex flex-col sm:flex-row justify-center sm:justify-end gap-3">
   <Button 
     onClick={downloadPDF}
     variant="outline"
@@ -471,10 +471,10 @@ const IncomeExpenseTracker = () => {
     <Save className="h-4 w-4" />
     {saving ? 'Saving...' : 'Save Data'}
   </Button>
-</div> */}
+</div>
   </div>
     
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
+      <div className="max-w-8xl mx-auto p-6 space-y-8">
         {/* Income Section */}
         <Card>
           <CardHeader>

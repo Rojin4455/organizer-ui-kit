@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { loginUser, clearError } from '../store/authSlice';
-import businessLogo from '../assets/business-logo.png';
+import businessLogo from '../assets/New-log.png';
 import { Checkbox } from '@/components/ui/checkbox';
 
 

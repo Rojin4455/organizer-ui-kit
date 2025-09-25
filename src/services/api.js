@@ -1,5 +1,5 @@
 // API service for Django backend integration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://organizers.advancedtaxgroup.com/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://tools.advancedtaxgroup.com/api';
 
 class ApiService {
   constructor() {
