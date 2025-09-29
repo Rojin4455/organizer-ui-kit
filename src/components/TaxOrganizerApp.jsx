@@ -36,7 +36,18 @@ import { FormsListView } from './FormsListView';
 import { getUrlParams, setUrlParams, generateFormLink } from '../utils/urlParams';
 import { apiService } from '../services/api';
 import { businessLogo } from '../assets';
-import UserHeader from './UserHeader';
+import { useSelector, useDispatch } from 'react-redux';
+import { logout } from '../store/authSlice';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { LogOut, User } from 'lucide-react';
 
 
 const theme = createTheme({
@@ -129,6 +140,8 @@ export const TaxOrganizerApp = ({
   initialData = {},
 }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
   const [selectedOrganizer, setSelectedOrganizer] = useState(null);
   const [savedData, setSavedData] = useState(initialData);
   const [currentUserId, setCurrentUserId] = useState(null);
@@ -137,6 +150,14 @@ export const TaxOrganizerApp = ({
   const [formId, setFormId] = useState(null);
   const [showFormsList, setShowFormsList] = useState(false);
   const [userToken, setUserToken] = useState(null); // You'll need to get this from your auth system
+
+  const handleLogout = () => {
+    dispatch(logout());
+  };
+
+  const getInitials = (username) => {
+    return username ? username.slice(0, 2).toUpperCase() : 'U';
+  };
 
   // Check URL parameters on component mount
   useEffect(() => {
@@ -362,7 +383,6 @@ export const TaxOrganizerApp = ({
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ flexGrow: 1 }}>
-        <UserHeader />
         <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
           <Toolbar>
             <Box sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>
@@ -379,35 +399,42 @@ export const TaxOrganizerApp = ({
               variant="outlined"
               startIcon={<SaveIcon />}
               onClick={() => setShowFormsList(true)}
-              sx={{ mr: 1 }}
+              sx={{ mr: 2 }}
             >
               My Forms
             </Button>
-            {/* <Button
-              variant="outlined"
-              startIcon={<SaveIcon />}
-              onClick={() => {
-                const data = localStorage.getItem('taxOrganizerData');
-                if (data) {
-                  const blob = new Blob([data], { type: 'application/json' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = 'tax-organizer-data.json';
-                  a.click();
-                }
-              }}
-              sx={{ mr: 1 }}
-            >
-              Export Data
-            </Button> */}
-            <IconButton
-              color="inherit"
-              onClick={handleReset}
-              sx={{ color: '#64748b' }}
-            >
-              <SettingsIcon />
-            </IconButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <IconButton
+                  color="inherit"
+                  sx={{ color: '#64748b' }}
+                >
+                  <SettingsIcon />
+                </IconButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                        {getInitials(user?.username)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{user?.username || 'User'}</span>
+                      {user?.email && (
+                        <span className="text-xs text-muted-foreground">{user.email}</span>
+                      )}
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </Toolbar>
         </AppBar>
 
