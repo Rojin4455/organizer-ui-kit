@@ -182,7 +182,7 @@ const IncomeExpenseTracker = () => {
     
     // Enhanced currency formatter for better readability
     const formatCurrencyCompact = (amount: number): string => {
-      if (amount === 0) return '$0.00';
+      if (amount === 0) return '$0';
       
       const absAmount = Math.abs(amount);
       const sign = amount < 0 ? '-' : '';
@@ -195,40 +195,46 @@ const IncomeExpenseTracker = () => {
       } else if (absAmount >= 10000) {
         return `${sign}$${(absAmount / 1000).toFixed(0)}K`;
       } else {
-        return `${sign}$${absAmount.toLocaleString('en-US', { 
-          minimumFractionDigits: 2, 
+        // Format with no decimals if amount is a whole number
+        const formatted = absAmount.toLocaleString('en-US', { 
+          minimumFractionDigits: 0, 
           maximumFractionDigits: 2 
-        })}`;
+        });
+        // Remove .00 if present
+        const cleanFormatted = formatted.replace(/\.00$/, '');
+        return `${sign}$${cleanFormatted}`;
       }
     };
     
-    // Function to add header to each page
+    // Function to add header to first page only
     const addPageHeader = () => {
-      // Add centered logo
-      try {
-        const logoWidth = 25;
-        const logoHeight = 18;
-        const logoX = (pageWidth - logoWidth) / 2;
-        doc.addImage(businessLogo, 'PNG', logoX, 8, logoWidth, logoHeight);
-      } catch (error) {
-        console.warn('Could not add logo to PDF:', error);
+      if (currentPage === 1) {
+        // Add centered logo only on first page
+        try {
+          const logoWidth = 25;
+          const logoHeight = 18;
+          const logoX = (pageWidth - logoWidth) / 2;
+          doc.addImage(businessLogo, 'PNG', logoX, 8, logoWidth, logoHeight);
+        } catch (error) {
+          console.warn('Could not add logo to PDF:', error);
+        }
+        
+        // Header with better spacing
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(40, 40, 40);
+        doc.text('SELF-EMPLOYED INCOME & EXPENSE LOG', pageWidth / 2, 35, { align: 'center' });
+        
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(80, 80, 80);
+        doc.text('Advanced Tax Group - 2025 Tax Year', pageWidth / 2, 45, { align: 'center' });
+        
+        // Add decorative line
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.5);
+        doc.line(20, 50, pageWidth - 20, 50);
       }
-      
-      // Header with better spacing
-      doc.setFontSize(22);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(40, 40, 40);
-      doc.text('SELF-EMPLOYED INCOME & EXPENSE LOG', pageWidth / 2, 35, { align: 'center' });
-      
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(80, 80, 80);
-      doc.text('Advanced Tax Group - 2025 Tax Year', pageWidth / 2, 45, { align: 'center' });
-      
-      // Add decorative line
-      doc.setDrawColor(200, 200, 200);
-      doc.setLineWidth(0.5);
-      doc.line(20, 50, pageWidth - 20, 50);
       
       // Add page number if not first page
       if (currentPage > 1) {
@@ -244,7 +250,7 @@ const IncomeExpenseTracker = () => {
         doc.addPage();
         currentPage++;
         addPageHeader();
-        return 60; // Reset yPos to start position
+        return currentPage === 1 ? 60 : 20; // Different start position for first vs other pages
       }
       return yPos;
     };
