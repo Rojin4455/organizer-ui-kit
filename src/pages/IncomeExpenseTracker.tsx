@@ -176,39 +176,93 @@ const IncomeExpenseTracker = () => {
     const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    const bottomMargin = 20;
+    let currentPage = 1;
     
-    // Add centered logo
-    try {
-      const logoWidth = 25;
-      const logoHeight = 18;
-      const logoX = (pageWidth - logoWidth) / 2;
-      doc.addImage(businessLogo, 'PNG', logoX, 8, logoWidth, logoHeight);
-    } catch (error) {
-      console.warn('Could not add logo to PDF:', error);
-    }
+    // Enhanced currency formatter for better readability
+    const formatCurrencyCompact = (amount: number): string => {
+      if (amount === 0) return '$0.00';
+      
+      const absAmount = Math.abs(amount);
+      const sign = amount < 0 ? '-' : '';
+      
+      // For very large numbers, use compact notation
+      if (absAmount >= 1000000000) {
+        return `${sign}$${(absAmount / 1000000000).toFixed(1)}B`;
+      } else if (absAmount >= 1000000) {
+        return `${sign}$${(absAmount / 1000000).toFixed(1)}M`;
+      } else if (absAmount >= 10000) {
+        return `${sign}$${(absAmount / 1000).toFixed(0)}K`;
+      } else {
+        return `${sign}$${absAmount.toLocaleString('en-US', { 
+          minimumFractionDigits: 2, 
+          maximumFractionDigits: 2 
+        })}`;
+      }
+    };
     
-    // Header with better spacing
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(40, 40, 40);
-    doc.text('SELF-EMPLOYED INCOME & EXPENSE LOG', pageWidth / 2, 35, { align: 'center' });
+    // Function to add header to each page
+    const addPageHeader = () => {
+      // Add centered logo
+      try {
+        const logoWidth = 25;
+        const logoHeight = 18;
+        const logoX = (pageWidth - logoWidth) / 2;
+        doc.addImage(businessLogo, 'PNG', logoX, 8, logoWidth, logoHeight);
+      } catch (error) {
+        console.warn('Could not add logo to PDF:', error);
+      }
+      
+      // Header with better spacing
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(40, 40, 40);
+      doc.text('SELF-EMPLOYED INCOME & EXPENSE LOG', pageWidth / 2, 35, { align: 'center' });
+      
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(80, 80, 80);
+      doc.text('Advanced Tax Group - 2025 Tax Year', pageWidth / 2, 45, { align: 'center' });
+      
+      // Add decorative line
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.5);
+      doc.line(20, 50, pageWidth - 20, 50);
+      
+      // Add page number if not first page
+      if (currentPage > 1) {
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Page ${currentPage}`, pageWidth - 30, pageHeight - 10);
+      }
+    };
     
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(80, 80, 80);
-    doc.text('Advanced Tax Group - 2025 Tax Year', pageWidth / 2, 45, { align: 'center' });
+    // Function to check if we need a new page
+    const checkNewPage = (requiredHeight: number): number => {
+      if (yPos + requiredHeight > pageHeight - bottomMargin) {
+        doc.addPage();
+        currentPage++;
+        addPageHeader();
+        return 60; // Reset yPos to start position
+      }
+      return yPos;
+    };
     
-    // Add decorative line
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.5);
-    doc.line(20, 50, pageWidth - 20, 50);
+    // Dynamic column width calculation
+    const availableWidth = pageWidth - (2 * margin);
+    const labelWidth = Math.min(80, availableWidth * 0.25); // 25% for labels, max 80mm
+    const totalColWidth = Math.min(25, availableWidth * 0.08); // 8% for total column, max 25mm
+    const monthlyColsWidth = availableWidth - labelWidth - totalColWidth;
+    const colWidth = monthlyColsWidth / 12; // Distribute remaining width among 12 months
+    const startX = margin;
     
+    // Add initial header
+    addPageHeader();
     let yPos = 60;
-    const colWidth = 20; // Increased from 18 for better visibility
-    const labelWidth = 60; // Increased from 50 for longer labels
-    const startX = 15;
     
-    // Income Section with improved styling
+    // Income Section with pagination support
+    yPos = checkNewPage(25);
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(40, 40, 40);
@@ -221,32 +275,34 @@ const IncomeExpenseTracker = () => {
     yPos += 12;
     
     // Income table headers with better formatting
-    doc.setFontSize(10);
+    yPos = checkNewPage(15);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(60, 60, 60);
     doc.text('Description', startX, yPos);
     MONTHS.forEach((month, index) => {
-      doc.text(month.substring(0, 3), startX + labelWidth + (index * colWidth), yPos, { align: 'center' });
+      const monthX = startX + labelWidth + (index * colWidth) + (colWidth / 2);
+      doc.text(month.substring(0, 3), monthX, yPos, { align: 'center' });
     });
-    doc.text('TOTAL', startX + labelWidth + (12 * colWidth), yPos, { align: 'center' });
+    const incomeTotalHeaderX = startX + labelWidth + (12 * colWidth) + (totalColWidth / 2);
+    doc.text('TOTAL', incomeTotalHeaderX, yPos, { align: 'center' });
     
     // Add header underline
     doc.setDrawColor(150, 150, 150);
     doc.setLineWidth(0.2);
-    doc.line(startX, yPos + 2, pageWidth - 15, yPos + 2);
+    doc.line(startX, yPos + 2, pageWidth - margin, yPos + 2);
     yPos += 8;
     
-    // Income rows with better formatting
+    // Income rows with better formatting and pagination
     incomeRows.forEach((row, rowIndex) => {
+      yPos = checkNewPage(12);
+      
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(40, 40, 40);
+      doc.setFontSize(8);
       
-      // Ensure full label is visible - no truncation
+      // Handle long labels by wrapping text
       const maxLabelWidth = labelWidth - 5;
-      const fontSize = 9;
-      doc.setFontSize(fontSize);
-      
-      // Split long labels into multiple lines if needed
       const words = row.label.split(' ');
       let line = '';
       let lineY = yPos;
@@ -265,51 +321,53 @@ const IncomeExpenseTracker = () => {
       }
       doc.text(line.trim(), startX, lineY);
       
-      // Values with right alignment and better formatting
-      doc.setFontSize(9);
+      // Values with right alignment and compact formatting
+      doc.setFontSize(8);
       row.values.forEach((value, index) => {
-        const formattedValue = formatCurrency(value);
+        const formattedValue = formatCurrencyCompact(value);
         const cellX = startX + labelWidth + (index * colWidth) + colWidth - 2;
         doc.text(formattedValue, cellX, yPos, { align: 'right' });
       });
       
-      // Row total
+      // Row total with better positioning
       const rowTotal = row.values.reduce((sum, val) => sum + val, 0);
-      const incomeTotalX = startX + labelWidth + (12 * colWidth) + colWidth - 2;
+      const totalX = startX + labelWidth + (12 * colWidth) + totalColWidth - 2;
       doc.setFont('helvetica', 'bold');
-      doc.text(formatCurrency(rowTotal), incomeTotalX, yPos, { align: 'right' });
+      doc.text(formatCurrencyCompact(rowTotal), totalX, yPos, { align: 'right' });
       
       // Add subtle row separator
       if (rowIndex < incomeRows.length - 1) {
         doc.setDrawColor(230, 230, 230);
         doc.setLineWidth(0.1);
-        doc.line(startX, yPos + 3, pageWidth - 15, yPos + 3);
+        doc.line(startX, yPos + 3, pageWidth - margin, yPos + 3);
       }
       
-      yPos += 8;
+      yPos += Math.max(8, lineY - yPos + 4);
     });
     
     // Income totals with highlighting
+    yPos = checkNewPage(10);
     doc.setDrawColor(100, 100, 100);
     doc.setLineWidth(0.3);
-    doc.line(startX, yPos, pageWidth - 15, yPos);
+    doc.line(startX, yPos, pageWidth - margin, yPos);
     yPos += 5;
     
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setTextColor(40, 40, 40);
     doc.text('Total Income', startX, yPos);
     
     totalIncome.forEach((total, index) => {
       const cellX = startX + labelWidth + (index * colWidth) + colWidth - 2;
-      doc.text(formatCurrency(total), cellX, yPos, { align: 'right' });
+      doc.text(formatCurrencyCompact(total), cellX, yPos, { align: 'right' });
     });
     const grandTotalIncome = totalIncome.reduce((sum, val) => sum + val, 0);
-    const incomeFinalTotalX = startX + labelWidth + (12 * colWidth) + colWidth - 2;
-    doc.text(formatCurrency(grandTotalIncome), incomeFinalTotalX, yPos, { align: 'right' });
+    const incomeTotalX = startX + labelWidth + (12 * colWidth) + totalColWidth - 2;
+    doc.text(formatCurrencyCompact(grandTotalIncome), incomeTotalX, yPos, { align: 'right' });
     yPos += 20;
     
-    // Expenses Section with improved styling
+    // Expenses Section with pagination support  
+    yPos = checkNewPage(25);
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(40, 40, 40);
@@ -322,32 +380,34 @@ const IncomeExpenseTracker = () => {
     yPos += 12;
     
     // Expense table headers with better formatting
-    doc.setFontSize(10);
+    yPos = checkNewPage(15);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(60, 60, 60);
     doc.text('Description', startX, yPos);
     MONTHS.forEach((month, index) => {
-      doc.text(month.substring(0, 3), startX + labelWidth + (index * colWidth), yPos, { align: 'center' });
+      const monthX = startX + labelWidth + (index * colWidth) + (colWidth / 2);
+      doc.text(month.substring(0, 3), monthX, yPos, { align: 'center' });
     });
-    doc.text('TOTAL', startX + labelWidth + (12 * colWidth), yPos, { align: 'center' });
+    const expenseTotalHeaderX = startX + labelWidth + (12 * colWidth) + (totalColWidth / 2);
+    doc.text('TOTAL', expenseTotalHeaderX, yPos, { align: 'center' });
     
     // Add header underline
     doc.setDrawColor(150, 150, 150);
     doc.setLineWidth(0.2);
-    doc.line(startX, yPos + 2, pageWidth - 15, yPos + 2);
+    doc.line(startX, yPos + 2, pageWidth - margin, yPos + 2);
     yPos += 8;
     
-    // Expense rows with better formatting
+    // Expense rows with better formatting and pagination
     expenseRows.forEach((row, rowIndex) => {
+      yPos = checkNewPage(12);
+      
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(40, 40, 40);
+      doc.setFontSize(8);
       
-      // Ensure full label is visible - no truncation
+      // Handle long labels by wrapping text
       const maxLabelWidth = labelWidth - 5;
-      const fontSize = 9;
-      doc.setFontSize(fontSize);
-      
-      // Split long labels into multiple lines if needed
       const words = row.label.split(' ');
       let line = '';
       let lineY = yPos;
@@ -366,51 +426,53 @@ const IncomeExpenseTracker = () => {
       }
       doc.text(line.trim(), startX, lineY);
       
-      // Values with right alignment and better formatting
-      doc.setFontSize(9);
+      // Values with right alignment and compact formatting
+      doc.setFontSize(8);
       row.values.forEach((value, index) => {
-        const formattedValue = formatCurrency(value);
+        const formattedValue = formatCurrencyCompact(value);
         const cellX = startX + labelWidth + (index * colWidth) + colWidth - 2;
         doc.text(formattedValue, cellX, yPos, { align: 'right' });
       });
       
-      // Row total
+      // Row total with better positioning
       const rowTotal = row.values.reduce((sum, val) => sum + val, 0);
-      const expenseTotalX = startX + labelWidth + (12 * colWidth) + colWidth - 2;
+      const totalX = startX + labelWidth + (12 * colWidth) + totalColWidth - 2;
       doc.setFont('helvetica', 'bold');
-      doc.text(formatCurrency(rowTotal), expenseTotalX, yPos, { align: 'right' });
+      doc.text(formatCurrencyCompact(rowTotal), totalX, yPos, { align: 'right' });
       
       // Add subtle row separator
       if (rowIndex < expenseRows.length - 1) {
         doc.setDrawColor(230, 230, 230);
         doc.setLineWidth(0.1);
-        doc.line(startX, yPos + 3, pageWidth - 15, yPos + 3);
+        doc.line(startX, yPos + 3, pageWidth - margin, yPos + 3);
       }
       
-      yPos += Math.max(8, lineY - yPos + 4); // Adjust for multi-line labels
+      yPos += Math.max(8, lineY - yPos + 4);
     });
     
     // Expense totals with highlighting
+    yPos = checkNewPage(10);
     doc.setDrawColor(100, 100, 100);
     doc.setLineWidth(0.3);
-    doc.line(startX, yPos, pageWidth - 15, yPos);
+    doc.line(startX, yPos, pageWidth - margin, yPos);
     yPos += 5;
     
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setTextColor(40, 40, 40);
     doc.text('Total Expenses', startX, yPos);
     
     totalExpenses.forEach((total, index) => {
       const cellX = startX + labelWidth + (index * colWidth) + colWidth - 2;
-      doc.text(formatCurrency(total), cellX, yPos, { align: 'right' });
+      doc.text(formatCurrencyCompact(total), cellX, yPos, { align: 'right' });
     });
     const grandTotalExpenses = totalExpenses.reduce((sum, val) => sum + val, 0);
-    const expenseFinalTotalX = startX + labelWidth + (12 * colWidth) + colWidth - 2;
-    doc.text(formatCurrency(grandTotalExpenses), expenseFinalTotalX, yPos, { align: 'right' });
+    const expenseTotalX = startX + labelWidth + (12 * colWidth) + totalColWidth - 2;
+    doc.text(formatCurrencyCompact(grandTotalExpenses), expenseTotalX, yPos, { align: 'right' });
     yPos += 20;
     
-    // Net Income Section with improved styling
+    // Net Income Section with pagination support
+    yPos = checkNewPage(25);
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(40, 40, 40);
@@ -423,24 +485,28 @@ const IncomeExpenseTracker = () => {
     yPos += 12;
     
     // Net income headers
-    doc.setFontSize(10);
+    yPos = checkNewPage(15);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(60, 60, 60);
     doc.text('Description', startX, yPos);
     MONTHS.forEach((month, index) => {
-      doc.text(month.substring(0, 3), startX + labelWidth + (index * colWidth), yPos, { align: 'center' });
+      const monthX = startX + labelWidth + (index * colWidth) + (colWidth / 2);
+      doc.text(month.substring(0, 3), monthX, yPos, { align: 'center' });
     });
-    doc.text('TOTAL', startX + labelWidth + (12 * colWidth), yPos, { align: 'center' });
+    const netTotalHeaderX = startX + labelWidth + (12 * colWidth) + (totalColWidth / 2);
+    doc.text('TOTAL', netTotalHeaderX, yPos, { align: 'center' });
     
     // Add header underline
     doc.setDrawColor(150, 150, 150);
     doc.setLineWidth(0.2);
-    doc.line(startX, yPos + 2, pageWidth - 15, yPos + 2);
+    doc.line(startX, yPos + 2, pageWidth - margin, yPos + 2);
     yPos += 8;
     
     // Net income row
+    yPos = checkNewPage(10);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setTextColor(40, 40, 40);
     doc.text('Net Income', startX, yPos);
     
@@ -448,20 +514,20 @@ const IncomeExpenseTracker = () => {
       const cellX = startX + labelWidth + (index * colWidth) + colWidth - 2;
       const color = net >= 0 ? [0, 120, 0] : [180, 0, 0]; // Green for positive, red for negative
       doc.setTextColor(color[0], color[1], color[2]);
-      doc.text(formatCurrency(net), cellX, yPos, { align: 'right' });
+      doc.text(formatCurrencyCompact(net), cellX, yPos, { align: 'right' });
     });
     
     const grandNetIncome = netIncome.reduce((sum, val) => sum + val, 0);
-    const netFinalTotalX = startX + labelWidth + (12 * colWidth) + colWidth - 2;
+    const netTotalX = startX + labelWidth + (12 * colWidth) + totalColWidth - 2;
     const finalColor = grandNetIncome >= 0 ? [0, 120, 0] : [180, 0, 0];
     doc.setTextColor(finalColor[0], finalColor[1], finalColor[2]);
-    doc.setFontSize(12);
-    doc.text(formatCurrency(grandNetIncome), netFinalTotalX, yPos, { align: 'right' });
+    doc.setFontSize(11);
+    doc.text(formatCurrencyCompact(grandNetIncome), netTotalX, yPos, { align: 'right' });
     
     // Add final border
     doc.setDrawColor(100, 100, 100);
     doc.setLineWidth(0.5);
-    doc.line(startX, yPos + 5, pageWidth - 15, yPos + 5);
+    doc.line(startX, yPos + 5, pageWidth - margin, yPos + 5);
     
     // Save the PDF
     doc.save('income-expense-tracker-2025.pdf');
