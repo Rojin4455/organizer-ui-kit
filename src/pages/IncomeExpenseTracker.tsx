@@ -540,7 +540,12 @@ const IncomeExpenseTracker = () => {
   };
 
   const updateIncomeValue = useCallback((rowId: string, monthIndex: number, value: string) => {
-    const numValue = parseFloat(value) || 0;
+    // Only allow numbers, dots, and empty string
+    if (value !== '' && !/^\d*\.?\d*$/.test(value)) {
+      return;
+    }
+    
+    const numValue = value === '' ? 0 : parseFloat(value) || 0;
     setIncomeRows(prev => 
       prev.map(row => 
         row.id === rowId 
@@ -551,7 +556,12 @@ const IncomeExpenseTracker = () => {
   }, []);
 
   const updateExpenseValue = useCallback((rowId: string, monthIndex: number, value: string) => {
-    const numValue = parseFloat(value) || 0;
+    // Only allow numbers, dots, and empty string
+    if (value !== '' && !/^\d*\.?\d*$/.test(value)) {
+      return;
+    }
+    
+    const numValue = value === '' ? 0 : parseFloat(value) || 0;
     setExpenseRows(prev => 
       prev.map(row => 
         row.id === rowId 
@@ -752,9 +762,24 @@ const IncomeExpenseTracker = () => {
                       {row.values.map((value, monthIndex) => (
                         <td key={monthIndex} className="p-2">
                           <Input
-                            type="number"
-                            value={value || ''}
+                            type="text"
+                            inputMode="decimal"
+                            value={value === 0 ? '' : value.toString()}
                             onChange={(e) => updateIncomeValue(row.id, monthIndex, e.target.value)}
+                            onKeyDown={(e) => {
+                              // Prevent 'e', 'E', '+', '-' and other non-numeric keys except backspace, delete, tab, enter, escape, arrow keys
+                              if (
+                                !/[0-9]/.test(e.key) && 
+                                !['Backspace', 'Delete', 'Tab', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', '.'].includes(e.key) &&
+                                !e.ctrlKey && !e.metaKey
+                              ) {
+                                e.preventDefault();
+                              }
+                              // Prevent multiple dots
+                              if (e.key === '.' && e.currentTarget.value.includes('.')) {
+                                e.preventDefault();
+                              }
+                            }}
                             className="w-full text-center"
                             placeholder="0.00"
                           />
@@ -916,9 +941,24 @@ const IncomeExpenseTracker = () => {
                       {row.values.map((value, monthIndex) => (
                         <td key={monthIndex} className="p-2">
                           <Input
-                            type="number"
-                            value={value || ''}
+                            type="text"
+                            inputMode="decimal"
+                            value={value === 0 ? '' : value.toString()}
                             onChange={(e) => updateExpenseValue(row.id, monthIndex, e.target.value)}
+                            onKeyDown={(e) => {
+                              // Prevent 'e', 'E', '+', '-' and other non-numeric keys except backspace, delete, tab, enter, escape, arrow keys
+                              if (
+                                !/[0-9]/.test(e.key) && 
+                                !['Backspace', 'Delete', 'Tab', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', '.'].includes(e.key) &&
+                                !e.ctrlKey && !e.metaKey
+                              ) {
+                                e.preventDefault();
+                              }
+                              // Prevent multiple dots
+                              if (e.key === '.' && e.currentTarget.value.includes('.')) {
+                                e.preventDefault();
+                              }
+                            }}
                             className="w-full text-center"
                             placeholder="0.00"
                           />
