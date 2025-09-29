@@ -767,12 +767,8 @@ const IncomeExpenseTracker = () => {
                             value={value === 0 ? '' : value.toString()}
                             onChange={(e) => updateIncomeValue(row.id, monthIndex, e.target.value)}
                             onKeyDown={(e) => {
-                              // Prevent 'e', 'E', '+', '-' and other non-numeric keys except backspace, delete, tab, enter, escape, arrow keys
-                              if (
-                                !/[0-9]/.test(e.key) && 
-                                !['Backspace', 'Delete', 'Tab', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', '.'].includes(e.key) &&
-                                !e.ctrlKey && !e.metaKey
-                              ) {
+                              // Prevent 'e', 'E', '+', '-'
+                              if (['e', 'E', '+', '-'].includes(e.key)) {
                                 e.preventDefault();
                               }
                               // Prevent multiple dots
@@ -946,12 +942,8 @@ const IncomeExpenseTracker = () => {
                             value={value === 0 ? '' : value.toString()}
                             onChange={(e) => updateExpenseValue(row.id, monthIndex, e.target.value)}
                             onKeyDown={(e) => {
-                              // Prevent 'e', 'E', '+', '-' and other non-numeric keys except backspace, delete, tab, enter, escape, arrow keys
-                              if (
-                                !/[0-9]/.test(e.key) && 
-                                !['Backspace', 'Delete', 'Tab', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', '.'].includes(e.key) &&
-                                !e.ctrlKey && !e.metaKey
-                              ) {
+                              // Prevent 'e', 'E', '+', '-'
+                              if (['e', 'E', '+', '-'].includes(e.key)) {
                                 e.preventDefault();
                               }
                               // Prevent multiple dots
