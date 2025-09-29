@@ -540,12 +540,7 @@ const IncomeExpenseTracker = () => {
   };
 
   const updateIncomeValue = useCallback((rowId: string, monthIndex: number, value: string) => {
-    // Allow empty string, numbers, and decimal format
-    if (value !== '' && !/^(\d+\.?\d*|\.\d+)$/.test(value) && value !== '.') {
-      return;
-    }
-    
-    const numValue = value === '' || value === '.' ? 0 : parseFloat(value) || 0;
+    const numValue = value === '' ? 0 : parseFloat(value) || 0;
     setIncomeRows(prev => 
       prev.map(row => 
         row.id === rowId 
@@ -556,12 +551,7 @@ const IncomeExpenseTracker = () => {
   }, []);
 
   const updateExpenseValue = useCallback((rowId: string, monthIndex: number, value: string) => {
-    // Allow empty string, numbers, and decimal format
-    if (value !== '' && !/^(\d+\.?\d*|\.\d+)$/.test(value) && value !== '.') {
-      return;
-    }
-    
-    const numValue = value === '' || value === '.' ? 0 : parseFloat(value) || 0;
+    const numValue = value === '' ? 0 : parseFloat(value) || 0;
     setExpenseRows(prev => 
       prev.map(row => 
         row.id === rowId 
