@@ -173,37 +173,28 @@ const IncomeExpenseTracker = () => {
   };
 
   const downloadPDF = () => {
-    const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation
+    const doc = new jsPDF('l', 'mm', 'a3'); // A3 Landscape orientation for more space
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 15;
     const bottomMargin = 20;
     let currentPage = 1;
     
-    // Enhanced currency formatter for better readability
+    // Full currency formatter - displays complete numbers without shorthand
     const formatCurrencyCompact = (amount: number): string => {
       if (amount === 0) return '$0';
       
       const absAmount = Math.abs(amount);
       const sign = amount < 0 ? '-' : '';
       
-      // For very large numbers, use compact notation
-      if (absAmount >= 1000000000) {
-        return `${sign}$${(absAmount / 1000000000).toFixed(1)}B`;
-      } else if (absAmount >= 1000000) {
-        return `${sign}$${(absAmount / 1000000).toFixed(1)}M`;
-      } else if (absAmount >= 10000) {
-        return `${sign}$${(absAmount / 1000).toFixed(0)}K`;
-      } else {
-        // Format with no decimals if amount is a whole number
-        const formatted = absAmount.toLocaleString('en-US', { 
-          minimumFractionDigits: 0, 
-          maximumFractionDigits: 2 
-        });
-        // Remove .00 if present
-        const cleanFormatted = formatted.replace(/\.00$/, '');
-        return `${sign}$${cleanFormatted}`;
-      }
+      // Format with full digits and thousand separators
+      const formatted = absAmount.toLocaleString('en-US', { 
+        minimumFractionDigits: 0, 
+        maximumFractionDigits: 2 
+      });
+      // Remove .00 if present
+      const cleanFormatted = formatted.replace(/\.00$/, '');
+      return `${sign}$${cleanFormatted}`;
     };
     
     // Function to add header to first page only
