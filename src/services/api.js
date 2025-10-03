@@ -243,36 +243,44 @@ async createTaxFormSubmissionMultipart(payload) {
     });
   }
 
-  // Tracker Finance Data APIs
-  async getTrackerData() {
+  // Tracker Finance Data APIs - Multi-tracker support
+  // Get all trackers for authenticated user
+  async getAllTrackers() {
     return this.request('/tracker/finance-data/', {
       method: 'GET',
     });
   }
 
-  async saveTrackerData(data) {
+  // Create multiple trackers at once
+  async createTrackers(trackersArray) {
     return this.request('/tracker/finance-data/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify(trackersArray),
     });
   }
 
-  async updateTrackerData(data) {
+  // Update a single tracker
+  async updateTracker(trackerData) {
     return this.request('/tracker/finance-data/', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify(trackerData),
     });
   }
 
-  async deleteTrackerData() {
+  // Delete a single tracker
+  async deleteTracker(trackerId) {
     return this.request('/tracker/finance-data/', {
       method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id: trackerId }),
     });
   }
 }
