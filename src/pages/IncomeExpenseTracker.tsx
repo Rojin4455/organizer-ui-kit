@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, X, Search, ArrowLeft, Save, Download, Trash2 } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Plus, X, Search, ArrowLeft, Save, Download, Trash2, Edit2, FileDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import { cn } from '@/lib/utils';
@@ -60,19 +61,36 @@ interface ExpenseRow {
   removable: boolean;
 }
 
+interface BusinessTab {
+  id: string;
+  name: string;
+  incomeRows: IncomeRow[];
+  expenseRows: ExpenseRow[];
+}
+
 const IncomeExpenseTracker = () => {
   const navigate = useNavigate();
   
-  const [incomeRows, setIncomeRows] = useState<IncomeRow[]>([
-    { id: '1099', label: '1099', values: new Array(12).fill(0) },
-    { id: 'other-income', label: 'Other Income', values: new Array(12).fill(0) }
-  ]);
+  const createDefaultBusinessTab = (id: string, name: string): BusinessTab => ({
+    id,
+    name,
+    incomeRows: [
+      { id: '1099', label: '1099', values: new Array(12).fill(0) },
+      { id: 'other-income', label: 'Other Income', values: new Array(12).fill(0) }
+    ],
+    expenseRows: [
+      { id: 'accounting', label: 'Accounting Fees', values: new Array(12).fill(0), removable: true },
+      { id: 'bank-fees', label: 'Bank and Credit Card Fees', values: new Array(12).fill(0), removable: true },
+      { id: 'misc', label: 'Miscellaneous - Other PLEASE DESCRIBE', values: new Array(12).fill(0), removable: true }
+    ]
+  });
 
-  const [expenseRows, setExpenseRows] = useState<ExpenseRow[]>([
-    { id: 'accounting', label: 'Accounting Fees', values: new Array(12).fill(0), removable: true },
-    { id: 'bank-fees', label: 'Bank and Credit Card Fees', values: new Array(12).fill(0), removable: true },
-    { id: 'misc', label: 'Miscellaneous - Other PLEASE DESCRIBE', values: new Array(12).fill(0), removable: true }
+  const [businessTabs, setBusinessTabs] = useState<BusinessTab[]>([
+    createDefaultBusinessTab('business-1', 'Business 1')
   ]);
+  const [activeTabId, setActiveTabId] = useState('business-1');
+  const [editingTabId, setEditingTabId] = useState<string | null>(null);
+  const [editingTabName, setEditingTabName] = useState('');
 
   const [showExpenseDropdown, setShowExpenseDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -81,6 +99,11 @@ const IncomeExpenseTracker = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Get current active business tab
+  const activeTab = businessTabs.find(tab => tab.id === activeTabId) || businessTabs[0];
+  const incomeRows = activeTab.incomeRows;
+  const expenseRows = activeTab.expenseRows;
 
   // Load data on component mount
   useEffect(() => {
@@ -91,18 +114,23 @@ const IncomeExpenseTracker = () => {
     setLoading(true);
     try {
       const response = await apiService.getTrackerData();
-      if (response.income && response.expenses && 
-          (response.income.length > 0 || response.expenses.length > 0)) {
-        setIncomeRows(response.income);
-        setExpenseRows(response.expenses);
+      if (response.businessTabs && response.businessTabs.length > 0) {
+        setBusinessTabs(response.businessTabs);
+        setActiveTabId(response.activeTabId || response.businessTabs[0].id);
         toast({
           title: "Data loaded",
           description: "Your tracker data has been loaded successfully.",
         });
+      } else if (response.income && response.expenses) {
+        // Legacy support: migrate old single-business format
+        const migratedTab = createDefaultBusinessTab('business-1', 'Business 1');
+        migratedTab.incomeRows = response.income;
+        migratedTab.expenseRows = response.expenses;
+        setBusinessTabs([migratedTab]);
+        setActiveTabId('business-1');
       }
     } catch (error) {
       console.error('Error loading tracker data:', error);
-      // If no data found (404 or similar), just keep the default empty state
       if (error.message && !error.message.includes('404')) {
         toast({
           title: "Error",
@@ -119,14 +147,14 @@ const IncomeExpenseTracker = () => {
     setSaving(true);
     try {
       const data = {
-        income: incomeRows,
-        expenses: expenseRows
+        businessTabs,
+        activeTabId
       };
       
       await apiService.saveTrackerData(data);
       toast({
         title: "Saved",
-        description: "Your tracker data has been saved successfully.",
+        description: "All business data has been saved successfully.",
       });
     } catch (error) {
       console.error('Error saving tracker data:', error);
@@ -140,25 +168,19 @@ const IncomeExpenseTracker = () => {
     }
   };
 
-  const resetTrackerData = async () => {
+  const resetCurrentTabData = async () => {
     setDeleting(true);
     try {
-      await apiService.deleteTrackerData();
-      
-      // Reset to default state
-      setIncomeRows([
-        { id: '1099', label: '1099', values: new Array(12).fill(0) },
-        { id: 'other-income', label: 'Other Income', values: new Array(12).fill(0) }
-      ]);
-      setExpenseRows([
-        { id: 'accounting', label: 'Accounting Fees', values: new Array(12).fill(0), removable: true },
-        { id: 'bank-fees', label: 'Bank and Credit Card Fees', values: new Array(12).fill(0), removable: true },
-        { id: 'misc', label: 'Miscellaneous - Other PLEASE DESCRIBE', values: new Array(12).fill(0), removable: true }
-      ]);
+      // Reset only the current tab
+      setBusinessTabs(prev => prev.map(tab => 
+        tab.id === activeTabId 
+          ? createDefaultBusinessTab(tab.id, tab.name)
+          : tab
+      ));
       
       toast({
         title: "Reset Complete",
-        description: "All tracker data has been deleted and reset to default.",
+        description: `Data for "${activeTab.name}" has been reset.`,
       });
     } catch (error) {
       console.error('Error resetting tracker data:', error);
@@ -170,6 +192,425 @@ const IncomeExpenseTracker = () => {
     } finally {
       setDeleting(false);
     }
+  };
+
+  // Tab management functions
+  const addBusinessTab = () => {
+    if (businessTabs.length >= 10) {
+      toast({
+        title: "Maximum Tabs Reached",
+        description: "You can only have up to 10 business tabs.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newTabNumber = businessTabs.length + 1;
+    const newTab = createDefaultBusinessTab(
+      `business-${Date.now()}`,
+      `Business ${newTabNumber}`
+    );
+    setBusinessTabs(prev => [...prev, newTab]);
+    setActiveTabId(newTab.id);
+    toast({
+      title: "Business Added",
+      description: `"Business ${newTabNumber}" has been added.`,
+    });
+  };
+
+  const startEditingTab = (tabId: string, currentName: string) => {
+    setEditingTabId(tabId);
+    setEditingTabName(currentName);
+  };
+
+  const saveTabName = () => {
+    if (!editingTabName.trim()) {
+      toast({
+        title: "Invalid Name",
+        description: "Business name cannot be empty.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setBusinessTabs(prev => prev.map(tab =>
+      tab.id === editingTabId
+        ? { ...tab, name: editingTabName.trim() }
+        : tab
+    ));
+    setEditingTabId(null);
+    setEditingTabName('');
+    toast({
+      title: "Name Updated",
+      description: "Business name has been updated.",
+    });
+  };
+
+  const cancelEditingTab = () => {
+    setEditingTabId(null);
+    setEditingTabName('');
+  };
+
+  const downloadCurrentPDF = () => {
+    downloadBusinessPDF(activeTab);
+  };
+
+  const downloadAllPDF = () => {
+    const doc = new jsPDF('l', 'mm', 'a3');
+    let isFirstBusiness = true;
+
+    businessTabs.forEach((tab, tabIndex) => {
+      if (!isFirstBusiness) {
+        doc.addPage();
+      }
+      isFirstBusiness = false;
+      
+      addBusinessToPDF(doc, tab, tabIndex + 1, businessTabs.length);
+    });
+
+    // Add summary page
+    addAllBusinessSummaryPage(doc);
+    
+    doc.save('all-businesses-income-expense-tracker-2025.pdf');
+  };
+
+  const addAllBusinessSummaryPage = (doc: jsPDF) => {
+    doc.addPage();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 15;
+    let yPos = 20;
+
+    // Title
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(40, 40, 40);
+    doc.text('ALL BUSINESSES SUMMARY', pageWidth / 2, yPos, { align: 'center' });
+    yPos += 15;
+
+    // Calculate totals for all businesses
+    const allBusinessesTotals = businessTabs.map(tab => {
+      const income = tab.incomeRows.reduce((sum, row) => 
+        sum + row.values.reduce((s, v) => s + v, 0), 0);
+      const expenses = tab.expenseRows.reduce((sum, row) => 
+        sum + row.values.reduce((s, v) => s + v, 0), 0);
+      return {
+        name: tab.name,
+        income,
+        expenses,
+        net: income - expenses
+      };
+    });
+
+    // Table
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Business', margin, yPos);
+    doc.text('Total Income', margin + 100, yPos);
+    doc.text('Total Expenses', margin + 180, yPos);
+    doc.text('Net Income', margin + 260, yPos);
+    yPos += 8;
+
+    doc.setFont('helvetica', 'normal');
+    allBusinessesTotals.forEach(business => {
+      doc.text(business.name, margin, yPos);
+      doc.text(formatCurrency(business.income), margin + 100, yPos);
+      doc.text(formatCurrency(business.expenses), margin + 180, yPos);
+      const color = business.net >= 0 ? [0, 120, 0] : [180, 0, 0];
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.text(formatCurrency(business.net), margin + 260, yPos);
+      doc.setTextColor(40, 40, 40);
+      yPos += 8;
+    });
+
+    // Grand totals
+    yPos += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    const grandIncome = allBusinessesTotals.reduce((sum, b) => sum + b.income, 0);
+    const grandExpenses = allBusinessesTotals.reduce((sum, b) => sum + b.expenses, 0);
+    const grandNet = grandIncome - grandExpenses;
+
+    doc.text('GRAND TOTALS', margin, yPos);
+    doc.text(formatCurrency(grandIncome), margin + 100, yPos);
+    doc.text(formatCurrency(grandExpenses), margin + 180, yPos);
+    const finalColor = grandNet >= 0 ? [0, 120, 0] : [180, 0, 0];
+    doc.setTextColor(finalColor[0], finalColor[1], finalColor[2]);
+    doc.text(formatCurrency(grandNet), margin + 260, yPos);
+  };
+
+  const addBusinessToPDF = (doc: jsPDF, tab: BusinessTab, businessNumber: number, totalBusinesses: number) => {
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    const bottomMargin = 20;
+    let currentPage = 1;
+    const incomeRows = tab.incomeRows;
+    const expenseRows = tab.expenseRows;
+    const totalIncome = calculateTotals(incomeRows);
+    const totalExpenses = calculateTotals(expenseRows);
+    const netIncome = totalIncome.map((income, index) => income - totalExpenses[index]);
+
+    const formatCurrencyCompact = (amount: number): string => {
+      if (amount === 0) return '$0';
+      const absAmount = Math.abs(amount);
+      const sign = amount < 0 ? '-' : '';
+      const formatted = absAmount.toLocaleString('en-US', { 
+        minimumFractionDigits: 0, 
+        maximumFractionDigits: 2 
+      });
+      const cleanFormatted = formatted.replace(/\.00$/, '');
+      return `${sign}$${cleanFormatted}`;
+    };
+
+    const addPageHeader = () => {
+      if (currentPage === 1) {
+        try {
+          const logoWidth = 25;
+          const logoHeight = 18;
+          const logoX = (pageWidth - logoWidth) / 2;
+          doc.addImage(businessLogo, 'PNG', logoX, 8, logoWidth, logoHeight);
+        } catch (error) {
+          console.warn('Could not add logo to PDF:', error);
+        }
+        
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(40, 40, 40);
+        doc.text('SELF-EMPLOYED INCOME & EXPENSE LOG', pageWidth / 2, 35, { align: 'center' });
+        
+        doc.setFontSize(16);
+        doc.setTextColor(60, 60, 60);
+        doc.text(`${tab.name} (${businessNumber} of ${totalBusinesses})`, pageWidth / 2, 45, { align: 'center' });
+        
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(80, 80, 80);
+        doc.text('Advanced Tax Group - 2025 Tax Year', pageWidth / 2, 53, { align: 'center' });
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.5);
+        doc.line(20, 58, pageWidth - 20, 58);
+      }
+      
+      if (currentPage > 1) {
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`${tab.name} - Page ${currentPage}`, pageWidth - 30, pageHeight - 10);
+      }
+    };
+
+    const checkNewPage = (requiredHeight: number): number => {
+      if (yPos + requiredHeight > pageHeight - bottomMargin) {
+        doc.addPage();
+        currentPage++;
+        addPageHeader();
+        return currentPage === 1 ? 68 : 20;
+      }
+      return yPos;
+    };
+
+    const availableWidth = pageWidth - (2 * margin);
+    const labelWidth = Math.min(80, availableWidth * 0.25);
+    const totalColWidth = Math.min(25, availableWidth * 0.08);
+    const monthlyColsWidth = availableWidth - labelWidth - totalColWidth;
+    const colWidth = monthlyColsWidth / 12;
+    const startX = margin;
+    
+    addPageHeader();
+    let yPos = 68;
+
+    // Income Section
+    yPos = checkNewPage(25);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(40, 40, 40);
+    doc.text('INCOME', startX, yPos);
+    doc.setDrawColor(100, 100, 100);
+    doc.setLineWidth(0.3);
+    doc.line(startX, yPos + 2, startX + 60, yPos + 2);
+    yPos += 12;
+
+    yPos = checkNewPage(15);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(60, 60, 60);
+    doc.text('Description', startX, yPos);
+    MONTHS.forEach((month, index) => {
+      const monthX = startX + labelWidth + (index * colWidth) + (colWidth / 2);
+      doc.text(month.substring(0, 3), monthX, yPos, { align: 'center' });
+    });
+    const incomeTotalHeaderX = startX + labelWidth + (12 * colWidth) + (totalColWidth / 2);
+    doc.text('TOTAL', incomeTotalHeaderX, yPos, { align: 'center' });
+    doc.setDrawColor(150, 150, 150);
+    doc.setLineWidth(0.2);
+    doc.line(startX, yPos + 2, pageWidth - margin, yPos + 2);
+    yPos += 8;
+
+    incomeRows.forEach((row) => {
+      yPos = checkNewPage(12);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(40, 40, 40);
+      doc.setFontSize(8);
+      doc.text(row.label, startX, yPos);
+      
+      doc.setFontSize(8);
+      row.values.forEach((value, index) => {
+        const formattedValue = formatCurrencyCompact(value);
+        const cellX = startX + labelWidth + (index * colWidth) + colWidth - 2;
+        doc.text(formattedValue, cellX, yPos, { align: 'right' });
+      });
+      
+      const rowTotal = row.values.reduce((sum, val) => sum + val, 0);
+      const totalX = startX + labelWidth + (12 * colWidth) + totalColWidth - 2;
+      doc.setFont('helvetica', 'bold');
+      doc.text(formatCurrencyCompact(rowTotal), totalX, yPos, { align: 'right' });
+      yPos += 8;
+    });
+
+    yPos = checkNewPage(10);
+    doc.setDrawColor(100, 100, 100);
+    doc.setLineWidth(0.3);
+    doc.line(startX, yPos, pageWidth - margin, yPos);
+    yPos += 5;
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(40, 40, 40);
+    doc.text('Total Income', startX, yPos);
+    
+    totalIncome.forEach((total, index) => {
+      const cellX = startX + labelWidth + (index * colWidth) + colWidth - 2;
+      doc.text(formatCurrencyCompact(total), cellX, yPos, { align: 'right' });
+    });
+    const grandTotalIncome = totalIncome.reduce((sum, val) => sum + val, 0);
+    const incomeTotalX = startX + labelWidth + (12 * colWidth) + totalColWidth - 2;
+    doc.text(formatCurrencyCompact(grandTotalIncome), incomeTotalX, yPos, { align: 'right' });
+    yPos += 20;
+
+    // Expenses Section
+    yPos = checkNewPage(25);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(40, 40, 40);
+    doc.text('EXPENSES', startX, yPos);
+    doc.setDrawColor(100, 100, 100);
+    doc.setLineWidth(0.3);
+    doc.line(startX, yPos + 2, startX + 70, yPos + 2);
+    yPos += 12;
+
+    yPos = checkNewPage(15);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(60, 60, 60);
+    doc.text('Description', startX, yPos);
+    MONTHS.forEach((month, index) => {
+      const monthX = startX + labelWidth + (index * colWidth) + (colWidth / 2);
+      doc.text(month.substring(0, 3), monthX, yPos, { align: 'center' });
+    });
+    const expenseTotalHeaderX = startX + labelWidth + (12 * colWidth) + (totalColWidth / 2);
+    doc.text('TOTAL', expenseTotalHeaderX, yPos, { align: 'center' });
+    doc.setDrawColor(150, 150, 150);
+    doc.setLineWidth(0.2);
+    doc.line(startX, yPos + 2, pageWidth - margin, yPos + 2);
+    yPos += 8;
+
+    expenseRows.forEach((row) => {
+      yPos = checkNewPage(12);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(40, 40, 40);
+      doc.setFontSize(8);
+      doc.text(row.label, startX, yPos);
+      
+      doc.setFontSize(8);
+      row.values.forEach((value, index) => {
+        const formattedValue = formatCurrencyCompact(value);
+        const cellX = startX + labelWidth + (index * colWidth) + colWidth - 2;
+        doc.text(formattedValue, cellX, yPos, { align: 'right' });
+      });
+      
+      const rowTotal = row.values.reduce((sum, val) => sum + val, 0);
+      const totalX = startX + labelWidth + (12 * colWidth) + totalColWidth - 2;
+      doc.setFont('helvetica', 'bold');
+      doc.text(formatCurrencyCompact(rowTotal), totalX, yPos, { align: 'right' });
+      yPos += 8;
+    });
+
+    yPos = checkNewPage(10);
+    doc.setDrawColor(100, 100, 100);
+    doc.setLineWidth(0.3);
+    doc.line(startX, yPos, pageWidth - margin, yPos);
+    yPos += 5;
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(40, 40, 40);
+    doc.text('Total Expenses', startX, yPos);
+    
+    totalExpenses.forEach((total, index) => {
+      const cellX = startX + labelWidth + (index * colWidth) + colWidth - 2;
+      doc.text(formatCurrencyCompact(total), cellX, yPos, { align: 'right' });
+    });
+    const grandTotalExpenses = totalExpenses.reduce((sum, val) => sum + val, 0);
+    const expenseTotalX = startX + labelWidth + (12 * colWidth) + totalColWidth - 2;
+    doc.text(formatCurrencyCompact(grandTotalExpenses), expenseTotalX, yPos, { align: 'right' });
+    yPos += 20;
+
+    // Net Income Section
+    yPos = checkNewPage(25);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(40, 40, 40);
+    doc.text('NET INCOME (Income - Expenses)', startX, yPos);
+    doc.setDrawColor(100, 100, 100);
+    doc.setLineWidth(0.3);
+    doc.line(startX, yPos + 2, startX + 100, yPos + 2);
+    yPos += 12;
+
+    yPos = checkNewPage(15);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(60, 60, 60);
+    doc.text('Description', startX, yPos);
+    MONTHS.forEach((month, index) => {
+      const monthX = startX + labelWidth + (index * colWidth) + (colWidth / 2);
+      doc.text(month.substring(0, 3), monthX, yPos, { align: 'center' });
+    });
+    const netTotalHeaderX = startX + labelWidth + (12 * colWidth) + (totalColWidth / 2);
+    doc.text('TOTAL', netTotalHeaderX, yPos, { align: 'center' });
+    doc.setDrawColor(150, 150, 150);
+    doc.setLineWidth(0.2);
+    doc.line(startX, yPos + 2, pageWidth - margin, yPos + 2);
+    yPos += 8;
+
+    yPos = checkNewPage(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(40, 40, 40);
+    doc.text('Net Income', startX, yPos);
+    
+    netIncome.forEach((net, index) => {
+      const cellX = startX + labelWidth + (index * colWidth) + colWidth - 2;
+      const color = net >= 0 ? [0, 120, 0] : [180, 0, 0];
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.text(formatCurrencyCompact(net), cellX, yPos, { align: 'right' });
+    });
+    
+    const grandNetIncome = netIncome.reduce((sum, val) => sum + val, 0);
+    const netTotalX = startX + labelWidth + (12 * colWidth) + totalColWidth - 2;
+    const finalColor = grandNetIncome >= 0 ? [0, 120, 0] : [180, 0, 0];
+    doc.setTextColor(finalColor[0], finalColor[1], finalColor[2]);
+    doc.setFontSize(11);
+    doc.text(formatCurrencyCompact(grandNetIncome), netTotalX, yPos, { align: 'right' });
+    
+    doc.setDrawColor(100, 100, 100);
+    doc.setLineWidth(0.5);
+    doc.line(startX, yPos + 5, pageWidth - margin, yPos + 5);
+  };
+
+  const downloadBusinessPDF = (tab: BusinessTab) => {
+    const doc = new jsPDF('l', 'mm', 'a3');
+    addBusinessToPDF(doc, tab, 1, 1);
+    doc.save(`${tab.name.toLowerCase().replace(/\s+/g, '-')}-income-expense-tracker-2025.pdf`);
   };
 
   const downloadPDF = () => {
@@ -532,56 +973,87 @@ const IncomeExpenseTracker = () => {
 
   const updateIncomeValue = useCallback((rowId: string, monthIndex: number, value: string) => {
     const numValue = value === '' ? 0 : parseFloat(value) || 0;
-    setIncomeRows(prev => 
-      prev.map(row => 
-        row.id === rowId 
-          ? { ...row, values: row.values.map((v, i) => i === monthIndex ? numValue : v) }
-          : row
-      )
-    );
-  }, []);
+    setBusinessTabs(prev => prev.map(tab =>
+      tab.id === activeTabId
+        ? {
+            ...tab,
+            incomeRows: tab.incomeRows.map(row =>
+              row.id === rowId
+                ? { ...row, values: row.values.map((v, i) => i === monthIndex ? numValue : v) }
+                : row
+            )
+          }
+        : tab
+    ));
+  }, [activeTabId]);
 
   const updateExpenseValue = useCallback((rowId: string, monthIndex: number, value: string) => {
     const numValue = value === '' ? 0 : parseFloat(value) || 0;
-    setExpenseRows(prev => 
-      prev.map(row => 
-        row.id === rowId 
-          ? { ...row, values: row.values.map((v, i) => i === monthIndex ? numValue : v) }
-          : row
-      )
-    );
-  }, []);
+    setBusinessTabs(prev => prev.map(tab =>
+      tab.id === activeTabId
+        ? {
+            ...tab,
+            expenseRows: tab.expenseRows.map(row =>
+              row.id === rowId
+                ? { ...row, values: row.values.map((v, i) => i === monthIndex ? numValue : v) }
+                : row
+            )
+          }
+        : tab
+    ));
+  }, [activeTabId]);
 
   const addExpenseCategory = useCallback((category: { id: string; label: string }) => {
     const newId = `expense-${Date.now()}`;
-    setExpenseRows(prev => [...prev, {
-      id: newId,
-      label: category.label,
-      values: new Array(12).fill(0),
-      removable: true
-    }]);
+    setBusinessTabs(prev => prev.map(tab =>
+      tab.id === activeTabId
+        ? {
+            ...tab,
+            expenseRows: [...tab.expenseRows, {
+              id: newId,
+              label: category.label,
+              values: new Array(12).fill(0),
+              removable: true
+            }]
+          }
+        : tab
+    ));
     setShowExpenseDropdown(false);
     setSearchTerm('');
-  }, []);
+  }, [activeTabId]);
 
   const addCustomExpenseCategory = useCallback(() => {
     if (customExpenseLabel.trim()) {
       const newId = `custom-expense-${Date.now()}`;
-      setExpenseRows(prev => [...prev, {
-        id: newId,
-        label: customExpenseLabel.trim(),
-        values: new Array(12).fill(0),
-        removable: true
-      }]);
+      setBusinessTabs(prev => prev.map(tab =>
+        tab.id === activeTabId
+          ? {
+              ...tab,
+              expenseRows: [...tab.expenseRows, {
+                id: newId,
+                label: customExpenseLabel.trim(),
+                values: new Array(12).fill(0),
+                removable: true
+              }]
+            }
+          : tab
+      ));
       setCustomExpenseLabel('');
       setShowCustomInput(false);
       setShowExpenseDropdown(false);
     }
-  }, [customExpenseLabel]);
+  }, [customExpenseLabel, activeTabId]);
 
   const removeExpenseCategory = useCallback((rowId: string) => {
-    setExpenseRows(prev => prev.filter(row => row.id !== rowId));
-  }, []);
+    setBusinessTabs(prev => prev.map(tab =>
+      tab.id === activeTabId
+        ? {
+            ...tab,
+            expenseRows: tab.expenseRows.filter(row => row.id !== rowId)
+          }
+        : tab
+    ));
+  }, [activeTabId]);
 
   const calculateTotals = useCallback((rows: { values: number[] }[]) => {
     return MONTHS.map((_, monthIndex) => 
@@ -660,15 +1132,88 @@ const IncomeExpenseTracker = () => {
   </p>
 </div>
 
+{/* Business Tabs */}
+<div className="mt-6">
+  <Tabs value={activeTabId} onValueChange={setActiveTabId} className="w-full">
+    <div className="flex items-center justify-between gap-4 mb-4">
+      <TabsList className="bg-muted">
+        {businessTabs.map(tab => (
+          <TabsTrigger 
+            key={tab.id} 
+            value={tab.id}
+            className="relative group"
+          >
+            {editingTabId === tab.id ? (
+              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <Input
+                  value={editingTabName}
+                  onChange={(e) => setEditingTabName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveTabName();
+                    if (e.key === 'Escape') cancelEditingTab();
+                  }}
+                  className="h-6 w-32 text-sm"
+                  autoFocus
+                />
+                <Button size="sm" variant="ghost" onClick={saveTabName} className="h-6 w-6 p-0">
+                  <Save className="h-3 w-3" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={cancelEditingTab} className="h-6 w-6 p-0">
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                {tab.name}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    startEditingTab(tab.id, tab.name);
+                  }}
+                  className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Edit2 className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+      
+      <Button
+        onClick={addBusinessTab}
+        disabled={businessTabs.length >= 10}
+        variant="outline"
+        size="sm"
+        className="gap-2"
+      >
+        <Plus className="h-4 w-4" />
+        Add Business {businessTabs.length >= 10 && '(Max 10)'}
+      </Button>
+    </div>
+  </Tabs>
+</div>
+
 {/* Action Buttons */}
-<div className="mt-6 flex flex-col sm:flex-row justify-center sm:justify-end gap-3">
+<div className="mt-6 flex flex-col sm:flex-row justify-center sm:justify-end gap-3 flex-wrap">
   <Button 
-    onClick={downloadPDF}
+    onClick={downloadCurrentPDF}
     variant="outline"
     className="gap-2"
   >
     <Download className="h-4 w-4" />
-    Download PDF
+    Download Current PDF
+  </Button>
+
+  <Button 
+    onClick={downloadAllPDF}
+    variant="outline"
+    className="gap-2"
+  >
+    <FileDown className="h-4 w-4" />
+    Download All PDF
   </Button>
 
   <AlertDialog>
@@ -679,25 +1224,25 @@ const IncomeExpenseTracker = () => {
         className="gap-2"
       >
         <Trash2 className="h-4 w-4" />
-        {deleting ? 'Resetting...' : 'Reset All Data'}
+        {deleting ? 'Resetting...' : 'Reset Current Tab'}
       </Button>
     </AlertDialogTrigger>
     <AlertDialogContent>
       <AlertDialogHeader>
         <AlertDialogTitle>
-          Are you sure you want to reset all data?
+          Reset "{activeTab.name}"?
         </AlertDialogTitle>
         <AlertDialogDescription>
-          This action cannot be undone. This will permanently delete all your income and expense data and reset the tracker to its default state.
+          This action cannot be undone. This will permanently delete all income and expense data for "{activeTab.name}" and reset it to default values.
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogCancel>Cancel</AlertDialogCancel>
         <AlertDialogAction 
-          onClick={resetTrackerData} 
+          onClick={resetCurrentTabData} 
           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
         >
-          Yes, reset all data
+          Yes, reset this tab
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
@@ -709,7 +1254,7 @@ const IncomeExpenseTracker = () => {
     className="gap-2"
   >
     <Save className="h-4 w-4" />
-    {saving ? 'Saving...' : 'Save Data'}
+    {saving ? 'Saving...' : 'Save All'}
   </Button>
 </div>
   </div>
