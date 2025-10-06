@@ -113,23 +113,21 @@ const IncomeExpenseTracker = () => {
   const loadTrackerData = async () => {
     setLoading(true);
     try {
-      const response = await apiService.getAllTrackers();
-      
-      // Response is an array of trackers
-      if (response && Array.isArray(response) && response.length > 0) {
-        const loadedTabs = response.map(tracker => ({
-          id: tracker.id.toString(),
-          name: tracker.tab_name,
-          incomeRows: tracker.income || [],
-          expenseRows: tracker.expenses || []
-        }));
-        
-        setBusinessTabs(loadedTabs);
-        setActiveTabId(loadedTabs[0].id);
+      const response = await apiService.getTrackerData();
+      if (response.businessTabs && response.businessTabs.length > 0) {
+        setBusinessTabs(response.businessTabs);
+        setActiveTabId(response.activeTabId || response.businessTabs[0].id);
         toast({
           title: "Data loaded",
-          description: `${loadedTabs.length} business tracker(s) loaded successfully.`,
+          description: "Your tracker data has been loaded successfully.",
         });
+      } else if (response.income && response.expenses) {
+        // Legacy support: migrate old single-business format
+        const migratedTab = createDefaultBusinessTab('business-1', 'Business 1');
+        migratedTab.incomeRows = response.income;
+        migratedTab.expenseRows = response.expenses;
+        setBusinessTabs([migratedTab]);
+        setActiveTabId('business-1');
       }
     } catch (error) {
       console.error('Error loading tracker data:', error);
@@ -148,44 +146,12 @@ const IncomeExpenseTracker = () => {
   const saveTrackerData = async () => {
     setSaving(true);
     try {
-      // Get existing trackers to check which ones already exist
-      const existingTrackers = await apiService.getAllTrackers();
-      const existingIds = new Set(existingTrackers.map(t => t.id.toString()));
+      const data = {
+        businessTabs,
+        activeTabId
+      };
       
-      // Separate new and existing tabs
-      const newTabs = businessTabs.filter(tab => !existingIds.has(tab.id));
-      const existingTabs = businessTabs.filter(tab => existingIds.has(tab.id));
-      
-      // Create new trackers
-      if (newTabs.length > 0) {
-        const newTrackersData = newTabs.map(tab => ({
-          tab_name: tab.name,
-          income: tab.incomeRows,
-          expenses: tab.expenseRows
-        }));
-        
-        const createResponse = await apiService.createTrackers(newTrackersData);
-        
-        // Update local state with server-assigned IDs
-        if (createResponse.created && createResponse.created.length > 0) {
-          const updatedTabs = businessTabs.map(tab => {
-            const serverTab = createResponse.created.find(st => st.tab_name === tab.name);
-            return serverTab ? { ...tab, id: serverTab.id.toString() } : tab;
-          });
-          setBusinessTabs(updatedTabs);
-        }
-      }
-      
-      // Update existing trackers
-      for (const tab of existingTabs) {
-        await apiService.updateTracker({
-          id: parseInt(tab.id),
-          tab_name: tab.name,
-          income: tab.incomeRows,
-          expenses: tab.expenseRows
-        });
-      }
-      
+      await apiService.saveTrackerData(data);
       toast({
         title: "Saved",
         description: "All business data has been saved successfully.",
