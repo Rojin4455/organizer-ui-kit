@@ -114,9 +114,10 @@ const IncomeExpenseTracker = () => {
     setLoading(true);
     try {
       const response = await apiService.getTrackerData();
-      if (response.businessTabs && response.businessTabs.length > 0) {
-        setBusinessTabs(response.businessTabs);
-        setActiveTabId(response.activeTabId || response.businessTabs[0].id);
+      console.log("response ; ", response)
+      if (response.finance_data.businessTabs && response.finance_data.businessTabs.length > 0) {
+        setBusinessTabs(response.finance_data.businessTabs);
+        setActiveTabId(response.finance_data.activeTabId || response.finance_data.businessTabs[0].id);
         toast({
           title: "Data loaded",
           description: "Your tracker data has been loaded successfully.",
@@ -143,21 +144,28 @@ const IncomeExpenseTracker = () => {
     }
   };
 
-  const saveTrackerData = async () => {
+  const saveTrackerData = async (updatedTabs = businessTabs, updatedActiveTabId = activeTabId) => {
     setSaving(true);
     try {
+
+
+      const safeTabs = JSON.parse(JSON.stringify(updatedTabs || businessTabs));
+      const safeActiveTabId = updatedActiveTabId || activeTabId;
+  
       const data = {
-        businessTabs,
-        activeTabId
+        finance_data: {
+          businessTabs: safeTabs,
+          activeTabId: safeActiveTabId,
+        },
       };
-      
+  
       await apiService.saveTrackerData(data);
       toast({
         title: "Saved",
         description: "All business data has been saved successfully.",
       });
     } catch (error) {
-      console.error('Error saving tracker data:', error);
+      console.error("Error saving tracker data:", error);
       toast({
         title: "Error",
         description: "Failed to save tracker data. Please try again.",
@@ -167,23 +175,28 @@ const IncomeExpenseTracker = () => {
       setSaving(false);
     }
   };
-
+  
   const resetCurrentTabData = async () => {
     setDeleting(true);
     try {
-      // Reset only the current tab
-      setBusinessTabs(prev => prev.map(tab => 
-        tab.id === activeTabId 
+      // Reset only the current tab locally first
+      const updatedTabs = businessTabs.map((tab) =>
+        tab.id === activeTabId
           ? createDefaultBusinessTab(tab.id, tab.name)
           : tab
-      ));
-      
+      );
+  
+      setBusinessTabs(updatedTabs);
+  
+      // Save updated data to backend immediately
+      await saveTrackerData(updatedTabs, activeTabId);
+  
       toast({
         title: "Reset Complete",
-        description: `Data for "${activeTab.name}" has been reset.`,
+        description: `Data for "${activeTab.name}" has been reset and saved.`,
       });
     } catch (error) {
-      console.error('Error resetting tracker data:', error);
+      console.error("Error resetting tracker data:", error);
       toast({
         title: "Error",
         description: "Failed to reset tracker data. Please try again.",
@@ -251,11 +264,31 @@ const IncomeExpenseTracker = () => {
     setEditingTabName('');
   };
 
-  const downloadCurrentPDF = () => {
+  const downloadCurrentPDF = async () => {
     downloadBusinessPDF(activeTab);
+    try{
+    const response = await apiService.downloadTracker();
+    console.log("response ; ", response)
+    }catch(error){
+    
+      console.log("response ; ", error)
+    
+    }
+
   };
 
-  const downloadAllPDF = () => {
+  const downloadAllPDF = async () => {
+
+    try{
+      const response = await apiService.downloadTracker();
+      console.log("response ; ", response)
+      }catch(error){
+      
+        console.log("response ; ", error)
+      
+      }
+
+      
     const doc = new jsPDF('l', 'mm', 'a3');
     let isFirstBusiness = true;
 
@@ -266,6 +299,15 @@ const IncomeExpenseTracker = () => {
       isFirstBusiness = false;
       
       addBusinessToPDF(doc, tab, tabIndex + 1, businessTabs.length);
+
+      // try{
+      //   const response = await apiService.getTrackerData();
+      //   console.log("response ; ", response)
+      //   }catch(error){
+        
+      //     console.log("response ; ", error)
+        
+      //   }
     });
 
     // Add summary page
@@ -1249,7 +1291,8 @@ const IncomeExpenseTracker = () => {
   </AlertDialog>
 
   <Button 
-    onClick={saveTrackerData}
+    // onClick={saveTrackerData}
+    onClick={() => saveTrackerData()}
     disabled={saving}
     className="gap-2"
   >

@@ -275,6 +275,14 @@ async createTaxFormSubmissionMultipart(payload) {
       method: 'DELETE',
     });
   }
+
+  async downloadTracker() {
+    return this.request('/tracker/tracker-download/', {
+      method: 'POST',
+    });
+  }
+
+  
 }
 
 export const apiService = new ApiService();
