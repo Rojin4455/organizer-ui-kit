@@ -670,21 +670,22 @@ export const RentalPropertyOrganizer = ({
                       </button>
                     </div>
                   ) : (
-                    <>
+                    <div className="flex items-center gap-2">
                       <span>{tab.name}</span>
                       {tab.status === 'submitted' && (
-                        <span className="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">
+                        <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">
                           Submitted
                         </span>
                       )}
                       {tab.status !== 'submitted' && (
-                        <div className="hidden group-hover:flex items-center gap-1 ml-2">
+                        <div className="flex items-center gap-1">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               startEditingTabName(tab.id, tab.name);
                             }}
-                            className="p-1 hover:bg-accent rounded"
+                            className="p-1 hover:bg-accent rounded transition-colors"
+                            title="Edit name"
                           >
                             <EditIcon sx={{ fontSize: 16 }} />
                           </button>
@@ -693,13 +694,14 @@ export const RentalPropertyOrganizer = ({
                               e.stopPropagation();
                               confirmDeleteTab(tab.id);
                             }}
-                            className="p-1 hover:bg-destructive/10 rounded text-destructive"
+                            className="p-1 hover:bg-destructive/10 rounded text-destructive transition-colors"
+                            title="Delete"
                           >
                             <DeleteIcon sx={{ fontSize: 16 }} />
                           </button>
                         </div>
                       )}
-                    </>
+                    </div>
                   )}
                 </TabsTrigger>
               ))}
