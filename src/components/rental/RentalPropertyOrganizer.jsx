@@ -38,7 +38,7 @@ import { RentalPropertyInfo } from './sections/RentalPropertyInfo';
 import { RentalIncomeExpenses } from './sections/RentalIncomeExpenses';
 import { RentalReview } from './sections/RentalReview';
 import { apiService } from '../../services/api';
-import ReadOnlyWrapper from '../shared/ReadOnlyWrapper';
+import { ReadOnlyWrapper } from '../shared/ReadOnlyWrapper';
 
 const createDefaultFormData = () => ({
   entityInfo: {},
