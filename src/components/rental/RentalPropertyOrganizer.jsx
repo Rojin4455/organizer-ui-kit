@@ -298,7 +298,7 @@ export const RentalPropertyOrganizer = ({
     setEditingTabName(currentName);
   };
 
-  const saveTabName = () => {
+  const saveTabName = async () => {
     if (!editingTabName.trim()) {
       toast({
         title: "Invalid Name",
@@ -308,11 +308,38 @@ export const RentalPropertyOrganizer = ({
       return;
     }
 
-    setFormTabs(prev => prev.map(tab =>
-      tab.id === editingTabId ? { ...tab, name: editingTabName.trim() } : tab
-    ));
-    setEditingTabId(null);
-    setEditingTabName('');
+    try {
+      const tab = formTabs.find(t => t.id === editingTabId);
+      if (!tab) return;
+
+      const payload = {
+        form_name: editingTabName.trim(),
+        form_type: 'rental',
+        status: tab.status,
+        submission_data: tab.formData,
+      };
+
+      await apiService.updateTaxFormSubmission(tab.submissionId, 'rental', payload);
+
+      setFormTabs(prev => prev.map(t =>
+        t.id === editingTabId ? { ...t, name: editingTabName.trim() } : t
+      ));
+      
+      toast({
+        title: "Name Updated",
+        description: `Form name changed to "${editingTabName.trim()}"`,
+      });
+      
+      setEditingTabId(null);
+      setEditingTabName('');
+    } catch (error) {
+      console.error('Error updating form name:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update form name.",
+        variant: "destructive",
+      });
+    }
   };
 
   const cancelEditingTabName = () => {
