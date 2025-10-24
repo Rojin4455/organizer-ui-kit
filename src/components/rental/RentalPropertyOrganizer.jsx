@@ -137,11 +137,11 @@ export const RentalPropertyOrganizer = ({
             ? { 
                 ...t, 
                 formData: {
-                  entityInfo: response.submission_data.entityInfo || {},
-                  ownerInfo: response.submission_data.ownerInfo || {},
-                  propertyInfo: response.submission_data.propertyInfo || {},
-                  incomeExpenses: response.submission_data.incomeExpenses || {},
-                  notes: response.submission_data.notes || {},
+                  entityInfo: response.submission_data.submission_data.entityInfo || {},
+                  ownerInfo: response.submission_data.submission_data.ownerInfo || {},
+                  propertyInfo: response.submission_data.submission_data.propertyInfo || {},
+                  incomeExpenses: response.submission_data.submission_data.incomeExpenses || {},
+                  notes: response.submission_data.submission_data.notes || {},
                 },
                 isDataLoaded: true,
                 name: response.submission_data._metadata?.tab_name || t.name,
