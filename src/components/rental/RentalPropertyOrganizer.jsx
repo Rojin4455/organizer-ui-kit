@@ -197,6 +197,11 @@ export const RentalPropertyOrganizer = ({
     ));
   };
 
+  // Early return if no active tab (prevents undefined errors during initial load)
+  if (!activeTab) {
+    return null;
+  }
+
   // Tab management functions
   const addFormTab = () => {
     if (formTabs.length >= 10) {
