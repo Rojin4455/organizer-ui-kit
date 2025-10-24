@@ -191,6 +191,13 @@ async createTaxFormSubmissionMultipart(payload) {
     });
   }
 
+  // Get all submissions for a specific form type
+  async getFormSubmissionsByType(formType) {
+    return this.request(`/survey/each-form-submissions/?form_type=${formType}`, {
+      method: 'GET',
+    });
+  }
+
   // PDF Generation
   async generatePDF(userId, formType) {
     const response = await fetch(`${this.baseURL}/${formType}-tax/${userId}/pdf/`, {

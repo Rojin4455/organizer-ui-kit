@@ -37,6 +37,8 @@ import { RentalOwnerInfo } from './sections/RentalOwnerInfo';
 import { RentalPropertyInfo } from './sections/RentalPropertyInfo';
 import { RentalIncomeExpenses } from './sections/RentalIncomeExpenses';
 import { RentalReview } from './sections/RentalReview';
+import { apiService } from '../../services/api';
+import ReadOnlyWrapper from '../shared/ReadOnlyWrapper';
 
 const createDefaultFormData = () => ({
   entityInfo: {},
@@ -46,13 +48,14 @@ const createDefaultFormData = () => ({
   notes: {},
 });
 
-const createDefaultFormTab = (id, name) => ({
-  id,
-  name,
+const createDefaultFormTab = (index = 0) => ({
+  id: `rental_${Date.now()}_${index}`,
+  name: `Rental Property ${index + 1}`,
   formData: createDefaultFormData(),
   activeStep: 0,
   submissionId: null,
   status: 'draft',
+  isDataLoaded: false,
 });
 
 export const RentalPropertyOrganizer = ({
@@ -65,58 +68,118 @@ export const RentalPropertyOrganizer = ({
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [useVerticalStepper, setUseVerticalStepper] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(true);
   
   // Tab management state
-  const [formTabs, setFormTabs] = useState([createDefaultFormTab('rental_1', 'Rental Property 1')]);
-  const [activeTabId, setActiveTabId] = useState('rental_1');
+  const [formTabs, setFormTabs] = useState([]);
+  const [activeTabId, setActiveTabId] = useState('');
   const [editingTabId, setEditingTabId] = useState(null);
   const [editingTabName, setEditingTabName] = useState('');
   const [tabToDelete, setTabToDelete] = useState(null);
 
-  const activeTab = formTabs.find(tab => tab.id === activeTabId) || formTabs[0];
-
-  // Load initial data and create tabs from submissions
+  // Load existing submissions from backend on mount
   useEffect(() => {
-    if (initialData && Object.keys(initialData).length > 0) {
-      const dataToSet = initialData.submission_data || initialData;
+    loadExistingSubmissions();
+  }, []);
+
+  const loadExistingSubmissions = async () => {
+    setIsLoadingData(true);
+    try {
+      const response = await apiService.getFormSubmissionsByType('rental');
       
-      // Check if this is multi-tab data or single form data
-      if (dataToSet && dataToSet.formTabs && Array.isArray(dataToSet.formTabs)) {
-        // Multi-tab data
-        setFormTabs(dataToSet.formTabs);
-        setActiveTabId(dataToSet.activeTabId || dataToSet.formTabs[0].id);
-      } else if (dataToSet && (dataToSet.entityInfo || dataToSet.ownerInfo || dataToSet.propertyInfo)) {
-        // Legacy single form data - convert to tab format
-        const hasExistingData = formTabs[0].formData.entityInfo && 
-                                Object.keys(formTabs[0].formData.entityInfo).length > 0;
+      if (response && Array.isArray(response) && response.length > 0) {
+        // Create tabs from existing submissions
+        const tabs = response.map((submission, index) => ({
+          id: submission.id,
+          name: `Rental ${index + 1}`,
+          formData: createDefaultFormData(),
+          activeStep: 0,
+          submissionId: submission.id,
+          status: submission.status,
+          isDataLoaded: false,
+        }));
         
-        if (!hasExistingData) {
-          setFormTabs([{
-            ...formTabs[0],
-            formData: {
-              entityInfo: dataToSet.entityInfo || {},
-              ownerInfo: dataToSet.ownerInfo || {},
-              propertyInfo: dataToSet.propertyInfo || {},
-              incomeExpenses: dataToSet.incomeExpenses || {},
-              notes: dataToSet.notes || {},
-            },
-            submissionId: initialData.id || null,
-          }]);
-        }
+        setFormTabs(tabs);
+        setActiveTabId(tabs[0].id);
+        
+        // Load the first tab's data
+        await loadTabData(tabs[0].id, tabs);
+      } else {
+        // No existing submissions, create default tab
+        initializeDefaultTab();
       }
+    } catch (error) {
+      console.error('Error loading submissions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load existing forms. Creating new form.",
+        variant: "destructive",
+      });
+      initializeDefaultTab();
+    } finally {
+      setIsLoadingData(false);
     }
-  }, [initialData]);
+  };
 
-  // Auto-save functionality
+  const loadTabData = async (tabId, tabsArray = formTabs) => {
+    try {
+      const tab = tabsArray.find(t => t.id === tabId);
+      if (!tab || tab.isDataLoaded) return;
+
+      const response = await apiService.getSubmission(tabId, 'rental');
+      
+      if (response && response.submission_data) {
+        setFormTabs(prev => prev.map(t => 
+          t.id === tabId 
+            ? { 
+                ...t, 
+                formData: {
+                  entityInfo: response.submission_data.entityInfo || {},
+                  ownerInfo: response.submission_data.ownerInfo || {},
+                  propertyInfo: response.submission_data.propertyInfo || {},
+                  incomeExpenses: response.submission_data.incomeExpenses || {},
+                  notes: response.submission_data.notes || {},
+                },
+                isDataLoaded: true,
+                name: response.submission_data._metadata?.tab_name || t.name,
+              } 
+            : t
+        ));
+      }
+    } catch (error) {
+      console.error('Error loading tab data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load form data.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const initializeDefaultTab = () => {
+    const defaultTab = createDefaultFormTab(0);
+    defaultTab.isDataLoaded = true; // New tabs are already "loaded"
+    setFormTabs([defaultTab]);
+    setActiveTabId(defaultTab.id);
+    setIsLoadingData(false);
+  };
+
+  const activeTab = formTabs.find(tab => tab.id === activeTabId) || formTabs[0];
+  const isReadOnly = activeTab?.status === 'submitted';
+
+  // Auto-save functionality (removed localStorage, will save to backend)
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      localStorage.setItem('rentalPropertyData', JSON.stringify({ formTabs, activeTabId }));
-      handleSaveAllProgress();
-    }, 2000);
-    return () => clearTimeout(timeout);
-  }, [formTabs]);
+    if (formTabs.length > 0 && !isLoadingData && activeTab) {
+      const timeoutId = setTimeout(() => {
+        handleSaveAllProgress();
+      }, 2000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [formTabs, activeTabId, isLoadingData]);
 
   const updateFormData = (section, data) => {
+    if (isReadOnly) return; // Prevent updates to read-only forms
+    
     setFormTabs(prev => prev.map(tab => 
       tab.id === activeTabId 
         ? { 
@@ -141,11 +204,8 @@ export const RentalPropertyOrganizer = ({
       return;
     }
 
-    const newTabNumber = formTabs.length + 1;
-    const newTab = createDefaultFormTab(
-      `rental_${Date.now()}`,
-      `Rental Property ${newTabNumber}`
-    );
+    const newTab = createDefaultFormTab(formTabs.length);
+    newTab.isDataLoaded = true; // New tabs are already "loaded"
     
     setFormTabs(prev => [...prev, newTab]);
     setActiveTabId(newTab.id);
@@ -154,6 +214,17 @@ export const RentalPropertyOrganizer = ({
       title: "Tab Added",
       description: `Created "${newTab.name}"`,
     });
+  };
+
+  const switchTab = async (tabId) => {
+    setActiveTabId(tabId);
+    setEditingTabId(null);
+    
+    // Load tab data if not already loaded
+    const tab = formTabs.find(t => t.id === tabId);
+    if (tab && !tab.isDataLoaded && tab.submissionId) {
+      await loadTabData(tabId);
+    }
   };
 
   const startEditingTabName = (tabId, currentName) => {
@@ -192,6 +263,17 @@ export const RentalPropertyOrganizer = ({
       });
       return;
     }
+    
+    const tab = formTabs.find(t => t.id === tabId);
+    if (tab?.status === 'submitted') {
+      toast({
+        title: "Cannot Delete",
+        description: "Cannot delete a submitted form.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setTabToDelete(tabId);
   };
 
@@ -220,10 +302,12 @@ export const RentalPropertyOrganizer = ({
       label: 'Entity Information',
       description: 'Business details and entity type',
       content: (
-        <RentalEntityInfo
-          data={activeTab.formData.entityInfo}
-          onChange={(data) => updateFormData('entityInfo', data)}
-        />
+        <ReadOnlyWrapper readOnly={isReadOnly}>
+          <RentalEntityInfo
+            data={activeTab.formData.entityInfo}
+            onChange={(data) => updateFormData('entityInfo', data)}
+          />
+        </ReadOnlyWrapper>
       ),
       isCompleted: Boolean(activeTab.formData.entityInfo.businessName || activeTab.formData.entityInfo.propertyInName),
       isRequired: true,
@@ -233,10 +317,12 @@ export const RentalPropertyOrganizer = ({
       label: 'Owner Information',
       description: 'Property owner details',
       content: (
-        <RentalOwnerInfo
-          data={activeTab.formData.ownerInfo}
-          onChange={(data) => updateFormData('ownerInfo', data)}
-        />
+        <ReadOnlyWrapper readOnly={isReadOnly}>
+          <RentalOwnerInfo
+            data={activeTab.formData.ownerInfo}
+            onChange={(data) => updateFormData('ownerInfo', data)}
+          />
+        </ReadOnlyWrapper>
       ),
       isCompleted: Boolean(activeTab.formData.ownerInfo.owners && activeTab.formData.ownerInfo.owners[0]?.firstName),
       isRequired: true,
@@ -246,10 +332,12 @@ export const RentalPropertyOrganizer = ({
       label: 'Property Information',
       description: 'Rental property details',
       content: (
-        <RentalPropertyInfo
-          data={activeTab.formData.propertyInfo}
-          onChange={(data) => updateFormData('propertyInfo', data)}
-        />
+        <ReadOnlyWrapper readOnly={isReadOnly}>
+          <RentalPropertyInfo
+            data={activeTab.formData.propertyInfo}
+            onChange={(data) => updateFormData('propertyInfo', data)}
+          />
+        </ReadOnlyWrapper>
       ),
       isCompleted: Boolean(activeTab.formData.propertyInfo.propertyAddress),
       isRequired: true,
@@ -259,12 +347,14 @@ export const RentalPropertyOrganizer = ({
       label: 'Income & Expenses',
       description: 'Property income and expense details',
       content: (
-        <RentalIncomeExpenses
-          data={activeTab.formData.incomeExpenses}
-          onChange={(data) => updateFormData('incomeExpenses', data)}
-        />
+        <ReadOnlyWrapper readOnly={isReadOnly}>
+          <RentalIncomeExpenses
+            data={activeTab.formData.incomeExpenses}
+            onChange={(data) => updateFormData('incomeExpenses', data)}
+          />
+        </ReadOnlyWrapper>
       ),
-      isCompleted: true, // Optional section
+      isCompleted: true,
       isRequired: false,
     },
     {
@@ -272,16 +362,20 @@ export const RentalPropertyOrganizer = ({
       label: 'Review & Submit',
       description: 'Review and submit your rental property organizer',
       content: (
-        <RentalReview
-          data={activeTab.formData}
-          onChange={(data) => {
-            setFormTabs(prev => prev.map(tab => 
-              tab.id === activeTabId 
-                ? { ...tab, formData: data }
-                : tab
-            ));
-          }}
-        />
+        <ReadOnlyWrapper readOnly={isReadOnly}>
+          <RentalReview
+            data={activeTab.formData}
+            onChange={(data) => {
+              if (!isReadOnly) {
+                setFormTabs(prev => prev.map(tab => 
+                  tab.id === activeTabId 
+                    ? { ...tab, formData: data }
+                    : tab
+                ));
+              }
+            }}
+          />
+        </ReadOnlyWrapper>
       ),
       isCompleted: false,
       isRequired: true,
@@ -289,6 +383,7 @@ export const RentalPropertyOrganizer = ({
   ];
 
   const handleNext = () => {
+    if (isReadOnly) return;
     if (activeTab.activeStep < steps.length - 1) {
       setFormTabs(prev => prev.map(tab =>
         tab.id === activeTabId ? { ...tab, activeStep: tab.activeStep + 1 } : tab
@@ -297,12 +392,14 @@ export const RentalPropertyOrganizer = ({
   };
 
   const handleStepChange = (stepIndex) => {
+    if (isReadOnly) return;
     setFormTabs(prev => prev.map(tab =>
       tab.id === activeTabId ? { ...tab, activeStep: stepIndex } : tab
     ));
   };
 
   const handleBack = () => {
+    if (isReadOnly) return;
     if (activeTab.activeStep > 0) {
       setFormTabs(prev => prev.map(tab =>
         tab.id === activeTabId ? { ...tab, activeStep: tab.activeStep - 1 } : tab
@@ -311,36 +408,44 @@ export const RentalPropertyOrganizer = ({
   };
 
   const handleSubmit = async () => {
+    if (isReadOnly) {
+      toast({
+        title: "Already Submitted",
+        description: "This form has already been submitted and cannot be modified.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Update tab status to submitted
-      setFormTabs(prev => prev.map(tab =>
-        tab.id === activeTabId ? { ...tab, status: 'submitted' } : tab
-      ));
-      
-      // Save with submitted status
-      const dataToSave = {
-        formTabs,
-        activeTabId,
+      // Submit only the active tab
+      const dataToSubmit = {
+        ...activeTab.formData,
         _metadata: {
-          tabName: activeTab.name,
-          tabId: activeTab.id,
+          tab_name: activeTab.name,
+          status: 'submitted',
         }
       };
-      
-      await onSave(dataToSave, true);
-      
+
+      if (onSave) {
+        await onSave(dataToSubmit, activeTab.submissionId, true);
+      }
+
+      // Update the tab status to submitted
+      setFormTabs(prev => prev.map(tab => 
+        tab.id === activeTabId ? { ...tab, status: 'submitted' } : tab
+      ));
+
       toast({
-        title: "Submitted",
-        description: `"${activeTab.name}" has been submitted successfully.`,
+        title: "Success",
+        description: "Form submitted successfully",
       });
     } catch (error) {
       console.error('Error submitting form:', error);
       toast({
         title: "Error",
-        description: "Failed to submit form. Please try again.",
+        description: "Failed to submit form",
         variant: "destructive",
       });
     } finally {
@@ -349,16 +454,53 @@ export const RentalPropertyOrganizer = ({
   };
 
   const handleSaveAllProgress = async () => {
+    if (isLoadingData) return;
+    
     try {
-      const dataToSave = {
-        formTabs,
-        activeTabId,
-      };
-      await onSave(dataToSave, false);
+      // Save all tabs as drafts (skip submitted forms)
+      const savePromises = formTabs.map(async (tab) => {
+        if (tab.status === 'submitted') return;
+        
+        const dataToSave = {
+          ...tab.formData,
+          _metadata: {
+            tab_name: tab.name,
+            status: 'draft',
+          }
+        };
+
+        if (onSave) {
+          const result = await onSave(dataToSave, tab.submissionId, false);
+          
+          // Update tab with new submission ID if it was just created
+          if (result && result.id && !tab.submissionId) {
+            setFormTabs(prev => prev.map(t => 
+              t.id === tab.id ? { ...t, submissionId: result.id } : t
+            ));
+          }
+        }
+      });
+
+      await Promise.all(savePromises);
     } catch (error) {
-      console.error('Error saving progress:', error);
+      console.error('Error saving forms:', error);
     }
   };
+
+  if (isLoadingData) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <Typography variant="body1" color="textSecondary">Loading forms...</Typography>
+        </div>
+      </Box>
+    );
+  }
+
+  if (!activeTab) {
+    return <Box>No forms available</Box>;
+  }
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -386,21 +528,31 @@ export const RentalPropertyOrganizer = ({
             label="Vertical Layout"
             sx={{ mr: 2, color: '#64748b' }}
           />
-          <Button
-            startIcon={<SaveIcon />}
-            onClick={handleSaveAllProgress}
-            variant="outlined"
-            size="small"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Saving...' : 'Save All Progress'}
-          </Button>
+          {!isReadOnly && (
+            <Button
+              startIcon={<SaveIcon />}
+              onClick={handleSaveAllProgress}
+              variant="outlined"
+              size="small"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Saving...' : 'Save All Progress'}
+            </Button>
+          )}
         </Toolbar>
       </AppBar>
 
       <Container maxWidth="lg" sx={{ mt: 3, mb: 4 }}>
+        {isReadOnly && (
+          <Box sx={{ mb: 3, p: 2, bgcolor: 'info.main', color: 'info.contrastText', borderRadius: 1 }}>
+            <Typography variant="body2">
+              ℹ️ This form has been submitted and is now read-only. No changes can be made.
+            </Typography>
+          </Box>
+        )}
+
         {/* Tabs Navigation */}
-        <Tabs value={activeTabId} onValueChange={setActiveTabId} className="mb-6">
+        <Tabs value={activeTabId} onValueChange={switchTab} className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <TabsList className="flex-1 justify-start overflow-x-auto">
               {formTabs.map((tab) => (
@@ -433,26 +585,28 @@ export const RentalPropertyOrganizer = ({
                           Submitted
                         </span>
                       )}
-                      <div className="hidden group-hover:flex items-center gap-1 ml-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startEditingTabName(tab.id, tab.name);
-                          }}
-                          className="p-1 hover:bg-accent rounded"
-                        >
-                          <EditIcon sx={{ fontSize: 16 }} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            confirmDeleteTab(tab.id);
-                          }}
-                          className="p-1 hover:bg-destructive/10 rounded text-destructive"
-                        >
-                          <DeleteIcon sx={{ fontSize: 16 }} />
-                        </button>
-                      </div>
+                      {tab.status !== 'submitted' && (
+                        <div className="hidden group-hover:flex items-center gap-1 ml-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditingTabName(tab.id, tab.name);
+                            }}
+                            className="p-1 hover:bg-accent rounded"
+                          >
+                            <EditIcon sx={{ fontSize: 16 }} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              confirmDeleteTab(tab.id);
+                            }}
+                            className="p-1 hover:bg-destructive/10 rounded text-destructive"
+                          >
+                            <DeleteIcon sx={{ fontSize: 16 }} />
+                          </button>
+                        </div>
+                      )}
                     </>
                   )}
                 </TabsTrigger>
@@ -483,6 +637,7 @@ export const RentalPropertyOrganizer = ({
                 isSubmitting={isSubmitting}
                 submitLabel={`Submit ${tab.name}`}
                 orientation={useVerticalStepper ? 'vertical' : 'horizontal'}
+                disabled={isReadOnly}
               />
             </TabsContent>
           ))}
@@ -501,12 +656,12 @@ export const RentalPropertyOrganizer = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={deleteTab} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
+            <AlertDialogAction onClick={deleteTab}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </Box>
   );
 };
+
+export default RentalPropertyOrganizer;
