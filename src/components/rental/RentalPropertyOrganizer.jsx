@@ -91,9 +91,9 @@ export const RentalPropertyOrganizer = ({
       
       if (response && Array.isArray(response) && response.length > 0) {
         // Create tabs from existing submissions
-        const tabs = response.map((submission, index) => ({
+        const tabs = response.map((submission) => ({
           id: submission.id,
-          name: `Rental ${index + 1}`,
+          name: submission.form_name || 'Rental Property',
           formData: createDefaultFormData(),
           activeStep: 0,
           submissionId: submission.id,
@@ -109,17 +109,16 @@ export const RentalPropertyOrganizer = ({
         await loadTabData(tabs[0].id, tabs);
       } else {
         console.log('No existing submissions, creating default tab');
-        // No existing submissions, create default tab
-        initializeDefaultTab();
+        // Create empty draft on backend
+        await createEmptyDraft();
       }
     } catch (error) {
       console.error('Error loading submissions:', error);
       toast({
         title: "Error",
-        description: "Failed to load existing forms. Creating new form.",
+        description: "Failed to load existing forms.",
         variant: "destructive",
       });
-      initializeDefaultTab();
     } finally {
       setIsLoadingData(false);
     }
@@ -160,12 +159,40 @@ export const RentalPropertyOrganizer = ({
     }
   };
 
-  const initializeDefaultTab = () => {
-    const defaultTab = createDefaultFormTab(0);
-    defaultTab.isDataLoaded = true; // New tabs are already "loaded"
-    setFormTabs([defaultTab]);
-    setActiveTabId(defaultTab.id);
-    setIsLoadingData(false);
+  const createEmptyDraft = async () => {
+    try {
+      const defaultName = `Rental Property ${Date.now()}`;
+      const payload = {
+        form_name: defaultName,
+        form_type: 'rental',
+        status: 'draft',
+        submission_data: createDefaultFormData(),
+      };
+      
+      const result = await apiService.createTaxFormSubmission(payload);
+      
+      if (result && result.id) {
+        const newTab = {
+          id: result.id,
+          name: defaultName,
+          formData: createDefaultFormData(),
+          activeStep: 0,
+          submissionId: result.id,
+          status: 'draft',
+          isDataLoaded: true,
+        };
+        
+        setFormTabs([newTab]);
+        setActiveTabId(newTab.id);
+      }
+    } catch (error) {
+      console.error('Error creating empty draft:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create new form.",
+        variant: "destructive",
+      });
+    }
   };
 
   const activeTab = formTabs.find(tab => tab.id === activeTabId) || formTabs[0];
@@ -173,15 +200,15 @@ export const RentalPropertyOrganizer = ({
 
   // Auto-save functionality - triggers every 5 minutes
   useEffect(() => {
-    if (formTabs.length > 0 && !isLoadingData) {
+    if (formTabs.length > 0 && !isLoadingData && activeTab && activeTab.status !== 'submitted') {
       const intervalId = setInterval(() => {
-        console.log('Auto-saving forms (5 minute interval)...');
-        handleSaveAllProgress();
+        console.log('Auto-saving current form (5 minute interval)...');
+        handleSaveProgress();
       }, 5 * 60 * 1000); // 5 minutes in milliseconds
       
       return () => clearInterval(intervalId);
     }
-  }, [isLoadingData]);
+  }, [isLoadingData, activeTabId]);
 
   const updateFormData = (section, data) => {
     if (isReadOnly) return; // Prevent updates to read-only forms
@@ -205,7 +232,7 @@ export const RentalPropertyOrganizer = ({
   }
 
   // Tab management functions
-  const addFormTab = () => {
+  const addFormTab = async () => {
     if (formTabs.length >= 10) {
       toast({
         title: "Tab Limit Reached",
@@ -215,16 +242,44 @@ export const RentalPropertyOrganizer = ({
       return;
     }
 
-    const newTab = createDefaultFormTab(formTabs.length);
-    newTab.isDataLoaded = true; // New tabs are already "loaded"
-    
-    setFormTabs(prev => [...prev, newTab]);
-    setActiveTabId(newTab.id);
-    
-    toast({
-      title: "Tab Added",
-      description: `Created "${newTab.name}"`,
-    });
+    try {
+      const defaultName = `Rental Property ${Date.now()}`;
+      const payload = {
+        form_name: defaultName,
+        form_type: 'rental',
+        status: 'draft',
+        submission_data: createDefaultFormData(),
+      };
+      
+      const result = await apiService.createTaxFormSubmission(payload);
+      
+      if (result && result.id) {
+        const newTab = {
+          id: result.id,
+          name: defaultName,
+          formData: createDefaultFormData(),
+          activeStep: 0,
+          submissionId: result.id,
+          status: 'draft',
+          isDataLoaded: true,
+        };
+        
+        setFormTabs(prev => [...prev, newTab]);
+        setActiveTabId(newTab.id);
+        
+        toast({
+          title: "Tab Added",
+          description: `Created "${newTab.name}"`,
+        });
+      }
+    } catch (error) {
+      console.error('Error creating new form:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create new form.",
+        variant: "destructive",
+      });
+    }
   };
 
   const switchTab = async (tabId) => {
@@ -288,23 +343,35 @@ export const RentalPropertyOrganizer = ({
     setTabToDelete(tabId);
   };
 
-  const deleteTab = () => {
+  const deleteTab = async () => {
     const tabIndex = formTabs.findIndex(tab => tab.id === tabToDelete);
+    const deletedTab = formTabs.find(tab => tab.id === tabToDelete);
     
-    setFormTabs(prev => prev.filter(tab => tab.id !== tabToDelete));
-    
-    if (activeTabId === tabToDelete) {
-      const newActiveTab = formTabs[tabIndex === 0 ? 1 : tabIndex - 1];
-      setActiveTabId(newActiveTab.id);
+    try {
+      // Call DELETE API
+      await apiService.deleteSubmission(tabToDelete, 'rental');
+      
+      setFormTabs(prev => prev.filter(tab => tab.id !== tabToDelete));
+      
+      if (activeTabId === tabToDelete) {
+        const newActiveTab = formTabs[tabIndex === 0 ? 1 : tabIndex - 1];
+        setActiveTabId(newActiveTab.id);
+      }
+      
+      toast({
+        title: "Tab Deleted",
+        description: `"${deletedTab?.name}" has been deleted.`,
+      });
+    } catch (error) {
+      console.error('Error deleting form:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete form.",
+        variant: "destructive",
+      });
+    } finally {
+      setTabToDelete(null);
     }
-    
-    const deletedTabName = formTabs.find(tab => tab.id === tabToDelete)?.name;
-    toast({
-      title: "Tab Deleted",
-      description: `"${deletedTabName}" has been deleted.`,
-    });
-    
-    setTabToDelete(null);
   };
 
   const steps = [
@@ -430,29 +497,14 @@ export const RentalPropertyOrganizer = ({
 
     setIsSubmitting(true);
     try {
-      // Generate unique form name using tab name and timestamp
-      const uniqueFormName = `${activeTab.name}_${Date.now()}`;
-      
-      // Submit only the active tab
-      const dataToSubmit = {
-        ...activeTab.formData,
-        form_name: uniqueFormName,
-        _metadata: {
-          tab_name: activeTab.name,
-          status: 'submitted',
-        }
+      const payload = {
+        form_name: activeTab.name,
+        form_type: 'rental',
+        status: 'submitted',
+        submission_data: activeTab.formData,
       };
 
-      if (onSave) {
-        const result = await onSave(dataToSubmit, true);
-        
-        // Update tab with submission ID if returned
-        if (result && result.id && !activeTab.submissionId) {
-          setFormTabs(prev => prev.map(tab => 
-            tab.id === activeTabId ? { ...tab, submissionId: result.id } : tab
-          ));
-        }
-      }
+      await apiService.updateTaxFormSubmission(activeTab.submissionId, 'rental', payload);
 
       // Update the tab status to submitted
       setFormTabs(prev => prev.map(tab => 
@@ -475,49 +527,28 @@ export const RentalPropertyOrganizer = ({
     }
   };
 
-  const handleSaveAllProgress = async () => {
-    if (isLoadingData) return;
+  const handleSaveProgress = async () => {
+    if (isLoadingData || !activeTab || activeTab.status === 'submitted') return;
     
     try {
-      // Save all tabs as drafts (skip submitted forms)
-      const savePromises = formTabs.map(async (tab) => {
-        if (tab.status === 'submitted') return;
-        
-        // Generate unique form name if not already present
-        const uniqueFormName = tab.formData.form_name || `${tab.name}_${Date.now()}`;
-        
-        const dataToSave = {
-          ...tab.formData,
-          form_name: uniqueFormName,
-          _metadata: {
-            tab_name: tab.name,
-            status: 'draft',
-          }
-        };
+      const payload = {
+        form_name: activeTab.name,
+        form_type: 'rental',
+        status: 'draft',
+        submission_data: activeTab.formData,
+      };
 
-        if (onSave) {
-          const result = await onSave(dataToSave, false);
-          
-          // Update tab with new submission ID if it was just created
-          if (result && result.id && !tab.submissionId) {
-            setFormTabs(prev => prev.map(t => 
-              t.id === tab.id ? { ...t, submissionId: result.id } : t
-            ));
-          }
-        }
-      });
-
-      await Promise.all(savePromises);
+      await apiService.updateTaxFormSubmission(activeTab.submissionId, 'rental', payload);
       
       toast({
         title: "Progress Saved",
-        description: "All forms have been saved successfully.",
+        description: `"${activeTab.name}" has been saved successfully.`,
       });
     } catch (error) {
-      console.error('Error saving forms:', error);
+      console.error('Error saving form:', error);
       toast({
         title: "Error",
-        description: "Failed to save some forms.",
+        description: "Failed to save form.",
         variant: "destructive",
       });
     }
@@ -567,12 +598,12 @@ export const RentalPropertyOrganizer = ({
           {!isReadOnly && (
             <Button
               startIcon={<SaveIcon />}
-              onClick={handleSaveAllProgress}
+              onClick={handleSaveProgress}
               variant="outlined"
               size="small"
               disabled={isLoading}
             >
-              {isLoading ? 'Saving...' : 'Save All Progress'}
+              {isLoading ? 'Saving...' : 'Save Progress'}
             </Button>
           )}
         </Toolbar>

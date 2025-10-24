@@ -198,6 +198,13 @@ async createTaxFormSubmissionMultipart(payload) {
     });
   }
 
+  // Delete a submission
+  async deleteSubmission(formId, formType) {
+    return this.request(`/survey/submit-tax-form/${formId}/?type=${encodeURIComponent(formType)}`, {
+      method: 'DELETE',
+    });
+  }
+
   // PDF Generation
   async generatePDF(userId, formType) {
     const response = await fetch(`${this.baseURL}/${formType}-tax/${userId}/pdf/`, {
