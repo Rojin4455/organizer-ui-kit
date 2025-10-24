@@ -171,15 +171,17 @@ export const RentalPropertyOrganizer = ({
   const activeTab = formTabs.find(tab => tab.id === activeTabId) || formTabs[0];
   const isReadOnly = activeTab?.status === 'submitted';
 
-  // Auto-save functionality (removed localStorage, will save to backend)
+  // Auto-save functionality - triggers every 5 minutes
   useEffect(() => {
-    if (formTabs.length > 0 && !isLoadingData && activeTab) {
-      const timeoutId = setTimeout(() => {
+    if (formTabs.length > 0 && !isLoadingData) {
+      const intervalId = setInterval(() => {
+        console.log('Auto-saving forms (5 minute interval)...');
         handleSaveAllProgress();
-      }, 2000);
-      return () => clearTimeout(timeoutId);
+      }, 5 * 60 * 1000); // 5 minutes in milliseconds
+      
+      return () => clearInterval(intervalId);
     }
-  }, [formTabs, activeTabId, isLoadingData]);
+  }, [isLoadingData]);
 
   const updateFormData = (section, data) => {
     if (isReadOnly) return; // Prevent updates to read-only forms
@@ -428,9 +430,13 @@ export const RentalPropertyOrganizer = ({
 
     setIsSubmitting(true);
     try {
+      // Generate unique form name using tab name and timestamp
+      const uniqueFormName = `${activeTab.name}_${Date.now()}`;
+      
       // Submit only the active tab
       const dataToSubmit = {
         ...activeTab.formData,
+        form_name: uniqueFormName,
         _metadata: {
           tab_name: activeTab.name,
           status: 'submitted',
@@ -477,8 +483,12 @@ export const RentalPropertyOrganizer = ({
       const savePromises = formTabs.map(async (tab) => {
         if (tab.status === 'submitted') return;
         
+        // Generate unique form name if not already present
+        const uniqueFormName = tab.formData.form_name || `${tab.name}_${Date.now()}`;
+        
         const dataToSave = {
           ...tab.formData,
+          form_name: uniqueFormName,
           _metadata: {
             tab_name: tab.name,
             status: 'draft',
@@ -498,8 +508,18 @@ export const RentalPropertyOrganizer = ({
       });
 
       await Promise.all(savePromises);
+      
+      toast({
+        title: "Progress Saved",
+        description: "All forms have been saved successfully.",
+      });
     } catch (error) {
       console.error('Error saving forms:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save some forms.",
+        variant: "destructive",
+      });
     }
   };
 
