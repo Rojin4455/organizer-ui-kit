@@ -90,23 +90,29 @@ export const RentalPropertyOrganizer = ({
       console.log('Rental submissions response:', response);
       
       if (response && Array.isArray(response) && response.length > 0) {
-        // Create tabs from existing submissions
-        const tabs = response.map((submission) => ({
-          id: submission.id,
-          name: submission.form_name || 'Rental Property',
-          formData: createDefaultFormData(),
-          activeStep: 0,
-          submissionId: submission.id,
-          status: submission.status,
-          isDataLoaded: false,
-        }));
+        // Create tabs from existing submissions with populated data
+        const tabs = response.map((submission) => {
+          console.log('Processing submission:', submission.id, submission.submission_data);
+          return {
+            id: submission.id,
+            name: submission.form_name || 'Rental Property',
+            formData: submission.submission_data ? {
+              entityInfo: submission.submission_data.entityInfo || {},
+              ownerInfo: submission.submission_data.ownerInfo || {},
+              propertyInfo: submission.submission_data.propertyInfo || {},
+              incomeExpenses: submission.submission_data.incomeExpenses || {},
+              notes: submission.submission_data.notes || {},
+            } : createDefaultFormData(),
+            activeStep: 0,
+            submissionId: submission.id,
+            status: submission.status,
+            isDataLoaded: true, // Data is already loaded from the response
+          };
+        });
         
-        console.log('Created tabs from submissions:', tabs);
+        console.log('Created tabs with data:', tabs);
         setFormTabs(tabs);
         setActiveTabId(tabs[0].id);
-        
-        // Load the first tab's data
-        await loadTabData(tabs[0].id, tabs);
       } else {
         console.log('No existing submissions, creating default tab');
         // Create empty draft on backend
