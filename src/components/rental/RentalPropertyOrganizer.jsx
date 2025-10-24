@@ -85,7 +85,9 @@ export const RentalPropertyOrganizer = ({
   const loadExistingSubmissions = async () => {
     setIsLoadingData(true);
     try {
+      console.log('Loading rental submissions...');
       const response = await apiService.getFormSubmissionsByType('rental');
+      console.log('Rental submissions response:', response);
       
       if (response && Array.isArray(response) && response.length > 0) {
         // Create tabs from existing submissions
@@ -99,12 +101,14 @@ export const RentalPropertyOrganizer = ({
           isDataLoaded: false,
         }));
         
+        console.log('Created tabs from submissions:', tabs);
         setFormTabs(tabs);
         setActiveTabId(tabs[0].id);
         
         // Load the first tab's data
         await loadTabData(tabs[0].id, tabs);
       } else {
+        console.log('No existing submissions, creating default tab');
         // No existing submissions, create default tab
         initializeDefaultTab();
       }
@@ -429,7 +433,14 @@ export const RentalPropertyOrganizer = ({
       };
 
       if (onSave) {
-        await onSave(dataToSubmit, activeTab.submissionId, true);
+        const result = await onSave(dataToSubmit, true);
+        
+        // Update tab with submission ID if returned
+        if (result && result.id && !activeTab.submissionId) {
+          setFormTabs(prev => prev.map(tab => 
+            tab.id === activeTabId ? { ...tab, submissionId: result.id } : tab
+          ));
+        }
       }
 
       // Update the tab status to submitted
@@ -470,7 +481,7 @@ export const RentalPropertyOrganizer = ({
         };
 
         if (onSave) {
-          const result = await onSave(dataToSave, tab.submissionId, false);
+          const result = await onSave(dataToSave, false);
           
           // Update tab with new submission ID if it was just created
           if (result && result.id && !tab.submissionId) {
