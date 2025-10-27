@@ -135,17 +135,18 @@ export const PersonalTaxOrganizer = ({
       const response = await apiService.getSubmission(tabId, 'personal');
       
       if (response && response.submission_data) {
+        console.log("response.submission_data: ", response)
         setFormTabs(prev => prev.map(t => 
           t.id === tabId 
             ? { 
                 ...t, 
                 formData: {
-                  basicInfo: response.submission_data.submission_data.basicInfo || {},
-                  dependents: response.submission_data.submission_data.dependents || [],
-                  income: response.submission_data.submission_data.income || {},
-                  deductions: response.submission_data.submission_data.deductions || {},
-                  taxPayments: response.submission_data.submission_data.taxPayments || {},
-                  generalQuestions: response.submission_data.submission_data.generalQuestions || {},
+                  basicInfo: response.submission_data.basicInfo || {},
+                  dependents: response.submission_data.dependents || [],
+                  income: response.submission_data.income || {},
+                  deductions: response.submission_data.deductions || {},
+                  taxPayments: response.submission_data.taxPayments || {},
+                  generalQuestions: response.submission_data.generalQuestions || {},
                 },
                 isDataLoaded: true,
                 name: response.submission_data._metadata?.tab_name || t.name,

@@ -130,18 +130,18 @@ export const RentalPropertyOrganizer = ({
       if (!tab || tab.isDataLoaded) return;
 
       const response = await apiService.getSubmission(tabId, 'rental');
-      
+      console.log("response.submission_data: ", response)
       if (response && response.submission_data) {
         setFormTabs(prev => prev.map(t => 
           t.id === tabId 
             ? { 
                 ...t, 
                 formData: {
-                  entityInfo: response.submission_data.submission_data.entityInfo || {},
-                  ownerInfo: response.submission_data.submission_data.ownerInfo || {},
-                  propertyInfo: response.submission_data.submission_data.propertyInfo || {},
-                  incomeExpenses: response.submission_data.submission_data.incomeExpenses || {},
-                  notes: response.submission_data.submission_data.notes || {},
+                  entityInfo: response.submission_data.entityInfo || {},
+                  ownerInfo: response.submission_data.ownerInfo || {},
+                  propertyInfo: response.submission_data.propertyInfo || {},
+                  incomeExpenses: response.submission_data.incomeExpenses || {},
+                  notes: response.submission_data.notes || {},
                 },
                 isDataLoaded: true,
                 name: response.submission_data._metadata?.tab_name || t.name,

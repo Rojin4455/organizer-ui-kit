@@ -137,11 +137,11 @@ export const BusinessTaxOrganizer = ({
             ? { 
                 ...t, 
                 formData: {
-                  basicInfo: response.submission_data.submission_data.basicInfo || {},
-                  ownerInfo: response.submission_data.submission_data.ownerInfo || {},
-                  incomeExpenses: response.submission_data.submission_data.incomeExpenses || {},
-                  assets: response.submission_data.submission_data.assets || {},
-                  homeOffice: response.submission_data.submission_data.homeOffice || {},
+                  basicInfo: response.submission_data.basicInfo || {},
+                  ownerInfo: response.submission_data.ownerInfo || {},
+                  incomeExpenses: response.submission_data.incomeExpenses || {},
+                  assets: response.submission_data.assets || {},
+                  homeOffice: response.submission_data.homeOffice || {},
                 },
                 isDataLoaded: true,
                 name: response.submission_data._metadata?.tab_name || t.name,
