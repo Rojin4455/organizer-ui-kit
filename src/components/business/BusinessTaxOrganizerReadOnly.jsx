@@ -122,6 +122,9 @@ export const BusinessTaxOrganizerReadOnly = ({
                 <Typography variant="body1" color="text.secondary">
                   Form ID: {formInfo?.id}
                 </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Form Name: {formInfo?.form_name || 'N/A'}
+                </Typography>
               </Grid>
               <Grid item>
                 <Box sx={{ textAlign: 'right' }}>

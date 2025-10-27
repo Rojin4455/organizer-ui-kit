@@ -78,7 +78,8 @@ export const FormDetailView = ({ form, onBack, onEdit, userToken }) => {
     );
   }
 
-  const isDrafted = form.status.toLowerCase() === 'drafted';
+  const isDrafted = form.status.toLowerCase() === 'draft';
+  console.log("form",form)
 
   return (
     <Box sx={{ flexGrow: 1 }}>

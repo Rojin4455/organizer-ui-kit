@@ -111,6 +111,9 @@ export const RentalPropertyOrganizerReadOnly = ({
                 <Typography variant="body1" color="text.secondary">
                   Form ID: {formInfo?.id?.slice(0, 8) || 'N/A'}
                 </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Form Name: {formInfo?.form_name || 'N/A'}
+                </Typography>
               </Grid>
               <Grid item>
                 <Box sx={{ textAlign: 'right' }}>

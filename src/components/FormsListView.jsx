@@ -179,7 +179,7 @@ export const FormsListView = ({ onBack, userToken }) => {
                         <PersonIcon sx={{ color: '#3b82f6', mr: 1 }} />
                       )}
                       <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        {form.form_type} Tax Form
+                        {form.form_name} Tax Form
                       </Typography>
                     </Box>
                     
