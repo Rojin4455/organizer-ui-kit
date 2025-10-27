@@ -521,7 +521,6 @@ export const PersonalTaxOrganizer = ({
   ];
 
   const handleNext = () => {
-    if (isReadOnly) return;
     if (activeTab.activeStep < steps.length - 1) {
       setFormTabs(prev => prev.map(tab =>
         tab.id === activeTabId ? { ...tab, activeStep: tab.activeStep + 1 } : tab
@@ -530,14 +529,12 @@ export const PersonalTaxOrganizer = ({
   };
 
   const handleStepChange = (stepIndex) => {
-    if (isReadOnly) return;
     setFormTabs(prev => prev.map(tab =>
       tab.id === activeTabId ? { ...tab, activeStep: stepIndex } : tab
     ));
   };
 
   const handleBack = () => {
-    if (isReadOnly) return;
     if (activeTab.activeStep > 0) {
       setFormTabs(prev => prev.map(tab =>
         tab.id === activeTabId ? { ...tab, activeStep: tab.activeStep - 1 } : tab
