@@ -13,15 +13,50 @@ import {
   ArrowBack as ArrowBackIcon,
   Save as SaveIcon,
   Business as BusinessIcon,
+  Add as AddIcon,
+  Edit as EditIcon,
+  Check as CheckIcon,
+  Close as CloseIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
 import { FormStepper } from '../shared/FormStepper';
-import { ContactInfo } from './sections/ContactInfo';
 import { BusinessBasicInfo } from './sections/BusinessBasicInfo';
 import { OwnerInfo } from './sections/OwnerInfo';
 import { BusinessIncomeExpenses } from './sections/BusinessIncomeExpenses';
 import { BusinessAssets } from './sections/BusinessAssets';
 import { BusinessReview } from './sections/BusinessReview';
+import { apiService } from '../../services/api';
+import { ReadOnlyWrapper } from '../shared/ReadOnlyWrapper';
 
+const createDefaultFormData = () => ({
+  basicInfo: {},
+  ownerInfo: {},
+  incomeExpenses: {},
+  assets: {},
+  homeOffice: {},
+});
+
+const createDefaultFormTab = (index = 0) => ({
+  id: `business_${Date.now()}_${index}`,
+  name: `Business ${index + 1}`,
+  formData: createDefaultFormData(),
+  activeStep: 0,
+  submissionId: null,
+  status: 'draft',
+  isDataLoaded: false,
+});
 
 export const BusinessTaxOrganizer = ({
   onSave,
@@ -30,93 +65,354 @@ export const BusinessTaxOrganizer = ({
   userId,
   isLoading = false,
 }) => {
-  const [activeStep, setActiveStep] = useState(0);
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [useVerticalStepper, setUseVerticalStepper] = useState(true);
-  const [formData, setFormData] = useState({
-    basicInfo: {},
-    ownerInfo: {},
-    incomeExpenses: {},
-    assets: {},
-    homeOffice: {},
-  });
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  
+  // Tab management state
+  const [formTabs, setFormTabs] = useState([]);
+  const [activeTabId, setActiveTabId] = useState('');
+  const [editingTabId, setEditingTabId] = useState(null);
+  const [editingTabName, setEditingTabName] = useState('');
+  const [tabToDelete, setTabToDelete] = useState(null);
 
-  // Update formData when initialData changes
+  // Load existing submissions from backend on mount
   useEffect(() => {
-    if (initialData && Object.keys(initialData).length > 0) {
-      const dataToSet = initialData.submission_data || initialData;
+    loadExistingSubmissions();
+  }, []);
+
+  const loadExistingSubmissions = async () => {
+    setIsLoadingData(true);
+    try {
+      console.log('Loading business submissions...');
+      const response = await apiService.getFormSubmissionsByType('business');
+      console.log('Business submissions response:', response);
       
-      // Check if we have actual form data and current form is empty
-      if (dataToSet && (dataToSet.basicInfo || dataToSet.ownerInfo || dataToSet.incomeExpenses)) {
-        setFormData(prev => {
-          const hasExistingData = Object.keys(prev.basicInfo).length > 0 || 
-                                 Object.keys(prev.ownerInfo).length > 0 ||
-                                 Object.keys(prev.incomeExpenses).length > 0;
-          
-          if (!hasExistingData) {
-            return {
-              basicInfo: dataToSet.basicInfo || {},
-              ownerInfo: dataToSet.ownerInfo || {},
-              incomeExpenses: dataToSet.incomeExpenses || {},
-              assets: dataToSet.assets || {},
-              homeOffice: dataToSet.homeOffice || {},
-            };
-          }
-          return prev;
-        });
+      if (response && Array.isArray(response) && response.length > 0) {
+        // Create tabs from existing submissions
+        const tabs = response.map((submission) => ({
+          id: submission.id,
+          name: submission.form_name || 'Business Form',
+          formData: createDefaultFormData(),
+          activeStep: 0,
+          submissionId: submission.id,
+          status: submission.status,
+          isDataLoaded: false,
+        }));
+        
+        console.log('Created tabs from submissions:', tabs);
+        setFormTabs(tabs);
+        setActiveTabId(tabs[0].id);
+        
+        // Load the first tab's data
+        await loadTabData(tabs[0].id, tabs);
+      } else {
+        console.log('No existing submissions, creating default tab');
+        // Create empty draft on backend
+        await createEmptyDraft();
       }
+    } catch (error) {
+      console.error('Error loading submissions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load existing forms.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingData(false);
     }
-  }, [initialData]);
+  };
 
+  const loadTabData = async (tabId, tabsArray = formTabs) => {
+    try {
+      const tab = tabsArray.find(t => t.id === tabId);
+      if (!tab || tab.isDataLoaded) return;
+
+      const response = await apiService.getSubmission(tabId, 'business');
+      
+      if (response && response.submission_data) {
+        setFormTabs(prev => prev.map(t => 
+          t.id === tabId 
+            ? { 
+                ...t, 
+                formData: {
+                  basicInfo: response.submission_data.submission_data.basicInfo || {},
+                  ownerInfo: response.submission_data.submission_data.ownerInfo || {},
+                  incomeExpenses: response.submission_data.submission_data.incomeExpenses || {},
+                  assets: response.submission_data.submission_data.assets || {},
+                  homeOffice: response.submission_data.submission_data.homeOffice || {},
+                },
+                isDataLoaded: true,
+                name: response.submission_data._metadata?.tab_name || t.name,
+              } 
+            : t
+        ));
+      }
+    } catch (error) {
+      console.error('Error loading tab data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load form data.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const createEmptyDraft = async () => {
+    try {
+      const defaultName = `Business ${Date.now()}`;
+      const payload = {
+        form_name: defaultName,
+        form_type: 'business',
+        status: 'draft',
+        submission_data: createDefaultFormData(),
+      };
+      
+      const result = await apiService.createTaxFormSubmission(payload);
+      
+      if (result && result.id) {
+        const newTab = {
+          id: result.id,
+          name: defaultName,
+          formData: createDefaultFormData(),
+          activeStep: 0,
+          submissionId: result.id,
+          status: 'draft',
+          isDataLoaded: true,
+        };
+        
+        setFormTabs([newTab]);
+        setActiveTabId(newTab.id);
+      }
+    } catch (error) {
+      console.error('Error creating empty draft:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create new form.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const activeTab = formTabs.find(tab => tab.id === activeTabId) || formTabs[0];
+  const isReadOnly = activeTab?.status === 'submitted';
+
+  // Auto-save functionality - triggers every 5 minutes
   useEffect(() => {
-    console.log("initialData being passed to BusinessTaxOrganizer:", initialData);
-  }, [initialData]);
-
-
-  useEffect(()=>{
-    console.log("formstted data in business form: ", formData)
-  })
-
-  // Auto-save functionality
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      localStorage.setItem('businessTaxData', JSON.stringify(formData));
-    }, 1000);
-    return () => clearTimeout(timeout);
-  }, [formData]);
+    if (formTabs.length > 0 && !isLoadingData && activeTab && activeTab.status !== 'submitted') {
+      const intervalId = setInterval(() => {
+        console.log('Auto-saving current form (5 minute interval)...');
+        handleSaveProgress();
+      }, 5 * 60 * 1000); // 5 minutes in milliseconds
+      
+      return () => clearInterval(intervalId);
+    }
+  }, [isLoadingData, activeTabId]);
 
   const updateFormData = (section, data) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: data,
-    }));
+    if (isReadOnly) return; // Prevent updates to read-only forms
+    
+    setFormTabs(prev => prev.map(tab => 
+      tab.id === activeTabId 
+        ? { 
+            ...tab, 
+            formData: { 
+              ...tab.formData, 
+              [section]: data 
+            } 
+          }
+        : tab
+    ));
+  };
+
+  // Early return if no active tab (prevents undefined errors during initial load)
+  if (!activeTab) {
+    return null;
+  }
+
+  // Tab management functions
+  const addFormTab = async () => {
+    if (formTabs.length >= 10) {
+      toast({
+        title: "Tab Limit Reached",
+        description: "You can only have up to 10 business forms.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const defaultName = `Business ${Date.now()}`;
+      const payload = {
+        form_name: defaultName,
+        form_type: 'business',
+        status: 'draft',
+        submission_data: createDefaultFormData(),
+      };
+      
+      const result = await apiService.createTaxFormSubmission(payload);
+      
+      if (result && result.id) {
+        const newTab = {
+          id: result.id,
+          name: defaultName,
+          formData: createDefaultFormData(),
+          activeStep: 0,
+          submissionId: result.id,
+          status: 'draft',
+          isDataLoaded: true,
+        };
+        
+        setFormTabs(prev => [...prev, newTab]);
+        setActiveTabId(newTab.id);
+        
+        toast({
+          title: "Tab Added",
+          description: `Created "${newTab.name}"`,
+        });
+      }
+    } catch (error) {
+      console.error('Error creating new form:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create new form.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const switchTab = async (tabId) => {
+    setActiveTabId(tabId);
+    setEditingTabId(null);
+    
+    // Load tab data if not already loaded
+    const tab = formTabs.find(t => t.id === tabId);
+    if (tab && !tab.isDataLoaded && tab.submissionId) {
+      await loadTabData(tabId);
+    }
+  };
+
+  const startEditingTabName = (tabId, currentName) => {
+    setEditingTabId(tabId);
+    setEditingTabName(currentName);
+  };
+
+  const saveTabName = async () => {
+    if (!editingTabName.trim()) {
+      toast({
+        title: "Invalid Name",
+        description: "Tab name cannot be empty.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const tab = formTabs.find(t => t.id === editingTabId);
+      const payload = {
+        form_name: editingTabName.trim(),
+        form_type: 'business',
+        status: tab.status,
+        submission_data: tab.formData,
+      };
+
+      await apiService.updateTaxFormSubmission(editingTabId, 'business', payload);
+
+      setFormTabs(prev => prev.map(tab =>
+        tab.id === editingTabId ? { ...tab, name: editingTabName.trim() } : tab
+      ));
+      
+      toast({
+        title: "Name Updated",
+        description: "Form name has been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating form name:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update form name.",
+        variant: "destructive",
+      });
+    } finally {
+      setEditingTabId(null);
+      setEditingTabName('');
+    }
+  };
+
+  const cancelEditingTabName = () => {
+    setEditingTabId(null);
+    setEditingTabName('');
+  };
+
+  const confirmDeleteTab = (tabId) => {
+    if (formTabs.length === 1) {
+      toast({
+        title: "Cannot Delete",
+        description: "You must have at least one business form.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const tab = formTabs.find(t => t.id === tabId);
+    if (tab?.status === 'submitted') {
+      toast({
+        title: "Cannot Delete",
+        description: "Cannot delete a submitted form.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setTabToDelete(tabId);
+  };
+
+  const deleteTab = async () => {
+    const tabIndex = formTabs.findIndex(tab => tab.id === tabToDelete);
+    const deletedTab = formTabs.find(tab => tab.id === tabToDelete);
+    
+    try {
+      // Call DELETE API
+      await apiService.deleteSubmission(tabToDelete, 'business');
+      
+      setFormTabs(prev => prev.filter(tab => tab.id !== tabToDelete));
+      
+      if (activeTabId === tabToDelete) {
+        const newActiveTab = formTabs[tabIndex === 0 ? 1 : tabIndex - 1];
+        setActiveTabId(newActiveTab.id);
+      }
+      
+      toast({
+        title: "Tab Deleted",
+        description: `"${deletedTab?.name}" has been deleted.`,
+      });
+    } catch (error) {
+      console.error('Error deleting form:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete form.",
+        variant: "destructive",
+      });
+    } finally {
+      setTabToDelete(null);
+    }
   };
 
   const steps = [
-    // {
-    //   id: 'contact-info',
-    //   label: 'Contact Information',
-    //   description: 'Your name, email, and phone number',
-    //   content: (
-    //     <ContactInfo
-    //       data={formData.contactInfo}
-    //       onChange={(data) => updateFormData('contactInfo', data)}
-    //     />
-    //   ),
-    //   isCompleted: Boolean(formData.contactInfo.fullName && (formData.contactInfo.email || formData.contactInfo.phone)),
-    //   isRequired: true,
-    // },
     {
       id: 'basic-info',
       label: 'Business Information',
       description: 'Entity details, EIN, and owner information',
       content: (
-        <BusinessBasicInfo
-          data={formData.basicInfo}
-          onChange={(data) => updateFormData('basicInfo', data)}
-        />
+        <ReadOnlyWrapper readOnly={isReadOnly}>
+          <BusinessBasicInfo
+            data={activeTab.formData.basicInfo}
+            onChange={(data) => updateFormData('basicInfo', data)}
+          />
+        </ReadOnlyWrapper>
       ),
-      isCompleted: Boolean(formData.basicInfo.businessName && formData.basicInfo.ein),
+      isCompleted: Boolean(activeTab.formData.basicInfo.businessName && activeTab.formData.basicInfo.ein),
       isRequired: true,
     },
     {
@@ -124,12 +420,14 @@ export const BusinessTaxOrganizer = ({
       label: 'Owner Information',
       description: 'Details for all business owners',
       content: (
-        <OwnerInfo
-          data={formData.ownerInfo}
-          onChange={(data) => updateFormData('ownerInfo', data)}
-        />
+        <ReadOnlyWrapper readOnly={isReadOnly}>
+          <OwnerInfo
+            data={activeTab.formData.ownerInfo}
+            onChange={(data) => updateFormData('ownerInfo', data)}
+          />
+        </ReadOnlyWrapper>
       ),
-      isCompleted: Boolean(formData.ownerInfo.owners && formData.ownerInfo.owners[0]?.firstName),
+      isCompleted: Boolean(activeTab.formData.ownerInfo.owners && activeTab.formData.ownerInfo.owners[0]?.firstName),
       isRequired: true,
     },
     {
@@ -137,12 +435,14 @@ export const BusinessTaxOrganizer = ({
       label: 'Income & Expenses',
       description: 'Business income, expenses, and cost of goods sold',
       content: (
-        <BusinessIncomeExpenses
-          data={formData.incomeExpenses}
-          onChange={(data) => updateFormData('incomeExpenses', data)}
-        />
+        <ReadOnlyWrapper readOnly={isReadOnly}>
+          <BusinessIncomeExpenses
+            data={activeTab.formData.incomeExpenses}
+            onChange={(data) => updateFormData('incomeExpenses', data)}
+          />
+        </ReadOnlyWrapper>
       ),
-      isCompleted: Boolean(formData.incomeExpenses.grossReceipts !== undefined),
+      isCompleted: Boolean(activeTab.formData.incomeExpenses.grossReceipts !== undefined),
       isRequired: true,
     },
     {
@@ -150,10 +450,12 @@ export const BusinessTaxOrganizer = ({
       label: 'Business Use of Home',
       description: 'Home office expenses and business use deductions',
       content: (
-        <BusinessAssets
-          data={formData.homeOffice}
-          onChange={(data) => updateFormData('homeOffice', data)}
-        />
+        <ReadOnlyWrapper readOnly={isReadOnly}>
+          <BusinessAssets
+            data={activeTab.formData.homeOffice}
+            onChange={(data) => updateFormData('homeOffice', data)}
+          />
+        </ReadOnlyWrapper>
       ),
       isCompleted: true, // Optional section
       isRequired: false,
@@ -163,10 +465,20 @@ export const BusinessTaxOrganizer = ({
       label: 'Review & Submit',
       description: 'Review your business information and submit',
       content: (
-        <BusinessReview
-          data={formData}
-          onChange={setFormData}
-        />
+        <ReadOnlyWrapper readOnly={isReadOnly}>
+          <BusinessReview
+            data={activeTab.formData}
+            onChange={(data) => {
+              if (!isReadOnly) {
+                setFormTabs(prev => prev.map(tab => 
+                  tab.id === activeTabId 
+                    ? { ...tab, formData: data }
+                    : tab
+                ));
+              }
+            }}
+          />
+        </ReadOnlyWrapper>
       ),
       isCompleted: false,
       isRequired: true,
@@ -174,39 +486,113 @@ export const BusinessTaxOrganizer = ({
   ];
 
   const handleNext = () => {
-    const currentStep = steps[activeStep];
-    
-    // Check if current step is completed before allowing progression
-    // if (!currentStep.isCompleted && currentStep.isRequired) {
-    //   // Show validation message or handle incomplete step
-    //   alert(`Please complete all required fields in the ${currentStep.label} section before proceeding.`);
-    //   return;
-    // }
-    
-    if (activeStep < steps.length - 1) {
-      setActiveStep(activeStep + 1);
+    if (isReadOnly) return;
+    if (activeTab.activeStep < steps.length - 1) {
+      setFormTabs(prev => prev.map(tab =>
+        tab.id === activeTabId ? { ...tab, activeStep: tab.activeStep + 1 } : tab
+      ));
     }
   };
 
   const handleStepChange = (stepIndex) => {
-    setActiveStep(stepIndex);
+    if (isReadOnly) return;
+    setFormTabs(prev => prev.map(tab =>
+      tab.id === activeTabId ? { ...tab, activeStep: stepIndex } : tab
+    ));
   };
 
   const handleBack = () => {
-    if (activeStep > 0) {
-      setActiveStep(activeStep - 1);
+    if (isReadOnly) return;
+    if (activeTab.activeStep > 0) {
+      setFormTabs(prev => prev.map(tab =>
+        tab.id === activeTabId ? { ...tab, activeStep: tab.activeStep - 1 } : tab
+      ));
     }
   };
 
   const handleSubmit = async () => {
+    if (isReadOnly) {
+      toast({
+        title: "Already Submitted",
+        description: "This form has already been submitted and cannot be modified.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      onSave(formData, true);
+      const payload = {
+        form_name: activeTab.name,
+        form_type: 'business',
+        status: 'submitted',
+        submission_data: activeTab.formData,
+      };
+
+      await apiService.updateTaxFormSubmission(activeTab.submissionId, 'business', payload);
+
+      // Update the tab status to submitted
+      setFormTabs(prev => prev.map(tab => 
+        tab.id === activeTabId ? { ...tab, status: 'submitted' } : tab
+      ));
+
+      toast({
+        title: "Success",
+        description: "Form submitted successfully",
+      });
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit form",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const handleSaveProgress = async () => {
+    if (isLoadingData || !activeTab || activeTab.status === 'submitted') return;
+    
+    try {
+      const payload = {
+        form_name: activeTab.name,
+        form_type: 'business',
+        status: 'draft',
+        submission_data: activeTab.formData,
+      };
+
+      await apiService.updateTaxFormSubmission(activeTab.submissionId, 'business', payload);
+      
+      toast({
+        title: "Progress Saved",
+        description: `"${activeTab.name}" has been saved successfully.`,
+      });
+    } catch (error) {
+      console.error('Error saving form:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save form.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (isLoadingData) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <Typography variant="body1" color="textSecondary">Loading forms...</Typography>
+        </div>
+      </Box>
+    );
+  }
+
+  if (!activeTab) {
+    return <Box>No forms available</Box>;
+  }
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -234,33 +620,140 @@ export const BusinessTaxOrganizer = ({
             label="Vertical Layout"
             sx={{ mr: 2, color: '#64748b' }}
           />
-          <Button
-            startIcon={<SaveIcon />}
-            onClick={() => {
-              onSave(formData, false);
-            }}
-            variant="outlined"
-            size="small"
-          >
-            Save Progress
-          </Button>
+          {!isReadOnly && (
+            <Button
+              startIcon={<SaveIcon />}
+              onClick={handleSaveProgress}
+              variant="outlined"
+              size="small"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Saving...' : 'Save Progress'}
+            </Button>
+          )}
         </Toolbar>
       </AppBar>
 
       <Container maxWidth="lg" sx={{ mt: 3, mb: 4 }}>
-        <FormStepper
-          steps={steps}
-          activeStep={activeStep}
-          onStepChange={handleStepChange}
-          onNext={handleNext}
-          onBack={handleBack}
-          onSubmit={handleSubmit}
-          isSubmitting={isSubmitting}
-          submitLabel="Submit Business Tax Organizer"
-          orientation={useVerticalStepper ? 'vertical' : 'horizontal'}
-          // isNextDisabled={activeStep === 0 && !Boolean(formData.contactInfo.fullName && (formData.contactInfo.email || formData.contactInfo.phone))}
-        />
+        {isReadOnly && (
+          <Box sx={{ mb: 3, p: 2, bgcolor: 'info.main', color: 'info.contrastText', borderRadius: 1 }}>
+            <Typography variant="body2">
+              ℹ️ This form has been submitted and is now read-only. No changes can be made.
+            </Typography>
+          </Box>
+        )}
+
+        {/* Tabs Navigation */}
+        <Tabs value={activeTabId} onValueChange={switchTab} className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <TabsList className="flex-1 justify-start overflow-x-auto">
+              {formTabs.map((tab) => (
+                <TabsTrigger key={tab.id} value={tab.id} className="relative group">
+                  {editingTabId === tab.id ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        value={editingTabName}
+                        onChange={(e) => setEditingTabName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveTabName();
+                          if (e.key === 'Escape') cancelEditingTabName();
+                        }}
+                        className="w-32 px-2 py-1 text-sm border rounded"
+                        autoFocus
+                      />
+                      <button onClick={saveTabName} className="p-1 hover:bg-accent rounded">
+                        <CheckIcon sx={{ fontSize: 16 }} />
+                      </button>
+                      <button onClick={cancelEditingTabName} className="p-1 hover:bg-accent rounded">
+                        <CloseIcon sx={{ fontSize: 16 }} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span>{tab.name}</span>
+                      {tab.status === 'submitted' && (
+                        <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">
+                          Submitted
+                        </span>
+                      )}
+                      {tab.status !== 'submitted' && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditingTabName(tab.id, tab.name);
+                            }}
+                            className="p-1 hover:bg-accent rounded transition-colors"
+                            title="Edit name"
+                          >
+                            <EditIcon sx={{ fontSize: 16 }} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              confirmDeleteTab(tab.id);
+                            }}
+                            className="p-1 hover:bg-destructive/10 rounded text-destructive transition-colors"
+                            title="Delete"
+                          >
+                            <DeleteIcon sx={{ fontSize: 16 }} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            
+            <Button
+              startIcon={<AddIcon />}
+              onClick={addFormTab}
+              variant="outlined"
+              size="small"
+              disabled={formTabs.length >= 10}
+              sx={{ ml: 2 }}
+            >
+              Add Business
+            </Button>
+          </div>
+
+          {formTabs.map((tab) => (
+            <TabsContent key={tab.id} value={tab.id}>
+              <FormStepper
+                steps={steps}
+                activeStep={tab.activeStep}
+                onStepChange={handleStepChange}
+                onNext={handleNext}
+                onBack={handleBack}
+                onSubmit={handleSubmit}
+                isSubmitting={isSubmitting}
+                submitLabel={`Submit ${tab.name}`}
+                orientation={useVerticalStepper ? 'vertical' : 'horizontal'}
+                disabled={isReadOnly}
+              />
+            </TabsContent>
+          ))}
+        </Tabs>
       </Container>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!tabToDelete} onOpenChange={() => setTabToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Business Form?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{formTabs.find(tab => tab.id === tabToDelete)?.name}"? 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteTab}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Box>
   );
 };
