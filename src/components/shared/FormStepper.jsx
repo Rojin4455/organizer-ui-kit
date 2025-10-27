@@ -28,6 +28,7 @@ export const FormStepper = ({
   submitLabel = 'Complete',
   orientation = 'vertical',
   isNextDisabled = false,
+  disabled = false, // Read-only mode
 }) => {
   const currentStep = steps[activeStep];
   const isLastStep = activeStep === steps.length - 1;
@@ -129,20 +130,22 @@ export const FormStepper = ({
                     </Button>
                   )}
                   {isLastStep ? (
-                    <Button
-                      onClick={onSubmit}
-                      variant="contained"
-                      size="small"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? 'Submitting...' : submitLabel}
-                    </Button>
+                    !disabled && (
+                      <Button
+                        onClick={onSubmit}
+                        variant="contained"
+                        size="small"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? 'Submitting...' : submitLabel}
+                      </Button>
+                    )
                   ) : (
                     <Button
                       onClick={onNext}
                       variant="contained"
                       size="small"
-                      disabled={isNextDisabled}
+                      disabled={isNextDisabled && !disabled}
                     >
                       Next
                     </Button>
@@ -193,18 +196,20 @@ export const FormStepper = ({
                 Back
               </Button>
               {isLastStep ? (
-                <Button
-                  onClick={onSubmit}
-                  variant="contained"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Submitting...' : submitLabel}
-                </Button>
+                !disabled && (
+                  <Button
+                    onClick={onSubmit}
+                    variant="contained"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Submitting...' : submitLabel}
+                  </Button>
+                )
               ) : (
                 <Button
                   onClick={onNext}
                   variant="contained"
-                  disabled={isNextDisabled}
+                  disabled={isNextDisabled && !disabled}
                 >
                   Next
                 </Button>
