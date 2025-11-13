@@ -27,6 +27,7 @@ import {
   Save as SaveIcon,
   Settings as SettingsIcon,
   TrendingUp as TrendingUpIcon,
+  Description as DescriptionIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { PersonalTaxOrganizer } from './personal/PersonalTaxOrganizer';
@@ -558,6 +559,30 @@ export const TaxOrganizerApp = ({
                     <Chip size="small" label="Auto Calculations" variant="outlined" />
                     <Chip size="small" label="Expense Categories" variant="outlined" />
                     <Chip size="small" label="Net Income" variant="outlined" />
+                  </Box>
+                </CardContent>
+              </CardActionArea>
+            </Card>
+
+            <Card sx={{ width: { xs: '100%', md: '400px' }, height: '100%' }}>
+              <CardActionArea
+                onClick={() => navigate('/tax-engagement-letter')}
+                sx={{ height: '100%', p: 3 }}
+              >
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <DescriptionIcon sx={{ fontSize: 64, color: '#ef4444', mb: 2 }} />
+                  <Typography variant="h4" component="h2" gutterBottom>
+                    Tax Engagement Letter
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                    Review and sign the tax engagement letter contract to confirm 
+                    the arrangements for income tax services.
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
+                    <Chip size="small" label="Legal Agreement" variant="outlined" />
+                    <Chip size="small" label="Digital Signature" variant="outlined" />
+                    <Chip size="small" label="Service Terms" variant="outlined" />
+                    <Chip size="small" label="Required" variant="outlined" />
                   </Box>
                 </CardContent>
               </CardActionArea>

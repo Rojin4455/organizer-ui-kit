@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
 import IncomeExpenseTracker from "./pages/IncomeExpenseTracker";
+import TaxEngagementLetter from "./pages/TaxEngagementLetter";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,11 @@ const App = () => (
               <Route path="/income-expense-tracker" element={
                 <ProtectedRoute>
                   <IncomeExpenseTracker />
+                </ProtectedRoute>
+              } />
+              <Route path="/tax-engagement-letter" element={
+                <ProtectedRoute>
+                  <TaxEngagementLetter />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
