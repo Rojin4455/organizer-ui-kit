@@ -11,7 +11,7 @@ import {
   CssBaseline,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { SignatureDrawer } from '../components/shared/SignatureDrawer';
+import { SignaturePad } from '../components/shared/SignaturePad';
 import businessLogo from '../assets/business-logo.png';
 import { ArrowLeft } from 'lucide-react';
 
@@ -171,8 +171,8 @@ export const TaxEngagementLetter = () => {
 
               {/* Signature Field */}
               <Box sx={{ mb: 3 }}>
-                <SignatureDrawer
-                  label="Signature *"
+                <SignaturePad
+                  label="Taxpayer Signature"
                   value={signature}
                   onChange={setSignature}
                   width={500}
