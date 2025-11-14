@@ -45,6 +45,7 @@ export const TaxEngagementLetter = () => {
   const [taxpayerName, setTaxpayerName] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
+  const [documentExists, setDocumentExists] = useState(false);
 
   useEffect(() => {
     const fetchExistingData = async () => {
@@ -59,9 +60,11 @@ export const TaxEngagementLetter = () => {
           setSignature(response.signature || '');
           setTaxpayerName(response.taxpayer_name || '');
           setDate(response.date_signed || new Date().toISOString().split('T')[0]);
+          setDocumentExists(true);
         }
       } catch (error) {
         console.log('No existing letter found or failed to fetch.');
+        setDocumentExists(false);
       }
     };
     fetchExistingData();
@@ -76,7 +79,56 @@ export const TaxEngagementLetter = () => {
 
     setIsLoading(true);
     try {
-      const payload = { signature, taxpayer_name: taxpayerName, date_signed: date };
+      const pdfData = {
+        document_title: 'Engagement Letter Individual Tax Returns',
+        taxpayer_name: taxpayerName,
+        date_signed: date,
+        signature_data: signature,
+        company_name: 'ATG Tax Elite, LLC',
+        letter_content: {
+          greeting: 'Dear Client:',
+          intro: 'This letter confirms the arrangements for our income tax services, as follows:',
+          sections: [
+            {
+              number: 1,
+              text: 'We will prepare your federal and state individual income tax returns from information provided by you. The number of tax returns we complete is based on information provided to us. At your request, we will furnish you with the tax organizer and worksheets to assist you in gathering the necessary information. We will not audit or verify the data you submit, although we may ask you to clarify it, or furnish us with additional data. It is your responsibility to provide information required for preparation of complete and accurate returns. You should keep all documents, canceled checks, and other data that support your reported income and deductions. They may be necessary to prove accuracy and completeness of the return to a taxing authority. You are responsible for the returns, so review them carefully before you sign them.'
+            },
+            {
+              number: 2,
+              text: 'By your signature below, you are confirming to us that unless we are otherwise advised, your, business, travel, entertainment, gifts and related expenses are supported by the necessary records required under Section 274 of the Internal Revenue Code. If you claim business use of a vehicle, you acknowledge you have written documentation of the use and purpose of that vehicle. If you have any questions as to the type of records required, please ask us for advice.'
+            },
+            {
+              number: 3,
+              text: 'We will use our professional judgment in preparing your returns. Whenever we are aware that possible applicable tax law is unclear or that there are conflicting interpretations of the law by authorities (e.g., tax agencies and courts), we will discuss with you our knowledge and understanding of the possible positions which may be taken on your return. We will adopt whatever position you request on your return so long as it is consistent with our professional standards and ethics. If the Internal Revenue Service should later contest the position taken, then there may be an assessment of additional tax liability, plus interest and possible penalties. We assume no liability for any such additional assessments.'
+            },
+            {
+              number: 4,
+              text: 'The Tax Equity and Fiscal Responsibility Act of 1982 ("TEFRA"), and the Tax Reform Act of 1986 contained a new Section 6661 calling for penalties against taxpayers for substantial understatement of tax (defined as being more than 25% of the tax). This penalty may be assessed unless the taxpayer can show that there was "substantial authority" for any position that was ultimately disallowed or that there was "adequate disclosure" in the return of any conflict between an Internal Revenue Service position and that taken by the taxpayer. Should a material tax issue arise, you agree to advise us if you wish such disclosure to be made in your returns or if you desire us to identify or perform further research with respect to this tax issue.'
+            },
+            {
+              number: 5,
+              text: 'Your returns are subject to review by taxing authorities. Any item which may be resolved against you by the examining agent is subject to certain rights of appeal. In the event of any tax examination, we will provide basic phone support as needed. If additional tax representation services are requested, such as reviews of the income tax aspects of proposed or completed transactions, compile income tax projections, engage in research in connection with such matters or tax court representation, we will render additional invoices for such services at our then normal billing rate.'
+            },
+            {
+              number: 6,
+              text: 'We may request verbally or in writing documentation to support the preparation of your income taxes.'
+            },
+            {
+              number: 7,
+              text: 'We would expect to continue to perform our services under the arrangements discussed above from year to year unless we are notified. If the foregoing meets with your agreement, please sign this letter and return it to us.'
+            }
+          ],
+          agreement_statement: 'I have read and understand, and agree to these terms.'
+        }
+      };
+
+      const payload = { 
+        signature, 
+        taxpayer_name: taxpayerName, 
+        date_signed: date,
+        pdf_data: pdfData
+      };
+
       const response = await apiService.request('/survey/tax-engagement-letter/', {
         method: 'POST',
         headers: {
@@ -87,6 +139,7 @@ export const TaxEngagementLetter = () => {
       });
 
       alert('Engagement letter saved successfully!');
+      setDocumentExists(true);
       console.log('Saved response:', response);
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -250,16 +303,25 @@ export const TaxEngagementLetter = () => {
             </Box>
 
             {/* Submit Button */}
-            <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-              <Button variant="outlined" onClick={() => navigate('/')}>Cancel</Button>
-              <Button
-                variant="contained"
-                onClick={handleSubmit}
-                disabled={isLoading || !signature || !taxpayerName || !date}
-              >
-                {isLoading ? 'Saving...' : 'Submit Agreement'}
-              </Button>
-            </Box>
+            {!documentExists && (
+              <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                <Button variant="outlined" onClick={() => navigate('/')}>Cancel</Button>
+                <Button
+                  variant="contained"
+                  onClick={handleSubmit}
+                  disabled={isLoading || !signature || !taxpayerName || !date}
+                >
+                  {isLoading ? 'Saving...' : 'Submit Agreement'}
+                </Button>
+              </Box>
+            )}
+            {documentExists && (
+              <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+                <Typography variant="body2" color="text.secondary">
+                  This engagement letter has already been submitted.
+                </Typography>
+              </Box>
+            )}
           </Paper>
         </Container>
       </Box>
