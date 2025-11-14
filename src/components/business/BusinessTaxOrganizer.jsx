@@ -39,6 +39,7 @@ import { BusinessAssets } from './sections/BusinessAssets';
 import { BusinessReview } from './sections/BusinessReview';
 import { apiService } from '../../services/api';
 import { ReadOnlyWrapper } from '../shared/ReadOnlyWrapper';
+import { formatBusinessTaxData } from '../../utils/formDataFormatter';
 
 const createDefaultFormData = () => ({
   basicInfo: {},
@@ -524,6 +525,7 @@ export const BusinessTaxOrganizer = ({
         form_type: 'business',
         status: 'submitted',
         submission_data: activeTab.formData,
+        pdf_data: formatBusinessTaxData(activeTab.formData),
       };
 
       await apiService.updateTaxFormSubmission(activeTab.submissionId, 'business', payload);

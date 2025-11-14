@@ -41,6 +41,7 @@ import { GeneralQuestions } from './sections/GeneralQuestions';
 import { ReviewSubmit } from './sections/ReviewSubmit';
 import { apiService } from '../../services/api';
 import { ReadOnlyWrapper } from '../shared/ReadOnlyWrapper';
+import { formatPersonalTaxData } from '../../utils/formDataFormatter';
 
 const createDefaultFormData = () => ({
   basicInfo: {},
@@ -559,6 +560,7 @@ export const PersonalTaxOrganizer = ({
         form_type: 'personal',
         status: 'submitted',
         submission_data: activeTab.formData,
+        pdf_data: formatPersonalTaxData(activeTab.formData),
       };
 
       await apiService.updateTaxFormSubmission(activeTab.submissionId, 'personal', payload);
