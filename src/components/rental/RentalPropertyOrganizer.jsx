@@ -519,11 +519,36 @@ export const RentalPropertyOrganizer = ({
 
     setIsSubmitting(true);
     try {
+      // For rental forms, we format the data similar to business forms
+      const formattedPdfData = {
+        formType: "rental",
+        submissionDate: new Date().toISOString(),
+        sections: {
+          entityInfo: {
+            sectionTitle: "Entity Information",
+            questionsAndAnswers: activeTab.formData.entityInfo || {}
+          },
+          ownerInfo: {
+            sectionTitle: "Owner Information",
+            questionsAndAnswers: activeTab.formData.ownerInfo || {}
+          },
+          propertyInfo: {
+            sectionTitle: "Property Information",
+            questionsAndAnswers: activeTab.formData.propertyInfo || {}
+          },
+          incomeExpenses: {
+            sectionTitle: "Income & Expenses",
+            questionsAndAnswers: activeTab.formData.incomeExpenses || {}
+          }
+        }
+      };
+
       const payload = {
         form_name: activeTab.name,
         form_type: 'rental',
         status: 'submitted',
         submission_data: activeTab.formData,
+        pdf_data: formattedPdfData,
       };
 
       await apiService.updateTaxFormSubmission(activeTab.submissionId, 'rental', payload);
