@@ -34,6 +34,7 @@ import { PersonalTaxOrganizer } from './personal/PersonalTaxOrganizer';
 import { BusinessTaxOrganizer } from './business/BusinessTaxOrganizer';
 import { RentalPropertyOrganizer } from './rental/RentalPropertyOrganizer';
 import { FormsListView } from './FormsListView';
+import { EngagementLetterBanner } from './shared/EngagementLetterBanner';
 import { getUrlParams, setUrlParams, generateFormLink } from '../utils/urlParams';
 import { apiService } from '../services/api';
 import { businessLogo } from '../assets';
@@ -151,6 +152,8 @@ export const TaxOrganizerApp = ({
   const [formId, setFormId] = useState(null);
   const [showFormsList, setShowFormsList] = useState(false);
   const [userToken, setUserToken] = useState(null); // You'll need to get this from your auth system
+  const [engagementLetterSigned, setEngagementLetterSigned] = useState(null);
+  const [showEngagementBanner, setShowEngagementBanner] = useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -159,6 +162,33 @@ export const TaxOrganizerApp = ({
   const getInitials = (username) => {
     return username ? username.slice(0, 2).toUpperCase() : 'U';
   };
+
+  // Check engagement letter status on mount
+  useEffect(() => {
+    const checkEngagementLetterStatus = async () => {
+      try {
+        const response = await apiService.request('/survey/tax-engagement-letter/', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        });
+        if (response && response.taxpayer_name) {
+          setEngagementLetterSigned(true);
+          setShowEngagementBanner(false);
+        } else {
+          setEngagementLetterSigned(false);
+          setShowEngagementBanner(true);
+        }
+      } catch (error) {
+        // No letter found, user hasn't signed
+        setEngagementLetterSigned(false);
+        setShowEngagementBanner(true);
+      }
+    };
+    
+    checkEngagementLetterStatus();
+  }, []);
 
   // Check URL parameters on component mount
   useEffect(() => {
@@ -440,6 +470,13 @@ export const TaxOrganizerApp = ({
         </AppBar>
 
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+          {showEngagementBanner && (
+            <EngagementLetterBanner
+              onNavigate={() => navigate('/tax-engagement-letter')}
+              onClose={() => setShowEngagementBanner(false)}
+            />
+          )}
+          
           <Box sx={{ textAlign: 'center', mb: 6 }}>
             <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
               Professional Tax Organizer
