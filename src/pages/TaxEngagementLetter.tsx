@@ -278,6 +278,7 @@ export const TaxEngagementLetter = () => {
                   onChange={setSignature}
                   width={500}
                   height={150}
+                  readOnly={documentExists}
                 />
               </Box>
 
