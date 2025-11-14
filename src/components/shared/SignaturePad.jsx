@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Box, Button, Typography, Paper } from '@mui/material';
 import { Delete as DeleteIcon, Save as SaveIcon } from '@mui/icons-material';
 
-export const SignaturePad = ({ label, value, onChange, width = 400, height = 150 }) => {
+export const SignaturePad = ({ label, value, onChange, width = 400, height = 150, readOnly = false }) => {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [context, setContext] = useState(null);
@@ -34,7 +34,7 @@ export const SignaturePad = ({ label, value, onChange, width = 400, height = 150
   }, [value]);
 
   const startDrawing = (e) => {
-    if (!context) return;
+    if (!context || readOnly) return;
     
     setIsDrawing(true);
     const rect = canvasRef.current.getBoundingClientRect();
@@ -148,21 +148,25 @@ export const SignaturePad = ({ label, value, onChange, width = 400, height = 150
           />
         </Box>
         
-        <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<DeleteIcon />}
-            onClick={clearSignature}
-            color="error"
-          >
-            Clear
-          </Button>
-        </Box>
-        
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
-          Click and drag to draw your signature above
-        </Typography>
+        {!readOnly && (
+          <>
+            <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<DeleteIcon />}
+                onClick={clearSignature}
+                color="error"
+              >
+                Clear
+              </Button>
+            </Box>
+            
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
+              Click and drag to draw your signature above
+            </Typography>
+          </>
+        )}
       </Paper>
     </Box>
   );
