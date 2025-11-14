@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import {
   Container,
   Paper,
@@ -14,6 +14,8 @@ import { useNavigate } from 'react-router-dom';
 import { SignaturePad } from '../components/shared/SignaturePad';
 import businessLogo from '../assets/business-logo.png';
 import { ArrowLeft } from 'lucide-react';
+
+import { apiService } from '../services/api';
 
 const theme = createTheme({
   palette: {
@@ -42,11 +44,57 @@ export const TaxEngagementLetter = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [taxpayerName, setTaxpayerName] = useState('');
 
-  const handleSubmit = () => {
-    // TODO: Implement submission logic
-    console.log('Submitting engagement letter:', { signature, date, taxpayerName });
-  };
+  const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    const fetchExistingData = async () => {
+      try {
+        const response = await apiService.request('/survey/tax-engagement-letter/', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        });
+        if (response && response.taxpayer_name) {
+          setSignature(response.signature || '');
+          setTaxpayerName(response.taxpayer_name || '');
+          setDate(response.date_signed || new Date().toISOString().split('T')[0]);
+        }
+      } catch (error) {
+        console.log('No existing letter found or failed to fetch.');
+      }
+    };
+    fetchExistingData();
+  }, []);
+
+  // Submit or update
+  const handleSubmit = async () => {
+    if (!signature || !taxpayerName || !date) {
+      alert('Please fill all fields before submitting.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const payload = { signature, taxpayer_name: taxpayerName, date_signed: date };
+      const response = await apiService.request('/survey/tax-engagement-letter/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      alert('Engagement letter saved successfully!');
+      console.log('Saved response:', response);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('Failed to submit engagement letter.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -190,34 +238,26 @@ export const TaxEngagementLetter = () => {
                 required
               />
 
-              {/* Date Field */}
               <TextField
                 fullWidth
                 label="Date"
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                InputLabelProps={{
-                  shrink: true,
-                }}
+                InputLabelProps={{ shrink: true }}
                 required
               />
             </Box>
 
             {/* Submit Button */}
             <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-              <Button
-                variant="outlined"
-                onClick={() => navigate('/')}
-              >
-                Cancel
-              </Button>
+              <Button variant="outlined" onClick={() => navigate('/')}>Cancel</Button>
               <Button
                 variant="contained"
                 onClick={handleSubmit}
-                disabled={!signature || !taxpayerName || !date}
+                disabled={isLoading || !signature || !taxpayerName || !date}
               >
-                Submit Agreement
+                {isLoading ? 'Saving...' : 'Submit Agreement'}
               </Button>
             </Box>
           </Paper>
