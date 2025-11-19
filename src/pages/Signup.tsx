@@ -1,46 +1,27 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { signupUser, clearError } from '../store/authSlice';
 import businessLogo from '../assets/New-log.png';
 
-const signupSchema = z.object({
-  username: z.string().min(1, 'Username is required').max(150, 'Username must be less than 150 characters'),
-  email: z.string().email('Invalid email address'),
-  password: z.string()
-    .min(8, 'This password is too short. It must contain at least 8 characters.')
-    .refine((val) => !/^\d+$/.test(val), {
-      message: 'This password is entirely numeric.',
-    }),
-  password_confirm: z.string().min(1, 'Please confirm your password'),
-}).refine((data) => data.password === data.password_confirm, {
-  message: 'Passwords do not match',
-  path: ['password_confirm'],
-});
-
 const Signup = () => {
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    password_confirm: '',
+  });
+
+  const [passwordError, setPasswordError] = useState('');
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error, isAuthenticated } = useSelector((state: any) => state.auth);
-
-  const form = useForm<z.infer<typeof signupSchema>>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: {
-      username: '',
-      email: '',
-      password: '',
-      password_confirm: '',
-    },
-  });
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -54,9 +35,30 @@ const Signup = () => {
     };
   }, [dispatch]);
 
-  const onSubmit = async (values: z.infer<typeof signupSchema>) => {
-    const { username, email, password, password_confirm } = values;
-    dispatch(signupUser({ username, email, password, password_confirm }) as any);
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+
+    // Clear password error when user starts typing
+    if (e.target.name === 'password' || e.target.name === 'password_confirm') {
+      setPasswordError('');
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validate passwords match
+    if (formData.password !== formData.password_confirm) {
+      setPasswordError('Passwords do not match');
+      return;
+    }
+
+    if (formData.username && formData.email && formData.password && formData.password_confirm) {
+      dispatch(signupUser(formData) as any);
+    }
   };
 
   return (
@@ -69,84 +71,83 @@ const Signup = () => {
           <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
           <CardDescription>Sign up to get started with your tax organizer</CardDescription>
         </CardHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardContent className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              <FormField
-                control={form.control}
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            {passwordError && (
+              <Alert variant="destructive">
+                <AlertDescription>{passwordError}</AlertDescription>
+              </Alert>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
                 name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Choose a username" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                type="text"
+                required
+                value={formData.username}
+                onChange={handleChange}
+                placeholder="Choose a username"
               />
-              <FormField
-                control={form.control}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
                 name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="Enter your email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                type="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter your email"
               />
-              <FormField
-                control={form.control}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
                 name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="Create a password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                type="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Create a password"
               />
-              <FormField
-                control={form.control}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password_confirm">Confirm Password</Label>
+              <Input
+                id="password_confirm"
                 name="password_confirm"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="Confirm your password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                type="password"
+                required
+                value={formData.password_confirm}
+                onChange={handleChange}
+                placeholder="Confirm your password"
               />
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-4">
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={loading}
-              >
-                {loading ? 'Creating Account...' : 'Create Account'}
-              </Button>
-              <p className="text-sm text-muted-foreground text-center">
-                Already have an account?{' '}
-                <Link to="/login" className="text-primary hover:underline">
-                  Sign in
-                </Link>
-              </p>
-            </CardFooter>
-          </form>
-        </Form>
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={loading}
+            >
+              {loading ? 'Creating Account...' : 'Create Account'}
+            </Button>
+            <p className="text-sm text-muted-foreground text-center">
+              Already have an account?{' '}
+              <Link to="/login" className="text-primary hover:underline">
+                Sign in
+              </Link>
+            </p>
+          </CardFooter>
+        </form>
       </Card>
     </div>
   );
