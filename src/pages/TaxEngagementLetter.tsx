@@ -141,6 +141,8 @@ export const TaxEngagementLetter = () => {
       alert('Engagement letter saved successfully!');
       setDocumentExists(true);
       console.log('Saved response:', response);
+      // Navigate to homepage after successful submission
+      navigate('/');
     } catch (error) {
       console.error('Error submitting form:', error);
       alert('Failed to submit engagement letter.');
