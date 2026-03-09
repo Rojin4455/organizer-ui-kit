@@ -42,6 +42,11 @@ import businessLogo from '../assets/New-log.png';
 import { useToast } from '@/hooks/use-toast';
 import AdminUserDetail from './AdminUserDetail';
 
+interface FormCountInfo {
+  draft: number;
+  submitted: number;
+}
+
 interface User {
   id: number;
   username: string;
@@ -50,8 +55,12 @@ interface User {
   last_name: string;
   date_joined: string;
   is_active: boolean;
-  forms_draft_count: number;
-  forms_submitted_count: number;
+  forms_count: {
+    personal: FormCountInfo;
+    business: FormCountInfo;
+    rental: FormCountInfo;
+    flip: FormCountInfo;
+  };
   engagement_letter_signed: boolean;
 }
 
@@ -449,14 +458,26 @@ const AdminDashboard = () => {
                 <Table>
                   <TableHead>
                     <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                      <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>User</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Email</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Joined</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>Draft Forms</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>Submitted</TableCell>
-                      <TableCell align="center" sx={{ fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>Engagement Ltr</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Status</TableCell>
-                      <TableCell align="center" sx={{ fontWeight: 600, color: '#1e293b' }}>Active</TableCell>
+                      <TableCell rowSpan={2} sx={{ fontWeight: 600, color: '#1e293b' }}>User</TableCell>
+                      <TableCell rowSpan={2} sx={{ fontWeight: 600, color: '#1e293b' }}>Email</TableCell>
+                      <TableCell rowSpan={2} sx={{ fontWeight: 600, color: '#1e293b' }}>Joined</TableCell>
+                      <TableCell colSpan={2} align="center" sx={{ fontWeight: 600, color: '#1e293b', borderBottom: '1px solid rgba(224, 224, 224, 1)', borderRight: '1px solid rgba(224, 224, 224, 1)' }}>Personal Forms</TableCell>
+                      <TableCell colSpan={2} align="center" sx={{ fontWeight: 600, color: '#1e293b', borderBottom: '1px solid rgba(224, 224, 224, 1)', borderRight: '1px solid rgba(224, 224, 224, 1)' }}>Business Forms</TableCell>
+                      <TableCell colSpan={2} align="center" sx={{ fontWeight: 600, color: '#1e293b', borderBottom: '1px solid rgba(224, 224, 224, 1)', borderRight: '1px solid rgba(224, 224, 224, 1)' }}>Rental Forms</TableCell>
+                      <TableCell colSpan={2} align="center" sx={{ fontWeight: 600, color: '#1e293b', borderBottom: '1px solid rgba(224, 224, 224, 1)' }}>Flip Forms</TableCell>
+                      <TableCell rowSpan={2} align="center" sx={{ fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>Engagement Ltr</TableCell>
+                      <TableCell rowSpan={2} sx={{ fontWeight: 600, color: '#1e293b' }}>Status</TableCell>
+                      <TableCell rowSpan={2} align="center" sx={{ fontWeight: 600, color: '#1e293b' }}>Active</TableCell>
+                    </TableRow>
+                    <TableRow sx={{ backgroundColor: '#f8fafc' }}>
+                      <TableCell align="center" sx={{ fontWeight: 600, fontSize: '0.75rem', p: 1, whiteSpace: 'nowrap' }}>Draft</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 600, fontSize: '0.75rem', p: 1, whiteSpace: 'nowrap', borderRight: '1px solid rgba(224, 224, 224, 1)' }}>Submitted</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 600, fontSize: '0.75rem', p: 1, whiteSpace: 'nowrap' }}>Draft</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 600, fontSize: '0.75rem', p: 1, whiteSpace: 'nowrap', borderRight: '1px solid rgba(224, 224, 224, 1)' }}>Submitted</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 600, fontSize: '0.75rem', p: 1, whiteSpace: 'nowrap' }}>Draft</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 600, fontSize: '0.75rem', p: 1, whiteSpace: 'nowrap', borderRight: '1px solid rgba(224, 224, 224, 1)' }}>Submitted</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 600, fontSize: '0.75rem', p: 1, whiteSpace: 'nowrap' }}>Draft</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 600, fontSize: '0.75rem', p: 1, whiteSpace: 'nowrap', }}>Submitted</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -525,39 +546,62 @@ const AdminDashboard = () => {
                             {formatDate(user.date_joined)}
                           </Typography>
                         </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Box sx={{
-                              width: 24,
-                              height: 24,
-                              borderRadius: '4px',
-                              backgroundColor: '#f1f5f9',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontWeight: 600,
-                              fontSize: '0.75rem',
-                              color: '#64748b'
-                            }}>
-                              {user.forms_draft_count || 0}
+                        <TableCell align="center">
+                          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <Box sx={{ width: 24, height: 24, borderRadius: '4px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.75rem', color: '#64748b' }}>
+                              {user.forms_count?.personal?.draft || 0}
                             </Box>
                           </Box>
                         </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Box sx={{
-                              width: 24,
-                              height: 24,
-                              borderRadius: '4px',
-                              backgroundColor: '#eff6ff',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontWeight: 600,
-                              fontSize: '0.75rem',
-                              color: '#3b82f6'
-                            }}>
-                              {user.forms_submitted_count || 0}
+                        <TableCell align="center" sx={{ borderRight: '1px solid rgba(224, 224, 224, 1)' }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <Box sx={{ width: 24, height: 24, borderRadius: '4px', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.75rem', color: '#3b82f6' }}>
+                              {user.forms_count?.personal?.submitted || 0}
+                            </Box>
+                          </Box>
+                        </TableCell>
+
+                        <TableCell align="center">
+                          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <Box sx={{ width: 24, height: 24, borderRadius: '4px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.75rem', color: '#64748b' }}>
+                              {user.forms_count?.business?.draft || 0}
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell align="center" sx={{ borderRight: '1px solid rgba(224, 224, 224, 1)' }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <Box sx={{ width: 24, height: 24, borderRadius: '4px', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.75rem', color: '#3b82f6' }}>
+                              {user.forms_count?.business?.submitted || 0}
+                            </Box>
+                          </Box>
+                        </TableCell>
+
+                        <TableCell align="center">
+                          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <Box sx={{ width: 24, height: 24, borderRadius: '4px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.75rem', color: '#64748b' }}>
+                              {user.forms_count?.rental?.draft || 0}
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell align="center" sx={{ borderRight: '1px solid rgba(224, 224, 224, 1)' }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <Box sx={{ width: 24, height: 24, borderRadius: '4px', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.75rem', color: '#3b82f6' }}>
+                              {user.forms_count?.rental?.submitted || 0}
+                            </Box>
+                          </Box>
+                        </TableCell>
+
+                        <TableCell align="center">
+                          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <Box sx={{ width: 24, height: 24, borderRadius: '4px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.75rem', color: '#64748b' }}>
+                              {user.forms_count?.flip?.draft || 0}
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <Box sx={{ width: 24, height: 24, borderRadius: '4px', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.75rem', color: '#3b82f6' }}>
+                              {user.forms_count?.flip?.submitted || 0}
                             </Box>
                           </Box>
                         </TableCell>
@@ -630,7 +674,7 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
       </Container>
-    </Box>
+    </Box >
   );
 };
 
