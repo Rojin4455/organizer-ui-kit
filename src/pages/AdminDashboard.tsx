@@ -50,6 +50,9 @@ interface User {
   last_name: string;
   date_joined: string;
   is_active: boolean;
+  forms_draft_count: number;
+  forms_submitted_count: number;
+  engagement_letter_signed: boolean;
 }
 
 const AdminDashboard = () => {
@@ -57,7 +60,7 @@ const AdminDashboard = () => {
   const dispatch = useDispatch();
   const { user: adminUser, permissions, isAuthenticated } = useSelector((state: any) => state.adminAuth);
   const { toast } = useToast();
-  
+
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,23 +72,23 @@ const AdminDashboard = () => {
   const [inactiveCount, setInactiveCount] = useState(0);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showAdminOptions, setShowAdminOptions] = useState(false);
-  
+
   const isSuperAdmin = permissions?.is_super_admin || false;
 
   useEffect(() => {
     // Check if admin is authenticated
     const adminToken = localStorage.getItem('adminAccessToken');
-    
+
     if (!adminToken && !isAuthenticated) {
       navigate('/atg-admin/login');
       return;
     }
-    
+
     // Load permissions if not already loaded
     if (!permissions && adminToken) {
       loadPermissions();
     }
-    
+
     loadUsers('', 1);
   }, [navigate, isAuthenticated]);
 
@@ -109,13 +112,13 @@ const AdminDashboard = () => {
     if (searchDebounce) {
       clearTimeout(searchDebounce);
     }
-    
+
     const timer = setTimeout(() => {
       loadUsers(searchQuery, page);
     }, 500);
-    
+
     setSearchDebounce(timer);
-    
+
     return () => {
       if (searchDebounce) {
         clearTimeout(searchDebounce);
@@ -127,14 +130,14 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       const response = await apiService.getAdminUsers(search, currentPage);
-      
+
       // Handle paginated response
       if (response.results) {
         // Paginated response format
         setUsers(response.results || []);
-        setTotalCount(response.count || 0);
+        setTotalCount(response.stats.total || response.count || 0);
         setTotalPages(Math.ceil((response.count || 0) / 20));
-        
+
         // Update stats from response
         if (response.stats) {
           setActiveCount(response.stats.active || 0);
@@ -147,9 +150,9 @@ const AdminDashboard = () => {
       } else {
         // Fallback for non-paginated response
         setUsers(response.users || []);
-        setTotalCount(response.count || response.users?.length || 0);
+        setTotalCount(response.stats.total || response.count || response.users?.length || 0);
         setTotalPages(1);
-        
+
         // Update stats from response
         if (response.stats) {
           setActiveCount(response.stats.active || 0);
@@ -190,14 +193,14 @@ const AdminDashboard = () => {
     try {
       const response = await apiService.toggleUserActive(userId);
       const newStatus = !currentStatus;
-      
+
       // Update local state
-      setUsers(users.map(user => 
-        user.id === userId 
+      setUsers(users.map(user =>
+        user.id === userId
           ? { ...user, is_active: newStatus }
           : user
       ));
-      
+
       // Update stats
       if (newStatus) {
         setActiveCount(prev => prev + 1);
@@ -206,7 +209,7 @@ const AdminDashboard = () => {
         setActiveCount(prev => Math.max(0, prev - 1));
         setInactiveCount(prev => prev + 1);
       }
-      
+
       toast({
         title: 'Success',
         description: response.message || `User ${newStatus ? 'activated' : 'deactivated'} successfully`,
@@ -248,22 +251,22 @@ const AdminDashboard = () => {
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
       {/* Header */}
-      <Box sx={{ 
-        backgroundColor: '#ffffff', 
+      <Box sx={{
+        backgroundColor: '#ffffff',
         borderBottom: '1px solid #e2e8f0',
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
       }}>
         <Container maxWidth="xl">
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'space-between',
             py: 2
           }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <img 
-                src={businessLogo} 
-                alt="Business Logo" 
+              <img
+                src={businessLogo}
+                alt="Business Logo"
                 style={{ height: '40px', width: 'auto' }}
               />
               <Box>
@@ -286,7 +289,7 @@ const AdminDashboard = () => {
               </Box>
               <IconButton
                 onClick={handleLogout}
-                sx={{ 
+                sx={{
                   color: '#64748b',
                   '&:hover': { backgroundColor: '#f1f5f9' }
                 }}
@@ -302,9 +305,9 @@ const AdminDashboard = () => {
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
         {/* Admin Options Section - Only visible to super admins */}
         {isSuperAdmin && (
-          <Card 
-            sx={{ 
-              mb: 4, 
+          <Card
+            sx={{
+              mb: 4,
               backgroundColor: '#ffffff',
               border: '1px solid #e2e8f0',
               boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
@@ -337,7 +340,7 @@ const AdminDashboard = () => {
                       py: 1,
                       borderRadius: 2,
                       textTransform: 'none',
-                      '&:hover': { 
+                      '&:hover': {
                         backgroundColor: '#2563eb',
                       },
                     }}
@@ -357,7 +360,7 @@ const AdminDashboard = () => {
                       py: 1,
                       borderRadius: 2,
                       textTransform: 'none',
-                      '&:hover': { 
+                      '&:hover': {
                         borderColor: '#2563eb',
                         backgroundColor: '#eff6ff',
                       },
@@ -449,19 +452,22 @@ const AdminDashboard = () => {
                       <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>User</TableCell>
                       <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Email</TableCell>
                       <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Joined</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>Draft Forms</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>Submitted</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>Engagement Ltr</TableCell>
                       <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Status</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 600, color: '#1e293b' }}>Active</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {users.map((user) => (
-                      <TableRow 
+                      <TableRow
                         key={user.id}
                         onClick={() => setSelectedUser(user)}
-                        sx={{ 
+                        sx={{
                           cursor: 'pointer',
                           transition: 'all 0.2s ease-in-out',
-                          '&:hover': { 
+                          '&:hover': {
                             backgroundColor: '#f1f5f9',
                             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
                             transform: 'translateY(-1px)',
@@ -473,10 +479,10 @@ const AdminDashboard = () => {
                         }}
                       >
                         <TableCell>
-                          <Box 
-                            sx={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
                               gap: 1.5,
                             }}
                           >
@@ -520,6 +526,49 @@ const AdminDashboard = () => {
                           </Typography>
                         </TableCell>
                         <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box sx={{
+                              width: 24,
+                              height: 24,
+                              borderRadius: '4px',
+                              backgroundColor: '#f1f5f9',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 600,
+                              fontSize: '0.75rem',
+                              color: '#64748b'
+                            }}>
+                              {user.forms_draft_count || 0}
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box sx={{
+                              width: 24,
+                              height: 24,
+                              borderRadius: '4px',
+                              backgroundColor: '#eff6ff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 600,
+                              fontSize: '0.75rem',
+                              color: '#3b82f6'
+                            }}>
+                              {user.forms_submitted_count || 0}
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell align="center">
+                          {user.engagement_letter_signed ? (
+                            <Chip label="Signed" size="small" color="primary" variant="outlined" sx={{ fontWeight: 500, borderColor: '#3b82f6', color: '#3b82f6' }} />
+                          ) : (
+                            <Typography variant="caption" color="text.secondary">-</Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <Chip
                             label={user.is_active ? 'Active' : 'Inactive'}
                             color={user.is_active ? 'success' : 'default'}
@@ -538,8 +587,8 @@ const AdminDashboard = () => {
                               color="success"
                               disabled={user.id === adminUser?.id}
                             />
-                            <ChevronRightIcon 
-                              sx={{ 
+                            <ChevronRightIcon
+                              sx={{
                                 color: '#94a3b8',
                                 fontSize: '1.25rem',
                                 ml: 1,
@@ -548,7 +597,7 @@ const AdminDashboard = () => {
                                   transform: 'translateX(4px)',
                                   color: '#3b82f6',
                                 }
-                              }} 
+                              }}
                             />
                           </Box>
                         </TableCell>
@@ -558,7 +607,7 @@ const AdminDashboard = () => {
                 </Table>
               </TableContainer>
             )}
-            
+
             {/* Pagination */}
             {!loading && users.length > 0 && totalPages > 1 && (
               <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
