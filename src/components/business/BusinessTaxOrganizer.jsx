@@ -303,10 +303,10 @@ export const BusinessTaxOrganizer = ({
 
   // Tab management functions
   const addFormTab = async () => {
-    if (formTabs.length >= 10) {
+    if (formTabs.length >= 20) {
       toast({
         title: "Tab Limit Reached",
-        description: "You can only have up to 10 business forms.",
+        description: "You can only have up to 20 business forms.",
         variant: "destructive",
       });
       return;
@@ -380,6 +380,14 @@ export const BusinessTaxOrganizer = ({
 
     try {
       const tab = formTabs.find(t => t.id === editingTabId);
+      if (!tab?.isDataLoaded) {
+        toast({
+          title: "Form still loading",
+          description: "Please wait for the form to load before renaming.",
+          variant: "destructive",
+        });
+        return;
+      }
       const payload = {
         form_name: editingTabName.trim(),
         form_type: 'business',
@@ -683,7 +691,15 @@ export const BusinessTaxOrganizer = ({
 
   const handleSaveProgress = async () => {
     if (isLoadingData || !activeTab || activeTab.status === 'submitted') return;
-    
+    if (!activeTab.isDataLoaded) {
+      toast({
+        title: "Form still loading",
+        description: "Please wait for the form to load before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const displayName = activeTab.formData?.basicInfo?.businessName?.trim() || activeTab.name;
       const payload = {
@@ -1018,7 +1034,7 @@ export const BusinessTaxOrganizer = ({
               onClick={addFormTab}
               variant="outlined"
               size="small"
-              disabled={formTabs.length >= 10}
+              disabled={formTabs.length >= 20}
               sx={{ 
                 ml: { xs: 0, sm: 2 },
                 width: { xs: '100%', sm: 'auto' },

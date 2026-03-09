@@ -215,10 +215,10 @@ const IncomeExpenseTracker = () => {
 
   // Tab management functions
   const addBusinessTab = () => {
-    if (businessTabs.length >= 10) {
+    if (businessTabs.length >= 20) {
       toast({
         title: "Maximum Tabs Reached",
-        description: "You can only have up to 10 business tabs.",
+        description: "You can only have up to 20 business tabs.",
         variant: "destructive",
       });
       return;
@@ -1232,13 +1232,13 @@ const IncomeExpenseTracker = () => {
       
       <Button
         onClick={addBusinessTab}
-        disabled={businessTabs.length >= 10}
+        disabled={businessTabs.length >= 20}
         variant="outline"
         size="sm"
         className="gap-2"
       >
         <Plus className="h-4 w-4" />
-        Add Business {businessTabs.length >= 10 && '(Max 10)'}
+        Add Business {businessTabs.length >= 20 && '(Max 20)'}
       </Button>
     </div>
   </Tabs>

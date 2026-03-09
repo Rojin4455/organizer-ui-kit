@@ -192,13 +192,8 @@ export const FlipOrganizer = ({
       );
     } catch (error) {
       console.error('Error loading tab data:', error);
-      toast({ title: 'Error', description: 'Failed to load form data.', variant: 'destructive' });
-      // Mark tab as loaded with empty data so the form still renders
-      setFormTabs((prev) =>
-        prev.map((t) =>
-          t.id === tabId ? { ...t, isDataLoaded: true, formData: createDefaultFormData() } : t
-        )
-      );
+      toast({ title: 'Error', description: 'Failed to load form data. Please try again or refresh.', variant: 'destructive' });
+      // Do not set isDataLoaded so we never save over server data with empty form
     }
   };
 
@@ -265,8 +260,8 @@ export const FlipOrganizer = ({
   }
 
   const addFormTab = async () => {
-    if (formTabs.length >= 10) {
-      toast({ title: 'Tab Limit Reached', description: 'You can only have up to 10 flip forms.', variant: 'destructive' });
+    if (formTabs.length >= 20) {
+      toast({ title: 'Tab Limit Reached', description: 'You can only have up to 20 flip forms.', variant: 'destructive' });
       return;
     }
     try {
@@ -320,6 +315,10 @@ export const FlipOrganizer = ({
     }
     try {
       const tab = formTabs.find((t) => t.id === editingTabId);
+      if (!tab?.isDataLoaded) {
+        toast({ title: 'Form still loading', description: 'Please wait for the form to load before renaming.', variant: 'destructive' });
+        return;
+      }
       const payload = {
         form_name: editingTabName.trim(),
         form_type: 'flip',
@@ -541,6 +540,10 @@ export const FlipOrganizer = ({
 
   const handleSaveProgress = async () => {
     if (isLoadingData || !activeTab || activeTab.status === 'submitted') return;
+    if (!activeTab.isDataLoaded) {
+      toast({ title: 'Form still loading', description: 'Please wait for the form to load before saving.', variant: 'destructive' });
+      return;
+    }
     try {
       const displayName = activeTab.formData?.flipInfo?.address?.trim() || activeTab.name;
       const payload = {
@@ -669,7 +672,7 @@ export const FlipOrganizer = ({
                 ))}
               </TabsList>
             </Box>
-            <Button startIcon={<AddIcon />} onClick={addFormTab} variant="outlined" size="small" disabled={formTabs.length >= 10} sx={{ ml: { xs: 0, sm: 2 }, width: { xs: '100%', sm: 'auto' }, mt: { xs: 2, sm: 0 } }}>
+            <Button startIcon={<AddIcon />} onClick={addFormTab} variant="outlined" size="small" disabled={formTabs.length >= 20} sx={{ ml: { xs: 0, sm: 2 }, width: { xs: '100%', sm: 'auto' }, mt: { xs: 2, sm: 0 } }}>
               Add Flip
             </Button>
           </Box>
