@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -73,7 +73,9 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchDebounce, setSearchDebounce] = useState<NodeJS.Timeout | null>(null);
+  const [inputValue, setInputValue] = useState('');
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isFirstRender = useRef(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -112,28 +114,33 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    // Reset to page 1 when search changes
-    setPage(1);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    // Debounce search
-    if (searchDebounce) {
-      clearTimeout(searchDebounce);
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
     }
 
-    const timer = setTimeout(() => {
-      loadUsers(searchQuery, page);
-    }, 500);
-
-    setSearchDebounce(timer);
+    loadUsers(searchQuery, page);
 
     return () => {
-      if (searchDebounce) {
-        clearTimeout(searchDebounce);
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
       }
     };
   }, [searchQuery, page]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputValue(value);
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      setSearchQuery(value);
+      setPage(1);
+    }, 500); // 500ms debounce
+  };
 
   const loadUsers = async (search = '', currentPage = 1) => {
     try {
@@ -427,8 +434,8 @@ const AdminDashboard = () => {
               <TextField
                 fullWidth
                 placeholder="Search users by username, email, or name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={inputValue}
+                onChange={handleSearchChange}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
