@@ -7,6 +7,7 @@ export const getUrlParams = () => {
     formType: params.get('type'),
     view: params.get('view'),
     formId: params.get('form_id'),
+    forUserId: params.get('for_user_id'), // When admin fills form for a client
   };
 };
 

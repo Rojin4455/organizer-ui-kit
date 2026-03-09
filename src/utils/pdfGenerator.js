@@ -659,6 +659,66 @@ const getRentalFormStructure = (submissionData) => [
   // }
 ];
 
+const formatFlipCurrency = (v) => {
+  if (v === null || v === undefined || v === '') return 'Not provided';
+  const n = Number(String(v).replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(n) ? `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : String(v);
+};
+
+const getFlipFormStructure = (submissionData) => [
+  {
+    title: 'Flip Info',
+    fields: [
+      { label: 'Address of Property', value: submissionData?.flipInfo?.address },
+      { label: 'City', value: submissionData?.flipInfo?.city },
+      { label: 'State', value: submissionData?.flipInfo?.state },
+      { label: 'Zip', value: submissionData?.flipInfo?.zip },
+    ]
+  },
+  {
+    title: 'Sales Information',
+    fields: [
+      { label: 'Sales Price (Include HUD if possible)', value: submissionData?.salesInfo?.salesPrice != null ? formatFlipCurrency(submissionData.salesInfo.salesPrice) : 'Not provided' },
+      { label: 'Date', value: submissionData?.salesInfo?.salesDate },
+      { label: 'Sales Expenses', value: submissionData?.salesInfo?.salesExpenses != null ? formatFlipCurrency(submissionData.salesInfo.salesExpenses) : 'Not provided' },
+      { label: 'Total Proceeds', value: submissionData?.salesInfo?.totalProceeds != null ? formatFlipCurrency(submissionData.salesInfo.totalProceeds) : 'Not provided' },
+    ]
+  },
+  {
+    title: 'Purchase Information',
+    fields: [
+      { label: 'Purchase Cost (include HUD if possible)', value: submissionData?.purchaseInfo?.purchaseCost != null ? formatFlipCurrency(submissionData.purchaseInfo.purchaseCost) : 'Not provided' },
+      { label: 'Date', value: submissionData?.purchaseInfo?.purchaseDate },
+      { label: 'Other purchase costs', value: submissionData?.purchaseInfo?.otherPurchaseCosts != null ? formatFlipCurrency(submissionData.purchaseInfo.otherPurchaseCosts) : 'Not provided' },
+      { label: 'Remodel/fix-up Costs', value: submissionData?.purchaseInfo?.remodelFixUpCosts != null ? formatFlipCurrency(submissionData.purchaseInfo.remodelFixUpCosts) : 'Not provided' },
+    ]
+  },
+  {
+    title: 'Holding Costs',
+    fields: [
+      { label: 'Holding Costs (taxes, utilities, interest, etc.)', value: submissionData?.holdingCosts?.holdingCosts != null ? formatFlipCurrency(submissionData.holdingCosts.holdingCosts) : 'Not provided' },
+    ]
+  },
+  {
+    title: 'Summary and Calculation',
+    fields: [
+      { label: 'Total Purchase and Holding costs (basis)', value: submissionData?.summary?.totalBasis != null ? formatFlipCurrency(submissionData.summary.totalBasis) : 'Not provided' },
+      { label: 'Subtract', value: submissionData?.summary?.subtract != null ? formatFlipCurrency(submissionData.summary.subtract) : 'Not provided' },
+      { label: 'Profit or Loss', value: submissionData?.summary?.profitOrLoss != null ? formatFlipCurrency(submissionData.summary.profitOrLoss) : 'Not provided' },
+    ]
+  },
+  {
+    title: 'Tax Treatment Note',
+    fields: [
+      {
+        label: 'Note',
+        value: 'If not sold in same year, all purchase and holding costs will be placed in cost of goods sold and will be held there until sold, and then profit/loss accounted for on tax return of year sold.',
+        type: 'multiline',
+      },
+    ]
+  }
+];
+
 const getBusinessFormStructure = (submissionData) => [
   // {
   //   title: 'Contact Information',
@@ -767,7 +827,7 @@ const getBusinessFormStructure = (submissionData) => [
       { label: 'Repairs', value: submissionData?.incomeExpenses?.repairs },
       { label: 'Entity Creation', value: submissionData?.incomeExpenses?.entityCreation },
       { label: 'Shipping/Postage', value: submissionData?.incomeExpenses?.shippingPostage },
-      { label: 'Food/Eat Out', value: submissionData?.incomeExpenses?.foodEatOut },
+      // { label: 'Food/Eat Out', value: submissionData?.incomeExpenses?.foodEatOut },
       { label: 'Taxes - real estate', value: submissionData?.incomeExpenses?.taxesRealEstate },
       { label: 'Health Insurance Premiums', value: submissionData?.incomeExpenses?.healthInsurancePremiums },
       { label: 'Taxes - other', value: submissionData?.incomeExpenses?.taxesOther },
@@ -871,8 +931,9 @@ export const generatePDFFromFormData = (formData, formInfo) => {
   doc.setFontSize(20);
   doc.setFont(undefined, 'bold');
   doc.setTextColor(0, 0, 0);
-  const formType = formInfo?.form_type || 'Tax';
-  doc.text(`${formType.charAt(0).toUpperCase() + formType.slice(1)} Tax Organizer`, MARGIN + 30, 15);
+  const formType = formInfo?.form_type || formData?.form_type || 'personal';
+  const formTypeLabel = formType === 'flip' ? 'Flip Organizer' : `${formType.charAt(0).toUpperCase() + formType.slice(1)} Tax Organizer`;
+  doc.text(formTypeLabel, MARGIN + 30, 15);
 
   // Add form metadata
   yPosition = 35;
@@ -881,9 +942,9 @@ export const generatePDFFromFormData = (formData, formInfo) => {
   doc.setTextColor(100, 100, 100);
   
   const formInfoData = [
-    `Form ID: ${formInfo?.id || 'N/A'}`,
-    `Status: ${formInfo?.status || 'N/A'}`,
-    `Submitted: ${formInfo?.submitted_at ? new Date(formInfo.submitted_at).toLocaleDateString() : 'N/A'}`,
+    `Form ID: ${formInfo?.id ?? formData?.id ?? 'N/A'}`,
+    `Status: ${formInfo?.status ?? formData?.status ?? 'N/A'}`,
+    `Submitted: ${(formInfo?.submitted_at ?? formData?.submitted_at) ? new Date(formInfo?.submitted_at ?? formData?.submitted_at).toLocaleDateString() : 'N/A'}`,
     `Generated: ${new Date().toLocaleDateString()}`
   ];
 
@@ -899,20 +960,24 @@ export const generatePDFFromFormData = (formData, formInfo) => {
   doc.line(MARGIN, yPosition, PAGE_WIDTH - MARGIN, yPosition);
   yPosition += 10;
 
-  // Get form structure based on type
+  const resolvedFormType = formInfo?.form_type || formData?.form_type || 'personal';
+  const submissionData = formData?.submission_data || formData;
   let formStructure;
-  switch (formInfo?.form_type) {
+  switch (resolvedFormType) {
     case 'personal':
-      formStructure = getPersonalFormStructure(formData.submission_data);
+      formStructure = getPersonalFormStructure(submissionData);
       break;
     case 'business':
-      formStructure = getBusinessFormStructure(formData.submission_data);
+      formStructure = getBusinessFormStructure(submissionData);
       break;
     case 'rental':
-      formStructure = getRentalFormStructure(formData.submission_data);
+      formStructure = getRentalFormStructure(submissionData);
+      break;
+    case 'flip':
+      formStructure = getFlipFormStructure(submissionData);
       break;
     default:
-      formStructure = getPersonalFormStructure(formData.submission_data);
+      formStructure = getPersonalFormStructure(submissionData);
   }
 
   // Process form sections
@@ -1186,9 +1251,9 @@ export const generatePDFFromFormData = (formData, formInfo) => {
 export const downloadFormAsPDF = (formData, formInfo) => {
   try {
     const doc = generatePDFFromFormData(formData, formInfo);
-    const formType = formInfo?.form_type || 'tax';
-    const formId = formInfo?.id ? formInfo.id.slice(0, 8) : 'unknown';
-    const fileName = `${formType}_tax_organizer_${formId}.pdf`;
+    const formType = formInfo?.form_type ?? formData?.form_type ?? 'tax';
+    const formId = (formInfo?.id ?? formData?.id) ? String(formInfo?.id ?? formData?.id).slice(0, 8) : 'unknown';
+    const fileName = formType === 'flip' ? `flip_organizer_${formId}.pdf` : `${formType}_tax_organizer_${formId}.pdf`;
     doc.save(fileName);
   } catch (error) {
     console.error('Error generating PDF:', error);

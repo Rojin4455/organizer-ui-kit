@@ -130,15 +130,21 @@ const IncomeExpenseTracker = () => {
         setBusinessTabs([migratedTab]);
         setActiveTabId('business-1');
       }
-    } catch (error) {
-      console.error('Error loading tracker data:', error);
-      if (error.message && !error.message.includes('404')) {
-        toast({
-          title: "Error",
-          description: "Failed to load tracker data. Using default empty state.",
-          variant: "destructive",
-        });
+    } catch (error: any) {
+      const isNoData =
+        error?.status === 404 ||
+        error?.message?.toLowerCase().includes('no finance data') ||
+        error?.responseData?.message?.toLowerCase().includes('no finance data');
+      if (isNoData) {
+        // No tracker submitted for this client — use default empty state without showing error
+        return;
       }
+      console.error('Error loading tracker data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load tracker data. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

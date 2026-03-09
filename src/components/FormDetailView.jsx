@@ -18,20 +18,27 @@ import { downloadFormAsPDF } from '../utils/pdfGenerator';
 import { PersonalTaxOrganizerReadOnly } from './personal/PersonalTaxOrganizerReadOnly';
 import { BusinessTaxOrganizerReadOnly } from './business/BusinessTaxOrganizerReadOnly';
 import { RentalPropertyOrganizerReadOnly } from './rental/RentalPropertyOrganizerReadOnly';
+import { FlipOrganizerReadOnly } from './flip/FlipOrganizerReadOnly';
 
-export const FormDetailView = ({ form, onBack, onEdit, userToken }) => {
-  const [formData, setFormData] = useState(null);
-  const [loading, setLoading] = useState(true);
+export const FormDetailView = ({ form, onBack, onEdit, userToken, useAdminToken = false, initialFormData = null, hideAppBar = false }) => {
+  const [formData, setFormData] = useState(initialFormData);
+  const [loading, setLoading] = useState(!initialFormData);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
 
   useEffect(() => {
+    if (initialFormData) {
+      setFormData(initialFormData);
+      setLoading(false);
+      return;
+    }
     loadFormData();
-  }, [form.id]);
+  }, [form.id, initialFormData]);
 
   const loadFormData = async () => {
+    if (initialFormData) return;
     try {
       setLoading(true);
-      const response = await apiService.getSubmission(form.id, form.form_type);
+      const response = await apiService.getSubmission(form.id, form.form_type, useAdminToken);
       setFormData(response);
     } catch (error) {
       console.error('Error loading form data:', error);
@@ -83,37 +90,39 @@ export const FormDetailView = ({ form, onBack, onEdit, userToken }) => {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
-        <Toolbar>
-          <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={onBack}
-            sx={{ mr: 2, color: '#64748b' }}
-          >
-            Back to Forms
-          </Button>
-          <Typography variant="h6" component="div" sx={{ color: '#1e293b', fontWeight: 600, flexGrow: 1 }}>
-            {form.form_type.charAt(0).toUpperCase() + form.form_type.slice(1)} Tax Form Details
-          </Typography>
-          {isDrafted && (
+      {!hideAppBar && (
+        <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
+          <Toolbar>
             <Button
-              variant="outlined"
-              startIcon={<EditIcon />}
-              onClick={handleEdit}
-              sx={{ mr: 2 }}
+              startIcon={<ArrowBackIcon />}
+              onClick={onBack}
+              sx={{ mr: 2, color: '#64748b' }}
             >
-              Edit Form
+              Back to Forms
             </Button>
-          )}
-          <Button
-            variant="contained"
-            startIcon={<DownloadIcon />}
-            onClick={handleDownloadPDF}
-          >
-            Download PDF
-          </Button>
-        </Toolbar>
-      </AppBar>
+            <Typography variant="h6" component="div" sx={{ color: '#1e293b', fontWeight: 600, flexGrow: 1 }}>
+              {form.form_type.charAt(0).toUpperCase() + form.form_type.slice(1)} Tax Form Details
+            </Typography>
+            {/* {isDrafted && (
+              <Button
+                variant="outlined"
+                startIcon={<EditIcon />}
+                onClick={handleEdit}
+                sx={{ mr: 2 }}
+              >
+                Edit Form
+              </Button>
+            )} */}
+            <Button
+              variant="contained"
+              startIcon={<DownloadIcon />}
+              onClick={handleDownloadPDF}
+            >
+              Download PDF
+            </Button>
+          </Toolbar>
+        </AppBar>
+      )}
 
       {/* Render form using structured read-only components */}
       {form.form_type === 'personal' && (
@@ -132,6 +141,13 @@ export const FormDetailView = ({ form, onBack, onEdit, userToken }) => {
       )}
       {form.form_type === 'rental' && (
         <RentalPropertyOrganizerReadOnly
+          submissionData={formData.submission_data}
+          formInfo={form}
+          showHeader={true}
+        />
+      )}
+      {form.form_type === 'flip' && (
+        <FlipOrganizerReadOnly
           submissionData={formData.submission_data}
           formInfo={form}
           showHeader={true}

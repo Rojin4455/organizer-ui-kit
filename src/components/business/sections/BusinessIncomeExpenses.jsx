@@ -210,15 +210,6 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
             fullWidth
           />
           <TextField
-            label="Food/Eat Out"
-            placeholder="e.g., client meals, business lunches (50% deductible)"
-            type="number"
-            value={data.foodEatOut || ''}
-            onChange={(e) => handleChange('foodEatOut', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-          <TextField
             label="Taxes - real estate"
             placeholder="e.g., property taxes on business real estate"
             type="number"

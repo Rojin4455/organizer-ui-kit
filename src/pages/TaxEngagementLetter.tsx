@@ -50,11 +50,9 @@ export const TaxEngagementLetter = () => {
   useEffect(() => {
     const fetchExistingData = async () => {
       try {
+        // Let apiService handle headers automatically
         const response = await apiService.request('/survey/tax-engagement-letter/', {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          },
         });
         if (response && response.taxpayer_name) {
           setSignature(response.signature || '');
@@ -62,8 +60,11 @@ export const TaxEngagementLetter = () => {
           setDate(response.date_signed || new Date().toISOString().split('T')[0]);
           setDocumentExists(true);
         }
-      } catch (error) {
-        console.log('No existing letter found or failed to fetch.');
+      } catch (error: any) {
+        // Only log if it's not an auth error (auth errors will redirect automatically)
+        if (error.status !== 401) {
+          console.log('No existing letter found or failed to fetch:', error);
+        }
         setDocumentExists(false);
       }
     };
@@ -129,13 +130,10 @@ export const TaxEngagementLetter = () => {
         pdf_data: pdfData
       };
 
+      // Let apiService handle headers and body stringification automatically
       const response = await apiService.request('/survey/tax-engagement-letter/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-        },
-        body: JSON.stringify(payload),
+        body: payload,
       });
 
       alert('Engagement letter saved successfully!');
@@ -143,9 +141,20 @@ export const TaxEngagementLetter = () => {
       console.log('Saved response:', response);
       // Navigate to homepage after successful submission
       navigate('/');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting form:', error);
-      alert('Failed to submit engagement letter.');
+      
+      // Provide more detailed error message
+      let errorMessage = 'Failed to submit engagement letter.';
+      if (error.status === 401) {
+        errorMessage = 'Your session has expired. Please log in again.';
+      } else if (error.message) {
+        errorMessage = `Failed to submit engagement letter: ${error.message}`;
+      } else if (error.responseData?.detail) {
+        errorMessage = `Failed to submit engagement letter: ${error.responseData.detail}`;
+      }
+      
+      alert(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -278,21 +287,41 @@ export const TaxEngagementLetter = () => {
                   label="Taxpayer Signature"
                   value={signature}
                   onChange={setSignature}
-                  width={500}
-                  height={150}
+                  width={350}
+                  height={100}
                   readOnly={documentExists}
                 />
               </Box>
 
-              {/* Taxpayer Name Field */}
-              <TextField
-                fullWidth
-                label="Accepted by: Taxpayer"
-                value={taxpayerName}
-                onChange={(e) => setTaxpayerName(e.target.value)}
-                sx={{ mb: 3 }}
-                required
-              />
+              {/* Taxpayer Name Field - Made More Obvious */}
+              <Box sx={{ mb: 3, p: 2, bgcolor: '#fff3cd', borderRadius: 2, border: '2px solid #ffc107' }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, mb: 1, color: '#856404' }}>
+                  ⚠️ IMPORTANT: Type Your Full Name Below
+                </Typography>
+                <TextField
+                  fullWidth
+                  label="Type Your Full Name Here"
+                  value={taxpayerName}
+                  onChange={(e) => setTaxpayerName(e.target.value)}
+                  placeholder="Enter your full legal name"
+                  required
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: '#ffffff',
+                      '&:hover fieldset': {
+                        borderColor: '#ffc107',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#ffc107',
+                        borderWidth: 2,
+                      },
+                    },
+                  }}
+                />
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  This must match the name on your tax return
+                </Typography>
+              </Box>
 
               <TextField
                 fullWidth

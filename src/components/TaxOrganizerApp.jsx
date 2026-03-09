@@ -27,19 +27,25 @@ import {
   Save as SaveIcon,
   Settings as SettingsIcon,
   TrendingUp as TrendingUpIcon,
+  SwapHoriz as FlipIcon,
   Description as DescriptionIcon,
+  ArrowForward as ArrowForwardIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { PersonalTaxOrganizer } from './personal/PersonalTaxOrganizer';
 import { BusinessTaxOrganizer } from './business/BusinessTaxOrganizer';
 import { RentalPropertyOrganizer } from './rental/RentalPropertyOrganizer';
+import { FlipOrganizer } from './flip/FlipOrganizer';
 import { FormsListView } from './FormsListView';
 import { EngagementLetterBanner } from './shared/EngagementLetterBanner';
+import { TaxExtensionBanner } from './shared/TaxExtensionBanner';
+import { ToolBox } from './shared/ToolBox';
 import { getUrlParams, setUrlParams, generateFormLink } from '../utils/urlParams';
 import { apiService } from '../services/api';
 import { businessLogo } from '../assets';
 import { useSelector, useDispatch } from 'react-redux';
-import { logout } from '../store/authSlice';
+import { clearAllAuthAndPurge } from '../utils/authLogout';
+import { persistor } from '../store/store';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -154,9 +160,10 @@ export const TaxOrganizerApp = ({
   const [userToken, setUserToken] = useState(null); // You'll need to get this from your auth system
   const [engagementLetterSigned, setEngagementLetterSigned] = useState(null);
   const [showEngagementBanner, setShowEngagementBanner] = useState(false);
+  const [fillForUserId, setFillForUserId] = useState(null); // When admin fills form for a client
 
   const handleLogout = () => {
-    dispatch(logout());
+    clearAllAuthAndPurge(dispatch, persistor);
   };
 
   const getInitials = (username) => {
@@ -193,13 +200,17 @@ export const TaxOrganizerApp = ({
   // Check URL parameters on component mount
   useEffect(() => {
     const params = getUrlParams();
+    if (params.forUserId) {
+      setFillForUserId(params.forUserId);
+      if (params.formType) {
+        setSelectedOrganizer(params.formType);
+      }
+    }
     if (params.userId && params.formType) {
       setCurrentUserId(params.userId);
       setSelectedOrganizer(params.formType);
       loadFormData(params.userId, params.formType);
     }
-    
-    // Load existing form data if form_id is provided
     if (params.formId) {
       setFormId(params.formId);
       const resolvedType = params.formType || 'personal';
@@ -410,73 +421,141 @@ export const TaxOrganizerApp = ({
     );
   }
 
+  if (selectedOrganizer === 'flip') {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <FlipOrganizer
+          onSave={handleSave}
+          onBack={() => { setSelectedOrganizer(null); setFillForUserId(null); }}
+          initialData={savedData}
+          userId={currentUserId}
+          fillForUserId={fillForUserId}
+          isLoading={isLoading}
+        />
+      </ThemeProvider>
+    );
+  }
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ flexGrow: 1 }}>
-        <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
-          <Toolbar>
-            <Box sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>
+        <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', zIndex: 1200 }}>
+          <Toolbar sx={{ 
+            flexWrap: { xs: 'wrap', sm: 'nowrap' },
+            minHeight: { xs: 'auto', sm: '64px' },
+            py: { xs: 1, sm: 0 },
+            gap: { xs: 1, sm: 0 }
+          }}>
+            <Box sx={{ 
+              mr: { xs: 1, sm: 2 }, 
+              display: 'flex', 
+              alignItems: 'center',
+              flexShrink: 0
+            }}>
               <img 
                 src={businessLogo} 
                 alt="Business Logo" 
-                style={{ height: '40px', width: 'auto' }}
+                style={{ height: '40px', width: 'auto', maxHeight: { xs: '32px', sm: '40px' } }}
               />
             </Box>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1, color: '#1e293b', fontWeight: 600 }}>
+            <Typography 
+              variant="h6" 
+              component="div" 
+              sx={{ 
+                flexGrow: 1, 
+                color: '#1e293b', 
+                fontWeight: 600,
+                fontSize: { xs: '1rem', sm: '1.25rem' },
+                display: { xs: 'none', sm: 'block' }
+              }}
+            >
               Tax Organizer Pro
             </Typography>
-            <Button
-              variant="outlined"
-              startIcon={<SaveIcon />}
-              onClick={() => setShowFormsList(true)}
-              sx={{ mr: 2 }}
-            >
-              My Forms
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <IconButton
-                  color="inherit"
-                  sx={{ color: '#64748b' }}
-                >
-                  <SettingsIcon />
-                </IconButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                        {getInitials(user?.username)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">{user?.username || 'User'}</span>
-                      {user?.email && (
-                        <span className="text-xs text-muted-foreground">{user.email}</span>
-                      )}
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: { xs: 1, sm: 2 },
+              width: { xs: '100%', sm: 'auto' },
+              justifyContent: { xs: 'space-between', sm: 'flex-end' },
+              order: { xs: 3, sm: 2 }
+            }}>
+              <Button
+                variant="contained"
+                startIcon={<SaveIcon />}
+                endIcon={<ArrowForwardIcon sx={{ display: { xs: 'none', sm: 'block' } }} />}
+                onClick={() => setShowFormsList(true)}
+                sx={{ 
+                  mr: { xs: 0, sm: 2 },
+                  backgroundColor: '#3b82f6',
+                  '&:hover': {
+                    backgroundColor: '#2563eb',
+                  },
+                  fontWeight: 600,
+                  boxShadow: '0 4px 6px rgba(59, 130, 246, 0.3)',
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  px: { xs: 1.5, sm: 2 },
+                  whiteSpace: { xs: 'nowrap', sm: 'normal' },
+                  flex: { xs: 1, sm: 'none' }
+                }}
+              >
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                  My Forms & Drafts
+                </Box>
+                <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                  My Forms
+                </Box>
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <IconButton
+                    color="inherit"
+                    sx={{ 
+                      color: '#64748b',
+                      flexShrink: 0
+                    }}
+                  >
+                    <SettingsIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />
+                  </IconButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56" style={{ zIndex: 1300 }}>
+                  <DropdownMenuLabel>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                          {getInitials(user?.username)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">{user?.username || 'User'}</span>
+                        {user?.email && (
+                          <span className="text-xs text-muted-foreground">{user.email}</span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Logout</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </Box>
           </Toolbar>
         </AppBar>
 
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Container maxWidth="lg" sx={{ mt: { xs: 2, sm: 4 }, mb: { xs: 2, sm: 4 }, px: { xs: 2, sm: 3 } }}>
           {showEngagementBanner && (
             <EngagementLetterBanner
               onNavigate={() => navigate('/tax-engagement-letter')}
               onClose={() => setShowEngagementBanner(false)}
             />
           )}
-          
+          <TaxExtensionBanner
+            onNavigate={() => window.open('https://api.leadconnectorhq.com/widget/form/8wLjUj6fcD8BpHvxdpPz', '_blank')}
+          />
           <Box sx={{ textAlign: 'center', mb: 6 }}>
             <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
               Professional Tax Organizer
@@ -564,7 +643,7 @@ export const TaxOrganizerApp = ({
                     Rental Property Organizer
                   </Typography>
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                    Organize your rental property information including property details, 
+                    Organize your rental property information including property details,
                     income, expenses, and owner information.
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
@@ -572,6 +651,30 @@ export const TaxOrganizerApp = ({
                     <Chip size="small" label="Rental Income" variant="outlined" />
                     <Chip size="small" label="Expenses" variant="outlined" />
                     <Chip size="small" label="Owner Details" variant="outlined" />
+                  </Box>
+                </CardContent>
+              </CardActionArea>
+            </Card>
+
+            <Card sx={{ width: { xs: '100%', md: '400px' }, height: '100%' }}>
+              <CardActionArea
+                onClick={() => handleNewForm('flip')}
+                sx={{ height: '100%', p: 3 }}
+              >
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <FlipIcon sx={{ fontSize: 64, color: '#06b6d4', mb: 2 }} />
+                  <Typography variant="h4" component="h2" gutterBottom>
+                    Flip Organizer
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                    Track property flip details including sales and purchase information,
+                    holding costs, and profit or loss calculations.
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
+                    <Chip size="small" label="Flip Info" variant="outlined" />
+                    <Chip size="small" label="Sales & Purchase" variant="outlined" />
+                    <Chip size="small" label="Holding Costs" variant="outlined" />
+                    <Chip size="small" label="Profit/Loss" variant="outlined" />
                   </Box>
                 </CardContent>
               </CardActionArea>
@@ -625,6 +728,8 @@ export const TaxOrganizerApp = ({
               </CardActionArea>
             </Card>
           </Box>
+
+          <ToolBox />
 
           <Box sx={{ mt: 6, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">

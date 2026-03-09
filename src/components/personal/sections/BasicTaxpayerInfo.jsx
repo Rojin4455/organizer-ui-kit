@@ -61,11 +61,19 @@ export const BasicTaxpayerInfo = ({ data, onChange }) => {
             required
           />
           <TextField
-            label="Date of Birth"
+            label="DOB"
             type="date"
             value={data.dateOfBirth || ''}
             onChange={(e) => handleChange('dateOfBirth', e.target.value)}
             InputLabelProps={{ shrink: true }}
+            required
+            fullWidth
+          />
+          <TextField
+            label="Email Address"
+            type="email"
+            value={data.email || ''}
+            onChange={(e) => handleChange('email', e.target.value)}
             required
             fullWidth
           />
@@ -121,6 +129,14 @@ export const BasicTaxpayerInfo = ({ data, onChange }) => {
               value={data.spouseDateOfBirth || ''}
               onChange={(e) => handleChange('spouseDateOfBirth', e.target.value)}
               InputLabelProps={{ shrink: true }}
+              fullWidth
+            />
+            <TextField
+              label="Spouse Email Address"
+              type="email"
+              value={data.spouseEmail || ''}
+              onChange={(e) => handleChange('spouseEmail', e.target.value)}
+              required
               fullWidth
             />
             <TextField

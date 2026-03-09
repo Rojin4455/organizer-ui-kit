@@ -8,6 +8,9 @@ import {
   Container,
   Switch,
   FormControlLabel,
+  Alert,
+  Chip,
+  IconButton,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -58,6 +61,15 @@ const createDefaultFormTab = (index = 0) => ({
   isDataLoaded: false,
 });
 
+/** Tab label: use entity Business Name from form when set, otherwise "Rental Property 1", "Rental Property 2", etc. */
+const getTabDisplayName = (tab, index) => {
+  const name = tab?.formData?.entityInfo?.businessName?.trim();
+  if (name) return name;
+  const i = index ?? 0;
+  if (tab?.name && /^Rental Property \d{10,}$/.test(tab.name)) return `Rental Property ${i + 1}`;
+  return tab?.name || `Rental Property ${i + 1}`;
+};
+
 export const RentalPropertyOrganizer = ({
   onSave,
   onBack,
@@ -91,9 +103,9 @@ export const RentalPropertyOrganizer = ({
       
       if (response && Array.isArray(response) && response.length > 0) {
         // Create tabs from existing submissions
-        const tabs = response.map((submission) => ({
+        const tabs = response.map((submission, idx) => ({
           id: submission.id,
-          name: submission.form_name || 'Rental Property',
+          name: submission.form_name || `Rental Property ${idx + 1}`,
           formData: createDefaultFormData(),
           activeStep: 0,
           submissionId: submission.id,
@@ -101,12 +113,32 @@ export const RentalPropertyOrganizer = ({
           isDataLoaded: false,
         }));
         
-        console.log('Created tabs from submissions:', tabs);
         setFormTabs(tabs);
         setActiveTabId(tabs[0].id);
         
-        // Load the first tab's data
-        await loadTabData(tabs[0].id, tabs);
+        // Load all tabs' data in parallel so every tab shows its name (entity Business Name) on initial load
+        const results = await Promise.allSettled(
+          tabs.map((tab) => apiService.getSubmission(tab.id, 'rental'))
+        );
+        const mergedTabs = tabs.map((tab, i) => {
+          const res = results[i];
+          if (res.status !== 'fulfilled' || !res.value?.submission_data) return tab;
+          const sd = res.value.submission_data;
+          const nameFromForm = sd.entityInfo?.businessName?.trim() || sd._metadata?.tab_name || undefined;
+          return {
+            ...tab,
+            formData: {
+              entityInfo: sd.entityInfo || {},
+              ownerInfo: sd.ownerInfo || {},
+              propertyInfo: sd.propertyInfo || {},
+              incomeExpenses: sd.incomeExpenses || {},
+              notes: sd.notes || {},
+            },
+            isDataLoaded: true,
+            name: nameFromForm || tab.name,
+          };
+        });
+        setFormTabs(mergedTabs);
       } else {
         console.log('No existing submissions, creating default tab');
         // Create empty draft on backend
@@ -114,9 +146,38 @@ export const RentalPropertyOrganizer = ({
       }
     } catch (error) {
       console.error('Error loading submissions:', error);
+      
+      // Check if it's an authentication error
+      if (error.status === 401 || error.message?.includes('401') || error.message?.includes('expired') || error.message?.includes('session')) {
+        toast({
+          title: "Session Expired",
+          description: "Your session has expired. Redirecting to login...",
+          variant: "destructive",
+        });
+        // Redirect will be handled by API service, but add a delay for user to see the message
+        setTimeout(() => {
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
+        }, 2000);
+        return;
+      }
+      
+      // Check if it's a network error
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('Network') || error.message?.includes('network')) {
+        toast({
+          title: "Network Error",
+          description: "Unable to connect to the server. Please check your internet connection and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Generic error with more details
+      const errorMessage = error.message || error.responseData?.detail || 'Unknown error occurred';
       toast({
         title: "Error",
-        description: "Failed to load existing forms.",
+        description: `Failed to load existing forms: ${errorMessage}`,
         variant: "destructive",
       });
     } finally {
@@ -132,19 +193,21 @@ export const RentalPropertyOrganizer = ({
       const response = await apiService.getSubmission(tabId, 'rental');
       console.log("response.submission_data: ", response)
       if (response && response.submission_data) {
+        const sd = response.submission_data;
+        const nameFromForm = sd.entityInfo?.businessName?.trim() || sd._metadata?.tab_name || undefined;
         setFormTabs(prev => prev.map(t => 
           t.id === tabId 
             ? { 
                 ...t, 
                 formData: {
-                  entityInfo: response.submission_data.entityInfo || {},
-                  ownerInfo: response.submission_data.ownerInfo || {},
-                  propertyInfo: response.submission_data.propertyInfo || {},
-                  incomeExpenses: response.submission_data.incomeExpenses || {},
-                  notes: response.submission_data.notes || {},
+                  entityInfo: sd.entityInfo || {},
+                  ownerInfo: sd.ownerInfo || {},
+                  propertyInfo: sd.propertyInfo || {},
+                  incomeExpenses: sd.incomeExpenses || {},
+                  notes: sd.notes || {},
                 },
                 isDataLoaded: true,
-                name: response.submission_data._metadata?.tab_name || t.name,
+                name: nameFromForm || t.name,
               } 
             : t
         ));
@@ -161,7 +224,7 @@ export const RentalPropertyOrganizer = ({
 
   const createEmptyDraft = async () => {
     try {
-      const defaultName = `Rental Property ${Date.now()}`;
+      const defaultName = 'Rental Property 1';
       const payload = {
         form_name: defaultName,
         form_type: 'rental',
@@ -243,7 +306,7 @@ export const RentalPropertyOrganizer = ({
     }
 
     try {
-      const defaultName = `Rental Property ${Date.now()}`;
+      const defaultName = `Rental Property ${formTabs.length + 1}`;
       const payload = {
         form_name: defaultName,
         form_type: 'rental',
@@ -385,7 +448,7 @@ export const RentalPropertyOrganizer = ({
       
       toast({
         title: "Tab Deleted",
-        description: `"${deletedTab?.name}" has been deleted.`,
+        description: `"${deletedTab ? getTabDisplayName(deletedTab, tabIndex) : ''}" has been deleted.`,
       });
     } catch (error) {
       console.error('Error deleting form:', error);
@@ -543,8 +606,9 @@ export const RentalPropertyOrganizer = ({
         }
       };
 
+      const displayName = getTabDisplayName(activeTab, formTabs.findIndex(t => t.id === activeTabId)) || activeTab.name;
       const payload = {
-        form_name: activeTab.name,
+        form_name: displayName,
         form_type: 'rental',
         status: 'submitted',
         submission_data: activeTab.formData,
@@ -578,8 +642,9 @@ export const RentalPropertyOrganizer = ({
     if (isLoadingData || !activeTab || activeTab.status === 'submitted') return;
     
     try {
+      const displayName = getTabDisplayName(activeTab, formTabs.findIndex(t => t.id === activeTabId)) || activeTab.name;
       const payload = {
-        form_name: activeTab.name,
+        form_name: displayName,
         form_type: 'rental',
         status: 'draft',
         submission_data: activeTab.formData,
@@ -589,7 +654,7 @@ export const RentalPropertyOrganizer = ({
       
       toast({
         title: "Progress Saved",
-        description: `"${activeTab.name}" has been saved successfully.`,
+        description: `"${displayName}" has been saved successfully.`,
       });
     } catch (error) {
       console.error('Error saving form:', error);
@@ -599,6 +664,11 @@ export const RentalPropertyOrganizer = ({
         variant: "destructive",
       });
     }
+  };
+
+  const handleBackWithSave = () => {
+    if (!isReadOnly) handleSaveProgress(); // fire-and-forget, don't block navigation
+    onBack();
   };
 
   if (isLoadingData) {
@@ -619,57 +689,227 @@ export const RentalPropertyOrganizer = ({
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
-        <Toolbar>
-          <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={onBack}
-            sx={{ mr: 2, color: '#64748b' }}
-          >
-            Back
-          </Button>
-          <HomeIcon sx={{ mr: 2, color: '#f97316' }} />
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1, color: '#1e293b', fontWeight: 600 }}>
-            Rental Property Organizer
-          </Typography>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={useVerticalStepper}
-                onChange={(e) => setUseVerticalStepper(e.target.checked)}
-                size="small"
-              />
-            }
-            label="Vertical Layout"
-            sx={{ mr: 2, color: '#64748b' }}
-          />
-          {!isReadOnly && (
+        <Toolbar sx={{ 
+          flexWrap: { xs: 'wrap', sm: 'nowrap' },
+          minHeight: { xs: 'auto', sm: '64px' },
+          py: { xs: 1, sm: 0 },
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          gap: { xs: 1, sm: 0 }
+        }}>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            width: { xs: '100%', sm: 'auto' }, 
+            mb: { xs: 1, sm: 0 },
+            flex: { sm: '1 1 auto' },
+            minWidth: 0
+          }}>
             <Button
-              startIcon={<SaveIcon />}
-              onClick={handleSaveProgress}
-              variant="outlined"
-              size="small"
-              disabled={isLoading}
+              startIcon={<ArrowBackIcon />}
+              onClick={handleBackWithSave}
+              sx={{ 
+                mr: { xs: 1, sm: 2 }, 
+                color: '#64748b',
+                minWidth: { xs: 'auto', sm: '64px' },
+                px: { xs: 1, sm: 2 },
+                flexShrink: 0
+              }}
             >
-              {isLoading ? 'Saving...' : 'Save Progress'}
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Back</Box>
             </Button>
-          )}
+            <HomeIcon sx={{ 
+              mr: { xs: 1, sm: 2 }, 
+              color: '#f97316', 
+              fontSize: { xs: 20, sm: 24 },
+              flexShrink: 0
+            }} />
+            <Typography 
+              variant="h6" 
+              component="div" 
+              sx={{ 
+                flexGrow: 1, 
+                color: '#1e293b', 
+                fontWeight: 600,
+                fontSize: { xs: '1rem', sm: '1.25rem' },
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              Rental Property Organizer
+            </Typography>
+          </Box>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: { xs: 1, sm: 2 },
+            width: { xs: '100%', sm: 'auto' },
+            justifyContent: { xs: 'space-between', sm: 'flex-end' },
+            flexShrink: 0
+          }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={useVerticalStepper}
+                  onChange={(e) => setUseVerticalStepper(e.target.checked)}
+                  size="small"
+                />
+              }
+              label={<Box component="span" sx={{ display: { xs: 'none', sm: 'inline' }, fontSize: '0.875rem' }}>Vertical Layout</Box>}
+              sx={{ 
+                mr: { xs: 0, sm: 2 }, 
+                color: '#64748b',
+                '& .MuiFormControlLabel-label': {
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                }
+              }}
+            />
+            {!isReadOnly && (
+              <Button
+                startIcon={<SaveIcon />}
+                onClick={handleSaveProgress}
+                variant="outlined"
+                size="small"
+                disabled={isLoading}
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  px: { xs: 1, sm: 2 },
+                  whiteSpace: { xs: 'nowrap', sm: 'normal' }
+                }}
+              >
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                  {isLoading ? 'Saving...' : 'Save Progress'}
+                </Box>
+                <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                  {isLoading ? 'Saving...' : 'Save'}
+                </Box>
+              </Button>
+            )}
+          </Box>
         </Toolbar>
       </AppBar>
 
       <Container maxWidth="lg" sx={{ mt: 3, mb: 4 }}>
         {isReadOnly && (
-          <Box sx={{ mb: 3, p: 2, bgcolor: 'info.main', color: 'info.contrastText', borderRadius: 1 }}>
-            <Typography variant="body2">
-              ℹ️ This form has been submitted and is now read-only. No changes can be made.
+          <Alert 
+            severity="info" 
+            sx={{ 
+              mb: 3, 
+              borderRadius: 2,
+              backgroundColor: '#e3f2fd',
+              border: '1px solid #2196f3',
+              '& .MuiAlert-icon': {
+                color: '#1976d2',
+              },
+              '& .MuiAlert-message': {
+                color: '#1565c0',
+                fontWeight: 500,
+              }
+            }}
+          >
+            <Typography variant="body1" sx={{ fontWeight: 600, mb: 0.5 }}>
+              Form Submitted
             </Typography>
-          </Box>
+            <Typography variant="body2" sx={{ color: '#424242' }}>
+              This form has been submitted and is now read-only. No changes can be made to submitted forms.
+            </Typography>
+          </Alert>
         )}
 
         {/* Tabs Navigation */}
         <Tabs value={activeTabId} onValueChange={switchTab} className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <TabsList className="flex-1 justify-start overflow-x-auto">
-              {formTabs.map((tab) => (
+          <Box sx={{ mb: 2, display: { xs: 'block', sm: 'flex' }, alignItems: { sm: 'center' }, justifyContent: { sm: 'space-between' } }}>
+            {/* Mobile: Vertical List */}
+            <Box sx={{ display: { xs: 'block', sm: 'none' }, mb: 2 }}>
+              {formTabs.map((tab, index) => (
+                <Box
+                  key={tab.id}
+                  onClick={() => switchTab(tab.id)}
+                  sx={{
+                    p: 2,
+                    mb: 1,
+                    borderRadius: 2,
+                    border: activeTabId === tab.id ? '2px solid #f97316' : '1px solid #e2e8f0',
+                    backgroundColor: activeTabId === tab.id ? '#fff7ed' : '#ffffff',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    '&:hover': {
+                      backgroundColor: activeTabId === tab.id ? '#fff7ed' : '#f8fafc',
+                    },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+                    <Typography variant="body1" sx={{ fontWeight: activeTabId === tab.id ? 600 : 400 }}>
+                      {getTabDisplayName(tab, index)}
+                    </Typography>
+                    {tab.status === 'submitted' && (
+                      <Chip label="Submitted" size="small" color="success" sx={{ height: '20px', fontSize: '0.7rem' }} />
+                    )}
+                  </Box>
+                  {tab.status !== 'submitted' && editingTabId !== tab.id && (
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startEditingTabName(tab.id, getTabDisplayName(tab, index));
+                        }}
+                        sx={{ p: 0.5 }}
+                      >
+                        <EditIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          confirmDeleteTab(tab.id);
+                        }}
+                        sx={{ p: 0.5, color: 'error.main' }}
+                      >
+                        <DeleteIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </Box>
+                  )}
+                </Box>
+              ))}
+            </Box>
+
+            {/* Desktop: Horizontal Tabs */}
+            <Box
+              sx={{
+                flex: 1,
+                display: { xs: 'none', sm: 'block' },
+                overflowX: 'auto',
+                '&::-webkit-scrollbar': {
+                  height: '6px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  backgroundColor: '#f1f1f1',
+                  borderRadius: '3px',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  backgroundColor: '#888',
+                  borderRadius: '3px',
+                  '&:hover': {
+                    backgroundColor: '#555',
+                  },
+                },
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#888 #f1f1f1',
+              }}
+            >
+              <TabsList 
+                className="flex-1 justify-start"
+                style={{
+                  display: 'flex',
+                  flexWrap: 'nowrap',
+                  gap: '4px',
+                  paddingBottom: '8px',
+                }}
+              >
+              {formTabs.map((tab, index) => (
                 <TabsTrigger key={tab.id} value={tab.id} className="relative group">
                   {editingTabId === tab.id ? (
                     <div className="flex items-center gap-1">
@@ -693,7 +933,7 @@ export const RentalPropertyOrganizer = ({
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <span>{tab.name}</span>
+                      <span>{getTabDisplayName(tab, index)}</span>
                       {tab.status === 'submitted' && (
                         <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">
                           Submitted
@@ -704,7 +944,7 @@ export const RentalPropertyOrganizer = ({
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              startEditingTabName(tab.id, tab.name);
+                              startEditingTabName(tab.id, getTabDisplayName(tab, index));
                             }}
                             className="p-1 hover:bg-accent rounded transition-colors"
                             title="Edit name"
@@ -728,6 +968,7 @@ export const RentalPropertyOrganizer = ({
                 </TabsTrigger>
               ))}
             </TabsList>
+            </Box>
             
             <Button
               startIcon={<AddIcon />}
@@ -735,13 +976,17 @@ export const RentalPropertyOrganizer = ({
               variant="outlined"
               size="small"
               disabled={formTabs.length >= 10}
-              sx={{ ml: 2 }}
+              sx={{ 
+                ml: { xs: 0, sm: 2 },
+                width: { xs: '100%', sm: 'auto' },
+                mt: { xs: 2, sm: 0 }
+              }}
             >
               Add Property
             </Button>
-          </div>
+          </Box>
 
-          {formTabs.map((tab) => (
+          {formTabs.map((tab, index) => (
             <TabsContent key={tab.id} value={tab.id}>
               <FormStepper
                 steps={steps}
@@ -751,7 +996,7 @@ export const RentalPropertyOrganizer = ({
                 onBack={handleBack}
                 onSubmit={handleSubmit}
                 isSubmitting={isSubmitting}
-                submitLabel={`Submit ${tab.name}`}
+                submitLabel={`Submit ${getTabDisplayName(tab, index)}`}
                 orientation={useVerticalStepper ? 'vertical' : 'horizontal'}
                 disabled={isReadOnly}
               />
@@ -766,7 +1011,10 @@ export const RentalPropertyOrganizer = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Rental Property Form?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{formTabs.find(tab => tab.id === tabToDelete)?.name}"? 
+              Are you sure you want to delete "{(() => {
+                const t = formTabs.find(tab => tab.id === tabToDelete);
+                return t ? getTabDisplayName(t, formTabs.findIndex(tab => tab.id === tabToDelete)) : '';
+              })()}"? 
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

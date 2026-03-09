@@ -258,7 +258,7 @@ export const ReviewSubmit = ({ data, onChange }) => {
         <Typography variant="body2" color="text.secondary">
           1. Review all information above for accuracy
           <br />
-          2. Gather and attach all supporting documents
+          2. Make sure to Upload any of the Documents Above to SmartVault
           <br />
           3. Submit your completed tax organizer
           <br />

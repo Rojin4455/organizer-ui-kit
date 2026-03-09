@@ -34,15 +34,17 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
     }
   };
 
-  const renderYesNoQuestion = (field, question, showDetails = false, detailsField = null) => (
+  const renderYesNoQuestion = (field, question, showDetails = false, detailsField = null, required = false) => (
     <Box sx={{ mb: 2 }}>
       <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
         {question}
+        {required && <span style={{ color: '#d32f2f', marginLeft: '4px' }}>*</span>}
       </Typography>
       <RadioGroup
         row
         value={data[field] || ''}
         onChange={(e) => handleChange(field, e.target.value)}
+        required={required}
       >
         <FormControlLabel value="yes" control={<Radio size="small" />} label="Yes" />
         <FormControlLabel value="no" control={<Radio size="small" />} label="No" />
@@ -268,7 +270,10 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
               <Box>
                 {renderYesNoQuestion(
                   'directDeposit',
-                  '18. The Internal Revenue Service is able to deposit many refunds directly into taxpayers\' accounts. If you receive a refund, would you like direct deposit?'
+                  '18. The Internal Revenue Service is able to deposit many refunds directly into taxpayers\' accounts. If you receive a refund, would you like direct deposit?',
+                  false,
+                  null,
+                  true
                 )}
               </Box>
             </TooltipWrapper>

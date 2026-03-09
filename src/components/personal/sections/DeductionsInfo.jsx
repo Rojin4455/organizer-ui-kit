@@ -222,61 +222,6 @@ export const DeductionsInfo = ({ data, onChange }) => {
           </Box>
         ))}
       </FormSection>
-
-      <FormSection title="General Vehicle Information">
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontWeight: 'bold' }}>
-          Do not include self-employment mileage here. This section is for EMPLOYEE business expense only.
-        </Typography>
-        
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Vehicle Information</TableCell>
-                <TableCell>Vehicle</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              <TableRow>
-                <TableCell>19. Description of vehicle</TableCell>
-                <TableCell>
-                  <TextField
-                    size="small"
-                    value={data.vehicleDescription || ''}
-                    onChange={(e) => handleChange('vehicleDescription', e.target.value)}
-                    fullWidth
-                  />
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>20. Date placed in service</TableCell>
-                <TableCell>
-                  <TextField
-                    size="small"
-                    type="date"
-                    value={data.vehicleDatePlacedInService || ''}
-                    onChange={(e) => handleChange('vehicleDatePlacedInService', e.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                    fullWidth
-                  />
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>21. Total miles for the year</TableCell>
-                <TableCell>
-                  <TextField
-                    size="small"
-                    type="number"
-                    value={data.vehicleTotalMiles || ''}
-                    onChange={(e) => handleChange('vehicleTotalMiles', e.target.value)}
-                    fullWidth
-                  />
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </FormSection>
     </Box>
   );
 };

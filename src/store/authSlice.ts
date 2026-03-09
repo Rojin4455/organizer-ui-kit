@@ -2,12 +2,13 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiService } from '../services/api';
 
 interface LoginCredentials {
-  username: string;
+  email: string;
   password: string;
 }
 
 interface SignupCredentials {
-  username: string;
+  first_name: string;
+  last_name: string;
   email: string;
   password: string;
   password_confirm: string;
@@ -43,15 +44,54 @@ interface AuthState {
   error: string | null;
 }
 
+// Helper function to extract error message
+const extractErrorMessage = (error: any): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  // If error has responseData (from our API service)
+  if (error.responseData) {
+    const data = error.responseData;
+    
+    // Check for non_field_errors
+    if (data.non_field_errors && Array.isArray(data.non_field_errors) && data.non_field_errors.length > 0) {
+      return data.non_field_errors[0];
+    }
+    
+    // Check for field-specific errors
+    const errorKeys = Object.keys(data);
+    if (errorKeys.length > 0) {
+      const allErrors: string[] = [];
+      errorKeys.forEach(key => {
+        const fieldErrors = data[key];
+        if (Array.isArray(fieldErrors)) {
+          allErrors.push(...fieldErrors);
+        } else if (typeof fieldErrors === 'string') {
+          allErrors.push(fieldErrors);
+        }
+      });
+      
+      if (allErrors.length > 0) {
+        return allErrors.join(' ');
+      }
+    }
+  }
+  
+  // Fallback
+  return error.message || 'An unexpected error occurred';
+};
+
 // Async thunk for login
 export const loginUser = createAsyncThunk<AuthResponse, LoginCredentials>(
   'auth/login',
-  async ({ username, password }, { rejectWithValue }) => {
+  async ({ email, password }, { rejectWithValue }) => {
     try {
-      const response = await apiService.login(username, password);
+      const response = await apiService.login(email, password);
       return response;
-    } catch (error) {
-      return rejectWithValue(error.message);
+    } catch (error: any) {
+      const errorMessage = extractErrorMessage(error);
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -59,12 +99,13 @@ export const loginUser = createAsyncThunk<AuthResponse, LoginCredentials>(
 // Async thunk for signup
 export const signupUser = createAsyncThunk<AuthResponse, SignupCredentials>(
   'auth/signup',
-  async ({ username, email, password, password_confirm }, { rejectWithValue }) => {
+  async ({ first_name, last_name, email, password, password_confirm }, { rejectWithValue }) => {
     try {
-      const response = await apiService.signup(username, email, password, password_confirm);
+      const response = await apiService.signup(first_name, last_name, email, password, password_confirm);
       return response;
-    } catch (error) {
-      return rejectWithValue(error.message);
+    } catch (error: any) {
+      const errorMessage = extractErrorMessage(error);
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -103,9 +144,17 @@ const authSlice = createSlice({
       state.tokens = { access: null, refresh: null };
       state.isAuthenticated = false;
       state.error = null;
+      state.loading = false;
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('accessToken');
+        window.localStorage.removeItem('refreshToken');
+      }
     },
     clearError: (state) => {
       state.error = null;
+    },
+    resetLoading: (state) => {
+      state.loading = false;
     },
     updateTokens: (state, action) => {
       state.tokens = action.payload;
@@ -124,6 +173,11 @@ const authSlice = createSlice({
         state.tokens = action.payload.tokens;
         state.isAuthenticated = true;
         state.error = null;
+        // Sync tokens to localStorage so API service and refresh flow work
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('accessToken', action.payload.tokens.access);
+          window.localStorage.setItem('refreshToken', action.payload.tokens.refresh);
+        }
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -141,6 +195,10 @@ const authSlice = createSlice({
         state.tokens = action.payload.tokens;
         state.isAuthenticated = true;
         state.error = null;
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('accessToken', action.payload.tokens.access);
+          window.localStorage.setItem('refreshToken', action.payload.tokens.refresh);
+        }
       })
       .addCase(signupUser.rejected, (state, action) => {
         state.loading = false;
@@ -155,9 +213,18 @@ const authSlice = createSlice({
         state.user = null;
         state.tokens = { access: null, refresh: null };
         state.isAuthenticated = false;
-      });
+      })
+      // Reset transient state when rehydrating (prevents stuck "Signing in..." from persisted state)
+      .addMatcher(
+        (action): action is { type: string; key: string } =>
+          action.type === 'persist/REHYDRATE' && (action as any).key === 'root',
+        (state) => {
+          state.loading = false;
+          state.error = null;
+        }
+      );
   },
 });
 
-export const { logout, clearError, updateTokens } = authSlice.actions;
+export const { logout, clearError, resetLoading, updateTokens } = authSlice.actions;
 export default authSlice.reducer;

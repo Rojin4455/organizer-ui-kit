@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,20 +6,24 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { loginUser, clearError } from '../store/authSlice';
+import { loginUser, clearError, resetLoading } from '../store/authSlice';
 import businessLogo from '../assets/New-log.png';
 import { Checkbox } from '@/components/ui/checkbox';
+import { InfoIcon, ArrowRight } from 'lucide-react';
+import { toast } from 'sonner';
 
+const LOGIN_TIMEOUT_MS = 20000; // 20 seconds — then reset and show message
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: '',
   });
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error, isAuthenticated } = useSelector((state: any) => state.auth);
+  const loginTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -27,98 +31,156 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  // Reset any stuck loading state from previous session (e.g. persisted before we fixed persist)
   useEffect(() => {
+    dispatch(resetLoading());
     return () => {
+      if (loginTimeoutRef.current) clearTimeout(loginTimeoutRef.current);
       dispatch(clearError());
     };
   }, [dispatch]);
+
+  // Clear timeout when login finishes (success or error)
+  useEffect(() => {
+    if (!loading && loginTimeoutRef.current) {
+      clearTimeout(loginTimeoutRef.current);
+      loginTimeoutRef.current = null;
+    }
+  }, [loading]);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+    // Clear error when user starts typing
+    if (error) {
+      dispatch(clearError());
+    }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.username && formData.password) {
+    if (formData.email && formData.password) {
+      if (loginTimeoutRef.current) clearTimeout(loginTimeoutRef.current);
       dispatch(loginUser(formData) as any);
+      loginTimeoutRef.current = setTimeout(() => {
+        dispatch(resetLoading());
+        toast.warning(
+          'This is taking longer than usual. Please check your connection and try again.',
+          { duration: 6000 }
+        );
+        loginTimeoutRef.current = null;
+      }, LOGIN_TIMEOUT_MS);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <img src={businessLogo} alt="Business Logo" className="h-16 w-auto" />
-          </div>
-          <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-          <CardDescription>Sign in to your account to continue</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                name="username"
-                type="text"
-                required
-                value={formData.username}
-                onChange={handleChange}
-                placeholder="Enter your username"
-              />
+      <div className="w-full max-w-md space-y-4">
+        {/* Info Banner for New Users */}
+        <Alert className="border-blue-200 bg-blue-50 text-blue-900">
+          <InfoIcon className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="ml-2 text-blue-900">
+            <span className="font-semibold">New to the Tax Toolbox?</span> You'll need to create an account first. No existing account? <Link to="/signup" className="font-semibold underline hover:text-blue-700">Sign up here →</Link>
+          </AlertDescription>
+        </Alert>
+
+        {/* Main Login Card */}
+        <Card>
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <img src={businessLogo} alt="Business Logo" className="h-16 w-auto" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Enter your password"
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="rememberMe"
-                name="rememberMe"
-                // checked={formData.rememberMe}
-                onCheckedChange={(checked) =>
-                  setFormData((prev) => ({ ...prev, rememberMe: checked }))
-                }
-              />
-              <Label htmlFor="rememberMe" className="text-sm font-normal">
-                Remember me
-              </Label>
+            <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
+            <CardDescription>Sign in to your existing account</CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="Enter your email"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Enter your password"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="rememberMe"
+                    name="rememberMe"
+                    // checked={formData.rememberMe}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({ ...prev, rememberMe: checked }))
+                    }
+                  />
+                  <Label htmlFor="rememberMe" className="text-sm font-normal">
+                    Remember me
+                  </Label>
+                </div>
+                <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-3">
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={loading}
+              >
+                {loading ? 'Signing in...' : 'Sign In'}
+              </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                Don't have an account?{' '}
+                <Link to="/signup" className="text-primary hover:underline font-medium">
+                  Create one here
+                </Link>
+              </p>
+            </CardFooter>
+          </form>
+        </Card>
+
+        {/* Call-to-Action Card for New Users */}
+        <Card className="border-2 border-green-200 bg-green-50">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-3">
+              <h3 className="font-semibold text-green-900">Ready to get started?</h3>
+              <p className="text-sm text-green-800">
+                Create your account in minutes to access your tax organizer and get started with your tax preparation.
+              </p>
+              <Link to="/signup">
+                <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                  Create Account Now
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={loading}
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </Button>
-            <p className="text-sm text-muted-foreground text-center">
-              Don't have an account?{' '}
-              <Link to="/signup" className="text-primary hover:underline">
-                Sign up
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 };

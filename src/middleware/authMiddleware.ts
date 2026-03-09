@@ -1,7 +1,9 @@
 import { createListenerMiddleware } from '@reduxjs/toolkit';
 import { apiService } from '../services/api';
 import { updateTokens, logout } from '../store/authSlice';
-import { store } from '../store/store';
+import { adminLogout } from '../store/adminAuthSlice';
+import { store, persistor } from '../store/store';
+import { clearAllAuthAndPurge } from '../utils/authLogout';
 
 interface RootState {
   auth: {
@@ -14,6 +16,32 @@ interface RootState {
 }
 
 export const authMiddleware = createListenerMiddleware();
+
+// When admin logs in (same tab had user session), clear user auth so only admin session remains
+authMiddleware.startListening({
+  type: 'adminAuth/login/fulfilled',
+  effect: async (_action, listenerApi) => {
+    listenerApi.dispatch(logout());
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('accessToken');
+      window.localStorage.removeItem('refreshToken');
+      window.localStorage.removeItem('taxOrganizerData');
+    }
+  },
+});
+
+// When user logs in (same tab had admin session), clear admin auth so only user session remains
+authMiddleware.startListening({
+  predicate: (action) =>
+    action.type === 'auth/login/fulfilled' || action.type === 'auth/signup/fulfilled',
+  effect: async (_action, listenerApi) => {
+    listenerApi.dispatch(adminLogout());
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('adminAccessToken');
+      window.localStorage.removeItem('adminRefreshToken');
+    }
+  },
+});
 
 // Token refresh middleware
 authMiddleware.startListening({
@@ -37,8 +65,8 @@ authMiddleware.startListening({
             const response = await apiService.refreshToken(tokens.refresh);
             listenerApi.dispatch(updateTokens(response.tokens));
           } catch (error) {
-            // If refresh fails, logout the user
-            listenerApi.dispatch(logout());
+            // If refresh fails, clear all auth and purge persisted state
+            clearAllAuthAndPurge(listenerApi.dispatch, persistor);
           }
         }
       } catch (error) {
@@ -79,8 +107,8 @@ apiService.request = async function(endpoint: string, options: any = {}) {
         options.headers.Authorization = `Bearer ${refreshResponse.tokens.access}`;
         return await originalRequest.call(this, endpoint, options);
       } catch (refreshError) {
-        // If refresh fails, logout
-        store.dispatch(logout());
+        // If refresh fails, clear all auth and purge persisted state
+        clearAllAuthAndPurge(store.dispatch, persistor);
         throw refreshError;
       }
     }

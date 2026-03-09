@@ -24,6 +24,8 @@ import {
   Download as DownloadIcon,
   Business as BusinessIcon,
   Person as PersonIcon,
+  Home as HomeIcon,
+  SwapHoriz as FlipIcon,
 } from '@mui/icons-material';
 import { apiService } from '../services/api';
 import { FormDetailView } from './FormDetailView';
@@ -80,13 +82,17 @@ export const FormsListView = ({ onBack, userToken }) => {
   const handleDownloadPDF = async (formId, formType) => {
     try {
       showNotification('Generating PDF...', 'info');
-      
-      // Get the form data using new endpoint
+
       const formData = await apiService.getSubmission(formId, formType);
-      
-      // Generate and download PDF on frontend
-      downloadFormAsPDF(formData);
-      
+      const formInfo = {
+        id: formData.id ?? formId,
+        form_type: formData.form_type ?? formType,
+        status: formData.status,
+        submitted_at: formData.submitted_at,
+        form_name: formData.form_name,
+      };
+      downloadFormAsPDF(formData, formInfo);
+
       showNotification('PDF downloaded successfully!', 'success');
     } catch (error) {
       console.error('Error downloading PDF:', error);
@@ -173,13 +179,17 @@ export const FormsListView = ({ onBack, userToken }) => {
                 <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                   <CardContent sx={{ flexGrow: 1 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      {form.form_type === 'Business' ? (
+                      {form.form_type === 'business' ? (
                         <BusinessIcon sx={{ color: '#22c55e', mr: 1 }} />
+                      ) : form.form_type === 'rental' ? (
+                        <HomeIcon sx={{ color: '#f59e0b', mr: 1 }} />
+                      ) : form.form_type === 'flip' ? (
+                        <FlipIcon sx={{ color: '#06b6d4', mr: 1 }} />
                       ) : (
                         <PersonIcon sx={{ color: '#3b82f6', mr: 1 }} />
                       )}
                       <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        {form.form_name} Tax Form
+                        {form.form_name}
                       </Typography>
                     </Box>
                     

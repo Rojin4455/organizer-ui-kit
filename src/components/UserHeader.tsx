@@ -2,7 +2,8 @@ import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { logout } from '../store/authSlice';
+import { clearAllAuthAndPurge } from '../utils/authLogout';
+import { persistor } from '../store/store';
 import { LogOut, User } from 'lucide-react';
 
 const UserHeader = () => {
@@ -10,7 +11,7 @@ const UserHeader = () => {
   const { user } = useSelector((state: any) => state.auth);
 
   const handleLogout = () => {
-    dispatch(logout());
+    clearAllAuthAndPurge(dispatch, persistor);
   };
 
   const getInitials = (username: string) => {

@@ -362,7 +362,7 @@ export const IncomeInfo = ({ data, onChange }) => {
 
       <Paper sx={{ p: 2, backgroundColor: '#f0f9ff', border: '1px solid #bae6fd' }}>
         <Typography variant="body2" color="primary">
-          📄 <strong>Attach all copies of your Tax Forms</strong>
+          📄 <strong>Make sure to Upload any of the Documents Above to SmartVault</strong>
         </Typography>
       </Paper>
     </Box>
