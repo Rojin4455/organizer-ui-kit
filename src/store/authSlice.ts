@@ -20,6 +20,7 @@ interface User {
   email: string;
   first_name?: string;
   last_name?: string;
+  onboard_required?: boolean;
 }
 
 interface AuthTokens {
@@ -49,16 +50,16 @@ const extractErrorMessage = (error: any): string => {
   if (error instanceof Error) {
     return error.message;
   }
-  
+
   // If error has responseData (from our API service)
   if (error.responseData) {
     const data = error.responseData;
-    
+
     // Check for non_field_errors
     if (data.non_field_errors && Array.isArray(data.non_field_errors) && data.non_field_errors.length > 0) {
       return data.non_field_errors[0];
     }
-    
+
     // Check for field-specific errors
     const errorKeys = Object.keys(data);
     if (errorKeys.length > 0) {
@@ -71,13 +72,13 @@ const extractErrorMessage = (error: any): string => {
           allErrors.push(fieldErrors);
         }
       });
-      
+
       if (allErrors.length > 0) {
         return allErrors.join(' ');
       }
     }
   }
-  
+
   // Fallback
   return error.message || 'An unexpected error occurred';
 };
@@ -159,6 +160,11 @@ const authSlice = createSlice({
     updateTokens: (state, action) => {
       state.tokens = action.payload;
     },
+    completeOnboarding: (state) => {
+      if (state.user) {
+        state.user.onboard_required = false;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -226,5 +232,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError, resetLoading, updateTokens } = authSlice.actions;
+export const { logout, clearError, resetLoading, updateTokens, completeOnboarding } = authSlice.actions;
 export default authSlice.reducer;

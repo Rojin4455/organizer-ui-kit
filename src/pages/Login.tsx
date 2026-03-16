@@ -22,14 +22,18 @@ const Login = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error, isAuthenticated } = useSelector((state: any) => state.auth);
+  const { loading, error, isAuthenticated, user } = useSelector((state: any) => state.auth);
   const loginTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      if (user?.onboard_required) {
+        navigate('/onboard');
+      } else {
+        navigate('/');
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   // Reset any stuck loading state from previous session (e.g. persisted before we fixed persist)
   useEffect(() => {
@@ -146,9 +150,9 @@ const Login = () => {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-3">
-              <Button 
-                type="submit" 
-                className="w-full" 
+              <Button
+                type="submit"
+                className="w-full"
                 disabled={loading}
               >
                 {loading ? 'Signing in...' : 'Sign In'}

@@ -23,14 +23,18 @@ const Signup = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error, isAuthenticated } = useSelector((state: any) => state.auth);
+  const { loading, error, isAuthenticated, user } = useSelector((state: any) => state.auth);
 
-  // Redirect after login
+  // Redirect after login/signup
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      if (user?.onboard_required) {
+        navigate('/onboard');
+      } else {
+        navigate('/');
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   // Clear errors on unmount
   useEffect(() => {
@@ -234,9 +238,9 @@ const Signup = () => {
             </CardContent>
 
             <CardFooter className="flex flex-col space-y-3">
-              <Button 
-                type="submit" 
-                className="w-full bg-green-600 hover:bg-green-700" 
+              <Button
+                type="submit"
+                className="w-full bg-green-600 hover:bg-green-700"
                 disabled={loading}
               >
                 {loading ? 'Creating Account...' : 'Create Account'}

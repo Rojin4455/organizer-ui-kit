@@ -8,20 +8,20 @@ class ApiService {
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     // Check if this is an admin endpoint and add admin token
     const isAdminEndpoint = endpoint.includes('/admin/');
     const adminToken = localStorage.getItem('adminAccessToken');
     const userToken = localStorage.getItem('accessToken');
-    
+
     // Check if we should use admin token (either admin endpoint or admin-only context)
     const useAdminToken = options.useAdminToken || (adminToken && !userToken);
-    
+
     const defaultHeaders = {
       'Content-Type': 'application/json; charset=utf-8',
       'Accept': 'application/json',
     };
-    
+
     // Add appropriate token based on endpoint and context
     if ((isAdminEndpoint || useAdminToken) && adminToken && !options.headers?.Authorization) {
       defaultHeaders['Authorization'] = `Bearer ${adminToken}`;
@@ -31,11 +31,11 @@ class ApiService {
       // Fallback: if no user token but admin token exists, use admin token
       defaultHeaders['Authorization'] = `Bearer ${adminToken}`;
     }
-    
+
     // Handle body stringification before creating config
     let body = options.body;
     const isFormData = body instanceof FormData;
-    
+
     if (body && typeof body === 'object' && !isFormData) {
       body = JSON.stringify(body);
     }
@@ -45,12 +45,12 @@ class ApiService {
       ...defaultHeaders,
       ...options.headers,
     };
-    
+
     // Force Content-Type for JSON bodies if not already set and not FormData
     if (body && typeof body === 'string' && !isFormData) {
       headers['Content-Type'] = 'application/json; charset=utf-8';
     }
-    
+
     // Remove Content-Type for FormData (browser will set it with boundary)
     if (isFormData) {
       delete headers['Content-Type'];
@@ -67,7 +67,7 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
-      
+
       // Handle non-JSON responses (e.g., 401 with no body)
       let data;
       try {
@@ -76,13 +76,13 @@ class ApiService {
       } catch (parseError) {
         data = {};
       }
-      
+
       if (!response.ok) {
         // Handle 401 Unauthorized - token expired
         if (response.status === 401) {
           const refreshToken = localStorage.getItem('refreshToken');
           const adminRefreshToken = localStorage.getItem('adminRefreshToken');
-          
+
           // Try to refresh token if refresh token exists
           if (refreshToken && !isAdminEndpoint && !useAdminToken) {
             try {
@@ -93,7 +93,7 @@ class ApiService {
                 },
                 body: JSON.stringify({ refresh: refreshToken }),
               });
-              
+
               if (refreshResponse.ok) {
                 let refreshData;
                 try {
@@ -102,18 +102,18 @@ class ApiService {
                   console.error('Failed to parse refresh response:', parseError);
                   throw new Error('Failed to refresh token');
                 }
-                
+
                 // Update tokens in localStorage
                 if (refreshData.access) {
                   localStorage.setItem('accessToken', refreshData.access);
                   if (refreshData.refresh) {
                     localStorage.setItem('refreshToken', refreshData.refresh);
                   }
-                  
+
                   // Retry original request with new token
                   config.headers['Authorization'] = `Bearer ${refreshData.access}`;
                   const retryResponse = await fetch(url, config);
-                  
+
                   // Parse retry response
                   let retryData;
                   try {
@@ -122,7 +122,7 @@ class ApiService {
                   } catch (parseError) {
                     retryData = {};
                   }
-                  
+
                   if (retryResponse.ok) {
                     return retryData;
                   } else {
@@ -143,18 +143,18 @@ class ApiService {
               console.error('Token refresh failed:', refreshError);
             }
           }
-          
+
           // If refresh failed or no refresh token, logout user
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('adminAccessToken');
           localStorage.removeItem('adminRefreshToken');
-          
+
           // Dispatch logout event that components can listen to
-          window.dispatchEvent(new CustomEvent('auth:logout', { 
-            detail: { reason: 'Token expired. Please log in again.' } 
+          window.dispatchEvent(new CustomEvent('auth:logout', {
+            detail: { reason: 'Token expired. Please log in again.' }
           }));
-          
+
           // Redirect to login after a short delay
           setTimeout(() => {
             if (window.location.pathname !== '/login' && !window.location.pathname.includes('/atg-admin')) {
@@ -163,16 +163,16 @@ class ApiService {
               window.location.href = '/atg-admin/login';
             }
           }, 1000);
-          
+
           const error = new Error('Your session has expired. Please log in again.');
           error.status = 401;
           error.responseData = data;
           throw error;
         }
-        
+
         // Extract error message from response (handle Django REST Framework format)
         let errorMessage = data.error || data.message || data.detail;
-        
+
         // Handle Django REST Framework validation errors
         // Format: { "field_name": ["Error message"], "another_field": ["Another error"] }
         // or: { "non_field_errors": ["Error message"] }
@@ -180,7 +180,7 @@ class ApiService {
           // Check for non_field_errors first (general validation errors)
           if (data.non_field_errors && Array.isArray(data.non_field_errors) && data.non_field_errors.length > 0) {
             errorMessage = data.non_field_errors[0];
-          } 
+          }
           // Check for field-specific errors
           else {
             const errorKeys = Object.keys(data);
@@ -197,7 +197,7 @@ class ApiService {
                   allErrors.push(fieldErrors[0]);
                 }
               });
-              
+
               // Join all errors or take the first one
               if (allErrors.length > 0) {
                 errorMessage = allErrors.join(' ');
@@ -214,12 +214,12 @@ class ApiService {
             }
           }
         }
-        
+
         // Handle array errors (e.g., ["Error message"])
         if (Array.isArray(errorMessage)) {
           errorMessage = errorMessage[0];
         }
-        
+
         // Handle string errors
         if (typeof errorMessage === 'string') {
           // errorMessage is already a string, use it as is
@@ -233,18 +233,18 @@ class ApiService {
             errorMessage = 'An error occurred';
           }
         }
-        
+
         // Fallback to status message
         if (!errorMessage || (typeof errorMessage !== 'string')) {
           errorMessage = `HTTP error! status: ${response.status}`;
         }
-        
+
         const error = new Error(String(errorMessage));
         error.status = response.status;
         error.responseData = data; // Store full response for debugging
         throw error;
       }
-      
+
       return data;
     } catch (error) {
       console.error('API request failed:', error);
@@ -255,6 +255,13 @@ class ApiService {
       // Otherwise, create a new error
       throw new Error(error.message || 'An unexpected error occurred');
     }
+  }
+
+  async submitClientProfile(formDataPayload) {
+    return this.request('/form/client-profile/', {
+      method: 'POST',
+      body: formDataPayload,
+    });
   }
 
   // Authentication APIs
@@ -296,7 +303,7 @@ class ApiService {
       params.append('page', page.toString());
     }
     const queryString = params.toString();
-    const url = queryString 
+    const url = queryString
       ? `/form/admin/users/?${queryString}`
       : '/form/admin/users/';
     return this.request(url, {
@@ -424,14 +431,14 @@ class ApiService {
     });
   }
 
-// Alternative approach using FormData (if you prefer multipart)
-// Only use this if the JSON approach above doesn't work
-async createTaxFormSubmissionMultipart(payload) {
+  // Alternative approach using FormData (if you prefer multipart)
+  // Only use this if the JSON approach above doesn't work
+  async createTaxFormSubmissionMultipart(payload) {
     console.log("Creating submission with payload: ", payload);
-    
+
     if (payload.pdf_data) {
       const formData = new FormData();
-      
+
       // Add all non-PDF data
       Object.keys(payload).forEach(key => {
         if (key !== 'pdf_data') {
@@ -443,23 +450,23 @@ async createTaxFormSubmissionMultipart(payload) {
           }
         }
       });
-      
+
       // Add PDF data
       formData.append('pdf_data', payload.pdf_data);
-      
+
       // Debug: Log FormData contents
       console.log("FormData contents:");
       for (let pair of formData.entries()) {
         console.log(pair[0] + ': ' + (pair[1].length > 100 ? '[PDF DATA]' : pair[1]));
       }
-      
+
       return this.request('/survey/submit-tax-form/', {
         method: 'POST',
         body: formData,
         // Explicitly don't set Content-Type - let browser set it with boundary
       });
     }
-    
+
     // Fallback to JSON if no PDF
     return this.request('/survey/submit-tax-form/', {
       method: 'POST',
@@ -472,10 +479,10 @@ async createTaxFormSubmissionMultipart(payload) {
 
   async updateTaxFormSubmissionMultipart(formId, formType, payload) {
     console.log("Updating submission with payload: ", payload);
-    
+
     if (payload.pdf_data) {
       const formData = new FormData();
-      
+
       // Add all non-PDF data
       Object.keys(payload).forEach(key => {
         if (key !== 'pdf_data') {
@@ -487,25 +494,25 @@ async createTaxFormSubmissionMultipart(payload) {
           }
         }
       });
-      
+
       // Add PDF data
       formData.append('pdf_data', payload.pdf_data);
-      
+
       console.log("PDF data present, size: ", payload.pdf_data.length);
-      
+
       // Debug: Log FormData contents
       console.log("FormData contents:");
       for (let pair of formData.entries()) {
         console.log(pair[0] + ': ' + (pair[1].length > 100 ? '[PDF DATA]' : pair[1]));
       }
-      
+
       return this.request(`/survey/submit-tax-form/${formId}/?type=${encodeURIComponent(formType)}`, {
         method: 'PUT',
         body: formData,
         // Explicitly don't set Content-Type - let browser set it with boundary
       });
     }
-    
+
     // Fallback to JSON if no PDF
     return this.request(`/survey/submit-tax-form/${formId}/?type=${encodeURIComponent(formType)}`, {
       method: 'PUT',
@@ -616,7 +623,7 @@ async createTaxFormSubmissionMultipart(payload) {
   // Auto-save functionality
   async autoSave(data, userId, formType) {
     const endpoint = `/${formType}-tax/${userId}/auto-save/`;
-    
+
     return this.request(endpoint, {
       method: 'PATCH',
       body: {
@@ -665,7 +672,7 @@ async createTaxFormSubmissionMultipart(payload) {
     });
   }
 
-  
+
 }
 
 export const apiService = new ApiService();

@@ -46,7 +46,7 @@ import { businessLogo } from '../assets';
 import { useSelector, useDispatch } from 'react-redux';
 import { clearAllAuthAndPurge } from '../utils/authLogout';
 import { persistor } from '../store/store';
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -193,7 +193,7 @@ export const TaxOrganizerApp = ({
         setShowEngagementBanner(true);
       }
     };
-    
+
     checkEngagementLetterStatus();
   }, []);
 
@@ -218,16 +218,16 @@ export const TaxOrganizerApp = ({
       loadExistingFormData(params.formId, resolvedType);
     }
   }, []);
-  
+
   const loadFormData = async (userId, formType) => {
     setIsLoading(true);
     try {
-      const response = formType === 'personal' 
+      const response = formType === 'personal'
         ? await apiService.getPersonalTaxForm(userId)
         : await apiService.getBusinessTaxForm(userId);
-      
+
       // setSavedData(response.data || {});
-      
+
       showNotification('Form data loaded successfully', 'success');
     } catch (error) {
       console.error('Error loading form data:', error);
@@ -260,10 +260,10 @@ export const TaxOrganizerApp = ({
     console.log("saved Data Before: ", data)
     try {
       setIsLoading(true);
-      
+
       // Build payload with simplified structure
       const payload = { form_type: selectedOrganizer || 'personal', status: isCompleted ? 'submitted' : 'drafted', ...data };
-      
+
       // Generate PDF if form is being completed
       let pdfBase64 = null;
       if (isCompleted) {
@@ -275,10 +275,10 @@ export const TaxOrganizerApp = ({
             status: 'submitted',
             submitted_at: new Date().toISOString()
           };
-          
+
           const doc = generatePDFFromFormData({ submission_data: data }, formInfo);
           pdfBase64 = doc.output('datauristring').split(',')[1]; // Get base64 without data URI prefix
-          
+
           // Add PDF to payload
           payload.pdf_data = pdfBase64;
         } catch (pdfError) {
@@ -286,27 +286,27 @@ export const TaxOrganizerApp = ({
           // Continue with form submission even if PDF generation fails
         }
       }
-      
+
       // Create or update submission
       const response = formId
         ? await apiService.updateTaxFormSubmission(formId, payload.form_type, payload)
         : await apiService.createTaxFormSubmission(payload);
 
-        console.log("form Iddddd: ", formId)
+      console.log("form Iddddd: ", formId)
 
       console.log("saved Data: ", data)
-      
+
       // Update local state with saved data
       setSavedData(data);
       onSave?.(data);
-      
+
       // Store form ID for subsequent saves
       if (response.id && !formId) {
         setFormId(response.id);
         // Update URL with form_id
-        setUrlParams({ 
-          type: selectedOrganizer, 
-          form_id: response.id 
+        setUrlParams({
+          type: selectedOrganizer,
+          form_id: response.id
         });
       }
 
@@ -324,9 +324,9 @@ export const TaxOrganizerApp = ({
 
       // Save to localStorage as backup
       localStorage.setItem('taxOrganizerData', JSON.stringify(data));
-      
+
       showNotification(
-        isCompleted ? 'Form submitted successfully!' : 'Progress saved successfully!', 
+        isCompleted ? 'Form submitted successfully!' : 'Progress saved successfully!',
         'success'
       );
 
@@ -442,30 +442,30 @@ export const TaxOrganizerApp = ({
       <CssBaseline />
       <Box sx={{ flexGrow: 1 }}>
         <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', zIndex: 1200 }}>
-          <Toolbar sx={{ 
+          <Toolbar sx={{
             flexWrap: { xs: 'wrap', sm: 'nowrap' },
             minHeight: { xs: 'auto', sm: '64px' },
             py: { xs: 1, sm: 0 },
             gap: { xs: 1, sm: 0 }
           }}>
-            <Box sx={{ 
-              mr: { xs: 1, sm: 2 }, 
-              display: 'flex', 
+            <Box sx={{
+              mr: { xs: 1, sm: 2 },
+              display: 'flex',
               alignItems: 'center',
               flexShrink: 0
             }}>
-              <img 
-                src={businessLogo} 
-                alt="Business Logo" 
+              <img
+                src={businessLogo}
+                alt="Business Logo"
                 style={{ height: '40px', width: 'auto', maxHeight: { xs: '32px', sm: '40px' } }}
               />
             </Box>
-            <Typography 
-              variant="h6" 
-              component="div" 
-              sx={{ 
-                flexGrow: 1, 
-                color: '#1e293b', 
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{
+                flexGrow: 1,
+                color: '#1e293b',
                 fontWeight: 600,
                 fontSize: { xs: '1rem', sm: '1.25rem' },
                 display: { xs: 'none', sm: 'block' }
@@ -473,9 +473,9 @@ export const TaxOrganizerApp = ({
             >
               Tax Organizer Pro
             </Typography>
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
               gap: { xs: 1, sm: 2 },
               width: { xs: '100%', sm: 'auto' },
               justifyContent: { xs: 'space-between', sm: 'flex-end' },
@@ -486,7 +486,7 @@ export const TaxOrganizerApp = ({
                 startIcon={<SaveIcon />}
                 endIcon={<ArrowForwardIcon sx={{ display: { xs: 'none', sm: 'block' } }} />}
                 onClick={() => setShowFormsList(true)}
-                sx={{ 
+                sx={{
                   mr: { xs: 0, sm: 2 },
                   backgroundColor: '#3b82f6',
                   '&:hover': {
@@ -511,7 +511,7 @@ export const TaxOrganizerApp = ({
                 <DropdownMenuTrigger asChild>
                   <IconButton
                     color="inherit"
-                    sx={{ 
+                    sx={{
                       color: '#64748b',
                       flexShrink: 0
                     }}
@@ -561,7 +561,7 @@ export const TaxOrganizerApp = ({
               Professional Tax Organizer
             </Typography>
             <Typography variant="h6" color="text.secondary" sx={{ mb: 3, maxWidth: 600, mx: 'auto' }}>
-              Streamline your tax preparation with our comprehensive, user-friendly organizer. 
+              Streamline your tax preparation with our comprehensive, user-friendly organizer.
               Choose between personal or business tax organization.
             </Typography>
             <Chip
@@ -595,7 +595,7 @@ export const TaxOrganizerApp = ({
                     Personal Tax Organizer
                   </Typography>
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                    Complete your personal tax information including income, deductions, 
+                    Complete your personal tax information including income, deductions,
                     dependents, and more.
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
@@ -619,7 +619,7 @@ export const TaxOrganizerApp = ({
                     Business Tax Organizer
                   </Typography>
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                    Organize your business tax information including income, expenses, 
+                    Organize your business tax information including income, expenses,
                     assets, and entity details.
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
@@ -691,7 +691,7 @@ export const TaxOrganizerApp = ({
                     Income & Expense Tracker
                   </Typography>
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                    Track your self-employed income and expenses throughout the year 
+                    Track your self-employed income and expenses throughout the year
                     with automatic calculations and monthly breakdowns.
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
@@ -715,7 +715,7 @@ export const TaxOrganizerApp = ({
                     Tax Engagement Letter
                   </Typography>
                   <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                    Review and sign the tax engagement letter contract to confirm 
+                    Review and sign the tax engagement letter contract to confirm
                     the arrangements for income tax services.
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
@@ -743,8 +743,8 @@ export const TaxOrganizerApp = ({
           autoHideDuration={6000}
           onClose={() => setNotification({ ...notification, open: false })}
         >
-          <Alert 
-            onClose={() => setNotification({ ...notification, open: false })} 
+          <Alert
+            onClose={() => setNotification({ ...notification, open: false })}
             severity={notification.severity}
           >
             {notification.message}

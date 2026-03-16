@@ -20,6 +20,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import CreateAdmin from "./pages/CreateAdmin";
 import ManageAdmins from "./pages/ManageAdmins";
+import ClientProfileCreator from "./pages/ClientProfileCreator";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 
@@ -56,8 +57,9 @@ const App = () => (
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/onboard" element={<ClientProfileCreator />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
-              
+
               {/* Admin Routes */}
               <Route path="/atg-admin/login" element={<AdminLogin />} />
               <Route path="/atg-admin" element={
@@ -75,7 +77,7 @@ const App = () => (
                   <ManageAdmins />
                 </ProtectedAdminRoute>
               } />
-              
+
               {/* User Routes */}
               <Route path="/" element={
                 <ProtectedRoute>
