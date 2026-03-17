@@ -21,6 +21,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import CreateAdmin from "./pages/CreateAdmin";
 import ManageAdmins from "./pages/ManageAdmins";
 import ClientProfileCreator from "./pages/ClientProfileCreator";
+import ClientProfilePublicPage from "./pages/ClientProfilePublicPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 
@@ -94,6 +95,8 @@ const App = () => (
                   <TaxEngagementLetter />
                 </ProtectedRoute>
               } />
+              {/* Public profile by UUID — no auth required */}
+              <Route path="/profile/:identifier" element={<ClientProfilePublicPage />} />
               {/* Public submission by ID (no auth). Same detail view as admin/user. */}
               <Route path="/submission/:id" element={<PublicSubmissionPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

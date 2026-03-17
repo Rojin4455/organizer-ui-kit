@@ -32,6 +32,8 @@ interface Business {
     name: string;
     purpose: string;
     assets: string;
+    isFirstYear: string;
+    priorYearReturn: File | null;
 }
 
 const ClientProfileCreator = () => {
@@ -49,14 +51,13 @@ const ClientProfileCreator = () => {
     };
 
     const [isLoading, setIsLoading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
     const [formData, setFormData] = useState({
         legalName: '',
         partnersName: '',
         numBusinesses: 0,
-        isFirstYear: 'yes',
         hasSmartVault: 'no',
-        priorYearReturn: null as File | null,
     });
 
     const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -69,7 +70,7 @@ const ClientProfileCreator = () => {
             const newBusinesses = [...prev];
             if (num > newBusinesses.length) {
                 for (let i = newBusinesses.length; i < num; i++) {
-                    newBusinesses.push({ name: '', purpose: '', assets: '' });
+                    newBusinesses.push({ name: '', purpose: '', assets: '', isFirstYear: 'yes', priorYearReturn: null });
                 }
             } else if (num < newBusinesses.length) {
                 newBusinesses.splice(num);
@@ -94,33 +95,48 @@ const ClientProfileCreator = () => {
         });
     };
 
+    const handleBusinessFileChange = (index: number, file: File | null) => {
+        setBusinesses(prev => {
+            const newBusinesses = [...prev];
+            newBusinesses[index] = { ...newBusinesses[index], priorYearReturn: file };
+            return newBusinesses;
+        });
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validate prior year return requirement
-        if (formData.isFirstYear === 'no' && !formData.priorYearReturn) {
-            toast.error('Please upload your prior-year tax returns.');
+        // Validate: each non-first-year business must have its own prior-year return
+        const missingFile = businesses.some(b => b.isFirstYear === 'no' && !b.priorYearReturn);
+        if (missingFile) {
+            toast.error('Please upload prior-year tax returns for every non-first-year business.');
             return;
         }
 
         setIsLoading(true);
+        setUploadProgress(0);
 
         try {
             const submitData = new FormData();
             submitData.append('legalName', formData.legalName);
             submitData.append('partnersName', formData.partnersName);
             submitData.append('numBusinesses', formData.numBusinesses.toString());
-            submitData.append('isFirstYear', formData.isFirstYear);
+            // Derive top-level isFirstYear: 'yes' only if ALL businesses answered yes
+            const isFirstYear = businesses.length === 0 || businesses.every(b => b.isFirstYear === 'yes') ? 'yes' : 'no';
+            submitData.append('isFirstYear', isFirstYear);
             submitData.append('hasSmartVault', formData.hasSmartVault);
-            submitData.append('businesses', JSON.stringify(businesses));
-
-            if (formData.priorYearReturn) {
-                submitData.append('priorYearReturn', formData.priorYearReturn);
-            }
+            // Strip File objects before JSON serialise
+            submitData.append('businesses', JSON.stringify(businesses.map(({ priorYearReturn: _, ...rest }) => rest)));
+            // Append per-business files with indexed keys
+            businesses.forEach((b, i) => {
+                if (b.priorYearReturn) {
+                    submitData.append(`priorYearReturn_${i}`, b.priorYearReturn);
+                }
+            });
 
             const loadingToastId = toast.loading('Submitting profile... Please wait for synchronization.');
 
-            await apiService.submitClientProfile(submitData);
+            await apiService.submitClientProfile(submitData, (pct) => setUploadProgress(pct));
 
             toast.dismiss(loadingToastId);
             toast.success('Profile completed successfully! Redirecting...');
@@ -136,14 +152,10 @@ const ClientProfileCreator = () => {
             toast.dismiss();
             toast.error(error.message || 'Failed to submit profile. Please try again.');
             setIsLoading(false);
+            setUploadProgress(0);
         }
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            setFormData({ ...formData, priorYearReturn: e.target.files[0] });
-        }
-    };
 
     return (
         <div className="min-h-screen bg-background flex flex-col">
@@ -324,49 +336,43 @@ const ClientProfileCreator = () => {
                                                         placeholder="Inventory, Equipment"
                                                     />
                                                 </div>
+                                                <div className="space-y-3">
+                                                    <Label>Is this your first year filing with us? <span className="text-destructive">*</span></Label>
+                                                    <RadioGroup
+                                                        value={business.isFirstYear}
+                                                        onValueChange={(val) => handleBusinessChange(index, 'isFirstYear', val)}
+                                                        className="flex gap-4"
+                                                    >
+                                                        <div className="flex items-center space-x-2">
+                                                            <RadioGroupItem value="yes" id={`firstYear-yes-${index}`} />
+                                                            <Label htmlFor={`firstYear-yes-${index}`} className="font-normal">Yes</Label>
+                                                        </div>
+                                                        <div className="flex items-center space-x-2">
+                                                            <RadioGroupItem value="no" id={`firstYear-no-${index}`} />
+                                                            <Label htmlFor={`firstYear-no-${index}`} className="font-normal">No</Label>
+                                                        </div>
+                                                    </RadioGroup>
+                                                </div>
+                                                {business.isFirstYear === 'no' && (
+                                                    <div className="space-y-2 p-3 border rounded-md bg-background">
+                                                        <Label htmlFor={`priorYearReturn-${index}`}>
+                                                            Prior-Year Tax Return <span className="text-destructive">*</span>
+                                                        </Label>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Please upload the prior-year tax return for this business.
+                                                        </p>
+                                                        <Input
+                                                            id={`priorYearReturn-${index}`}
+                                                            type="file"
+                                                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                                            required
+                                                            onChange={(e) => handleBusinessFileChange(index, e.target.files?.[0] ?? null)}
+                                                        />
+                                                    </div>
+                                                )}
                                             </CardContent>
                                         </Card>
                                     ))}
-                                </div>
-
-                                <Separator />
-
-                                <div className="space-y-4">
-                                    <div className="space-y-3">
-                                        <Label>Is this your first year filing with us? <span className="text-destructive">*</span></Label>
-                                        <RadioGroup
-                                            value={formData.isFirstYear}
-                                            onValueChange={(val) => setFormData({ ...formData, isFirstYear: val })}
-                                            className="flex flex-col space-y-1"
-                                        >
-                                            <div className="flex items-center space-x-2">
-                                                <RadioGroupItem value="yes" id="firstYear-yes" />
-                                                <Label htmlFor="firstYear-yes" className="font-normal">Yes</Label>
-                                            </div>
-                                            <div className="flex items-center space-x-2">
-                                                <RadioGroupItem value="no" id="firstYear-no" />
-                                                <Label htmlFor="firstYear-no" className="font-normal">No</Label>
-                                            </div>
-                                        </RadioGroup>
-                                    </div>
-
-                                    {formData.isFirstYear === 'no' && (
-                                        <div className="space-y-2 p-4 border rounded-md bg-secondary/20">
-                                            <Label htmlFor="priorYearReturn">
-                                                Prior-Year Tax Return Upload <span className="text-destructive">*</span>
-                                            </Label>
-                                            <p className="text-sm text-muted-foreground mb-2">
-                                                Since it's not your first year, please upload your prior-year tax returns.
-                                            </p>
-                                            <Input
-                                                id="priorYearReturn"
-                                                type="file"
-                                                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                                                onChange={handleFileChange}
-                                                required={formData.isFirstYear === 'no'}
-                                            />
-                                        </div>
-                                    )}
                                 </div>
 
                                 <Separator />
@@ -390,17 +396,31 @@ const ClientProfileCreator = () => {
                                 </div>
 
                             </CardContent>
-                            <CardFooter>
+                            <CardFooter className="flex flex-col gap-3">
                                 <Button type="submit" className="w-full" disabled={isLoading}>
                                     {isLoading ? (
                                         <div className="flex items-center">
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Submitting...
+                                            {uploadProgress < 100 ? `Uploading… ${uploadProgress}%` : 'Processing…'}
                                         </div>
                                     ) : (
                                         'Submit Profile'
                                     )}
                                 </Button>
+                                {isLoading && (
+                                    <div className="w-full">
+                                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                            <span>{uploadProgress < 100 ? 'Uploading files…' : 'Syncing with CRM…'}</span>
+                                            <span>{uploadProgress}%</span>
+                                        </div>
+                                        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                                            <div
+                                                className="h-full rounded-full bg-primary transition-all duration-300"
+                                                style={{ width: `${uploadProgress}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </CardFooter>
                         </form>
                     </Card>

@@ -257,10 +257,53 @@ class ApiService {
     }
   }
 
-  async submitClientProfile(formDataPayload) {
-    return this.request('/form/client-profile/', {
-      method: 'POST',
-      body: formDataPayload,
+  async submitClientProfile(formDataPayload, onProgress = null) {
+    return new Promise((resolve, reject) => {
+      const url = `${this.baseURL}/form/client-profile/`;
+
+      const userToken = localStorage.getItem('accessToken');
+      const adminToken = localStorage.getItem('adminAccessToken');
+      const token = userToken || adminToken;
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url, true);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.setRequestHeader('Accept', 'application/json');
+      // Do NOT set Content-Type — browser sets multipart boundary automatically
+
+      if (onProgress && xhr.upload) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            onProgress(Math.round((event.loaded / event.total) * 100));
+          }
+        };
+      }
+
+      xhr.onload = () => {
+        let data;
+        try {
+          data = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+        } catch {
+          data = {};
+        }
+
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(data);
+        } else {
+          const errorMessage =
+            data.error || data.message || data.detail ||
+            `HTTP error! status: ${xhr.status}`;
+          const error = new Error(String(errorMessage));
+          error.status = xhr.status;
+          error.responseData = data;
+          reject(error);
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('Network error during profile submission.'));
+      xhr.ontimeout = () => reject(new Error('Request timed out during profile submission.'));
+
+      xhr.send(formDataPayload);
     });
   }
 
