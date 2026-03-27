@@ -107,11 +107,11 @@ const ClientProfileCreator = () => {
         e.preventDefault();
 
         // Validate: each non-first-year business must have its own prior-year return
-        const missingFile = businesses.some(b => b.isFirstYear === 'no' && !b.priorYearReturn);
-        if (missingFile) {
-            toast.error('Please upload prior-year tax returns for every non-first-year business.');
-            return;
-        }
+        // const missingFile = businesses.some(b => b.isFirstYear === 'no' && !b.priorYearReturn);
+        // if (missingFile) {
+        //     toast.error('Please upload prior-year tax returns for every non-first-year business.');
+        //     return;
+        // }
 
         setIsLoading(true);
         setUploadProgress(0);
@@ -355,10 +355,10 @@ const ClientProfileCreator = () => {
                                                 </div>
                                                 {business.isFirstYear === 'no' && (
                                                     <div className="space-y-2 p-3 border rounded-md bg-background">
-                                                        <Label htmlFor={`priorYearReturn-${index}`}>
-                                                            Prior-Year Tax Return <span className="text-destructive">*</span>
-                                                        </Label>
-                                                        <p className="text-xs text-muted-foreground">
+                                                        {/* <Label htmlFor={`priorYearReturn-${index}`}>
+                                                            Prior-Year Tax Return
+                                                        </Label> */}
+                                                        {/* <p className="text-xs text-muted-foreground">
                                                             Please upload the prior-year tax return for this business.
                                                         </p>
                                                         <Input
@@ -367,7 +367,10 @@ const ClientProfileCreator = () => {
                                                             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                                                             required
                                                             onChange={(e) => handleBusinessFileChange(index, e.target.files?.[0] ?? null)}
-                                                        />
+                                                        /> */}
+                                                        <p className="text-sm font-bold text-red-500">
+                                                            *Please upload your prior year tax return to your SmartVault Account
+                                                        </p>
                                                     </div>
                                                 )}
                                             </CardContent>
@@ -410,7 +413,7 @@ const ClientProfileCreator = () => {
                                 {isLoading && (
                                     <div className="w-full">
                                         <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                                            <span>{uploadProgress < 100 ? 'Uploading files…' : 'Syncing with CRM…'}</span>
+                                            <span>{uploadProgress < 100 ? 'Uploading files…' : 'Processing…'}</span>
                                             <span>{uploadProgress}%</span>
                                         </div>
                                         <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">

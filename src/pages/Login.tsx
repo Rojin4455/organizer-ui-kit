@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { loginUser, clearError, resetLoading } from '../store/authSlice';
+import { CROSS_APP_LOGOUT_PARAM } from '../constants/crossAppAuth';
 import businessLogo from '../assets/New-log.png';
 import { Checkbox } from '@/components/ui/checkbox';
 import { InfoIcon, ArrowRight } from 'lucide-react';
@@ -22,18 +23,27 @@ const Login = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error, isAuthenticated, user } = useSelector((state: any) => state.auth);
+  const [searchParams] = useSearchParams();
+  const redirectUri = searchParams.get('redirect_uri');
+  const { loading, error, isAuthenticated, user, tokens } = useSelector((state: any) => state.auth);
   const loginTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (searchParams.has(CROSS_APP_LOGOUT_PARAM)) return;
+
     if (isAuthenticated) {
+      if (redirectUri && tokens?.access && tokens?.refresh) {
+        // SSO flow: redirect back to app1's /sso with redirect_uri so it can issue the code
+        navigate(`/sso?redirect_uri=${encodeURIComponent(redirectUri)}`, { replace: true });
+        return;
+      }
       if (user?.onboard_required) {
         navigate('/onboard');
       } else {
         navigate('/');
       }
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, tokens, redirectUri, navigate, searchParams]);
 
   // Reset any stuck loading state from previous session (e.g. persisted before we fixed persist)
   useEffect(() => {

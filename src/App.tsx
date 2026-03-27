@@ -22,8 +22,11 @@ import CreateAdmin from "./pages/CreateAdmin";
 import ManageAdmins from "./pages/ManageAdmins";
 import ClientProfileCreator from "./pages/ClientProfileCreator";
 import ClientProfilePublicPage from "./pages/ClientProfilePublicPage";
+import EstatePlanningPage from "./pages/EstatePlanningPage";
+import SSOHandlerPage from "./pages/SSOHandlerPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+import { CrossAppLogoutHandler } from "./components/CrossAppLogoutHandler";
 
 const queryClient = new QueryClient();
 
@@ -54,12 +57,15 @@ const App = () => (
           <AuthHandler />
           <Toaster />
           <Sonner />
-          <BrowserRouter>
+          <BrowserRouter basename={import.meta.env.VITE_BASENAME || "/"}>
+            <CrossAppLogoutHandler />
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/onboard" element={<ClientProfileCreator />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+              {/* SSO handler — redirect app2 users back with tokens */}
+              <Route path="/sso" element={<SSOHandlerPage />} />
 
               {/* Admin Routes */}
               <Route path="/atg-admin/login" element={<AdminLogin />} />
@@ -95,6 +101,11 @@ const App = () => (
                   <TaxEngagementLetter />
                 </ProtectedRoute>
               } />
+              {/* <Route path="/estate-planning" element={
+                <ProtectedRoute>
+                  <EstatePlanningPage />
+                </ProtectedRoute>
+              } /> */}
               {/* Public profile by UUID — no auth required */}
               <Route path="/profile/:identifier" element={<ClientProfilePublicPage />} />
               {/* Public submission by ID (no auth). Same detail view as admin/user. */}

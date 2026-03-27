@@ -33,12 +33,14 @@ import {
   SwapHoriz as FlipIcon,
   Description as DescriptionIcon,
   Logout as LogoutIcon,
+  Assignment as AssignmentIcon,
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useToast } from '@/hooks/use-toast';
 import { FormDetailView } from '../components/FormDetailView';
+import AdminEstatePlanningDialog from '../components/AdminEstatePlanningDialog';
 import { clearAllAuthAndPurge } from '../utils/authLogout';
 import { persistor } from '../store/store';
 import businessLogo from '../assets/New-log.png';
@@ -69,6 +71,16 @@ interface EngagementLetter {
   date_signed: string;
   created_at: string;
   updated_at: string;
+}
+
+/** Estate planning staff list row (matches backend staff serializer). */
+interface EstateSubmissionRow {
+  id: string;
+  status: string;
+  current_step: number;
+  submitted_at: string | null;
+  updated_at: string;
+  user?: string;
 }
 
 interface AdminUserDetailProps {
@@ -103,6 +115,9 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
   const [reassigningId, setReassigningId] = useState<string | null>(null);
   /** Display names derived from submission_data (business name, first+last, entity name) for admin table */
   const [formDisplayNames, setFormDisplayNames] = useState<Record<string, string>>({});
+  const [estateSubmissions, setEstateSubmissions] = useState<EstateSubmissionRow[]>([]);
+  const [estateDialogOpen, setEstateDialogOpen] = useState(false);
+  const [selectedEstateId, setSelectedEstateId] = useState<string | null>(null);
 
   // Get permissions or default to false
   const isSuperAdmin = permissions?.is_super_admin || false;
@@ -111,10 +126,12 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
   const canViewRental = isSuperAdmin || permissions?.can_view_rental_organizer || false;
   const canViewFlip = isSuperAdmin || permissions?.can_view_flip_organizer || false;
   const canViewEngagement = isSuperAdmin || permissions?.can_view_engagement_letter || false;
+  const canViewEstatePlanning =
+    isSuperAdmin || permissions?.can_list_users || false;
 
   useEffect(() => {
     loadUserForms();
-  }, [user.id]);
+  }, [user.id, canViewEstatePlanning]);
 
   /** Derive display name from submission_data (same logic as client organizers). */
   const getDisplayNameFromSubmission = (formType: string, submissionData: any): string | null => {
@@ -178,6 +195,19 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
         }
       });
       setFormDisplayNames(names);
+
+      if (canViewEstatePlanning) {
+        try {
+          const estateRaw = await apiService.getEstatePlanningStaffList(user.id, {
+            useAdminToken: true,
+          });
+          setEstateSubmissions(Array.isArray(estateRaw) ? estateRaw : []);
+        } catch {
+          setEstateSubmissions([]);
+        }
+      } else {
+        setEstateSubmissions([]);
+      }
     } catch (error: any) {
       console.error('Error loading user forms:', error);
       toast({
@@ -197,6 +227,7 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
   if (canViewRental) availableTabs.push({ type: 'rental', index: availableTabs.length });
   if (canViewFlip) availableTabs.push({ type: 'flip', index: availableTabs.length });
   if (canViewEngagement) availableTabs.push({ type: 'engagement', index: availableTabs.length });
+  if (canViewEstatePlanning) availableTabs.push({ type: 'estate', index: availableTabs.length });
 
   const getCurrentTabType = () => {
     return availableTabs[activeTab]?.type || null;
@@ -209,6 +240,11 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
   const handleViewForm = (form: FormSubmission) => {
     setSelectedForm(form);
     setDetailDialogOpen(true);
+  };
+
+  const handleViewEstateSubmission = (row: EstateSubmissionRow) => {
+    setSelectedEstateId(row.id);
+    setEstateDialogOpen(true);
   };
 
   const loadAdminFlipForms = async () => {
@@ -293,6 +329,8 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
         return forms.flip;
       case 'engagement':
         return []; // Engagement letter is handled separately
+      case 'estate':
+        return []; // Estate planning uses estateSubmissions state
       default:
         return [];
     }
@@ -310,6 +348,8 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
         return 'Flip Organizer';
       case 'engagement':
         return 'Engagement Letter';
+      case 'estate':
+        return 'Estate Planning Questionnaire';
       default:
         return '';
     }
@@ -490,12 +530,97 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
                   label={`Engagement Letter ${engagementLetter ? '(Signed)' : '(Not Signed)'}`}
                 />
               )}
+              {canViewEstatePlanning && (
+                <Tab
+                  icon={<AssignmentIcon />}
+                  iconPosition="start"
+                  label={`Estate Planning (${estateSubmissions.length})`}
+                />
+              )}
             </Tabs>
 
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                 <CircularProgress />
               </Box>
+            ) : getCurrentTabType() === 'estate' ? (
+              estateSubmissions.length === 0 ? (
+                <Alert severity="info" sx={{ borderRadius: 2 }}>
+                  No estate planning questionnaire submissions for this user.
+                </Alert>
+              ) : (
+                <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 2, border: '1px solid #e2e8f0' }}>
+                  <Table>
+                    <TableHead>
+                      <TableRow sx={{ backgroundColor: '#f8fafc' }}>
+                        <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Submission ID</TableCell>
+                        <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Status</TableCell>
+                        <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Step</TableCell>
+                        <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Submitted</TableCell>
+                        <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Updated</TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 600, color: '#1e293b' }}>Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {estateSubmissions.map((row) => (
+                        <TableRow
+                          key={row.id}
+                          sx={{
+                            '&:hover': { backgroundColor: '#f8fafc' },
+                            '&:last-child td': { borderBottom: 0 },
+                          }}
+                        >
+                          <TableCell>
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                              {row.id}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={row.status === 'submitted' ? 'Submitted' : 'Draft'}
+                              color={getStatusColor(row.status) as any}
+                              size="small"
+                              sx={{ fontWeight: 500 }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">{row.current_step ?? '—'}</Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color="text.secondary">
+                              {row.submitted_at ? formatDate(row.submitted_at) : '—'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color="text.secondary">
+                              {row.updated_at ? formatDate(row.updated_at) : '—'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={<ViewIcon />}
+                              onClick={() => handleViewEstateSubmission(row)}
+                              sx={{
+                                textTransform: 'none',
+                                borderColor: '#3b82f6',
+                                color: '#3b82f6',
+                                '&:hover': {
+                                  borderColor: '#2563eb',
+                                  backgroundColor: '#eff6ff',
+                                },
+                              }}
+                            >
+                              View / Edit
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )
             ) : getCurrentTabType() === 'engagement' ? (
               // Engagement Letter Tab
               engagementLetter ? (
@@ -971,6 +1096,16 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <AdminEstatePlanningDialog
+        open={estateDialogOpen}
+        submissionId={selectedEstateId}
+        onClose={() => {
+          setEstateDialogOpen(false);
+          setSelectedEstateId(null);
+        }}
+        onSaved={() => void loadUserForms()}
+      />
     </Box>
   );
 };
