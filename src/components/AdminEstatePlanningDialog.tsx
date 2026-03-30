@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -12,12 +12,19 @@ import {
   TextField,
   Alert,
   CircularProgress,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
 } from '@mui/material';
+import { User, Users, ScrollText, Landmark } from 'lucide-react';
 import { apiService } from '../services/api';
+import {
+  EstateFormProvider,
+  useEstateForm,
+  staffRecordToFormData,
+  packAllStepsForStaffPatch,
+} from '../contexts/EstateFormContext';
+import Step1Personal from './estate-planning/Step1Personal';
+import Step2Heirs from './estate-planning/Step2Heirs';
+import Step3TrustDistribution from './estate-planning/Step3TrustDistribution';
+import Step4Financials from './estate-planning/Step4Financials';
 
 export interface EstatePlanningStaffRecord {
   id: string;
@@ -41,38 +48,102 @@ interface AdminEstatePlanningDialogProps {
   onSaved?: () => void;
 }
 
-const STEP_KEYS = [
-  { key: 'step1_personal' as const, label: 'Step 1 — Personal' },
-  { key: 'step2_heirs_legal' as const, label: 'Step 2 — Heirs & Legal' },
-  { key: 'step3_distribution' as const, label: 'Step 3 — Trust Distribution' },
-  { key: 'step4_financials' as const, label: 'Step 4 — Financial & Property' },
+const ADMIN_ESTATE_STEPS = [
+  { id: 1, title: 'Personal Information', description: 'Demographics & contact', icon: User },
+  { id: 2, title: 'Heirs & Legal', description: 'Dependents & fiduciaries', icon: Users },
+  { id: 3, title: 'Trust Distribution', description: 'Allocation & contingencies', icon: ScrollText },
+  { id: 4, title: 'Financial & Property', description: 'Assets & real estate', icon: Landmark },
 ];
 
-function stringifyJson(value: unknown): string {
-  if (value == null || (typeof value === 'object' && Object.keys(value as object).length === 0)) {
-    return '{}';
-  }
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return '{}';
-  }
-}
+const STEP_PANELS = [
+  <Step1Personal key="s1" />,
+  <Step2Heirs key="s2" />,
+  <Step3TrustDistribution key="s3" />,
+  <Step4Financials key="s4" />,
+];
 
-function parseJsonField(raw: string, fieldLabel: string): Record<string, unknown> {
-  const t = raw.trim();
-  if (!t) return {};
-  try {
-    const parsed = JSON.parse(t);
-    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      throw new Error('Root must be a JSON object');
+const AdminEstateEditorInner: React.FC<{
+  tab: number;
+  setTab: (v: number) => void;
+  staffNotes: string;
+  setStaffNotes: (v: string) => void;
+  submissionId: string;
+  detailUpdatedAt?: string;
+  saveHandlerRef: React.MutableRefObject<(() => Promise<void>) | null>;
+  onSaveSuccess: (rec: EstatePlanningStaffRecord) => void;
+  onSaveError: (msg: string | null) => void;
+  setSaving: (v: boolean) => void;
+}> = ({
+  tab,
+  setTab,
+  staffNotes,
+  setStaffNotes,
+  submissionId,
+  detailUpdatedAt,
+  saveHandlerRef,
+  onSaveSuccess,
+  onSaveError,
+  setSaving,
+}) => {
+  const { formData } = useEstateForm();
+
+  const handleSave = useCallback(async () => {
+    setSaving(true);
+    try {
+      const payload = {
+        staff_notes: staffNotes,
+        ...packAllStepsForStaffPatch(formData),
+      };
+      const updated = await apiService.patchEstatePlanningStaffEdit(submissionId, payload, {
+        useAdminToken: true,
+      });
+      onSaveSuccess(updated as EstatePlanningStaffRecord);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Save failed';
+      onSaveError(msg);
+    } finally {
+      setSaving(false);
     }
-    return parsed as Record<string, unknown>;
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'Invalid JSON';
-    throw new Error(`${fieldLabel}: ${msg}`);
-  }
-}
+  }, [staffNotes, formData, submissionId, onSaveSuccess, onSaveError, setSaving]);
+
+  saveHandlerRef.current = handleSave;
+
+  return (
+    <>
+      <TextField
+        fullWidth
+        size="small"
+        label="Staff notes"
+        multiline
+        minRows={2}
+        value={staffNotes}
+        onChange={(e) => setStaffNotes(e.target.value)}
+        sx={{ mb: 2 }}
+      />
+      <Tabs
+        value={tab}
+        onChange={(_, v) => setTab(v)}
+        variant="scrollable"
+        scrollButtons="auto"
+        sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
+      >
+        {ADMIN_ESTATE_STEPS.map((s, i) => (
+          <Tab key={s.id} label={s.title} value={i} sx={{ textTransform: 'none' }} />
+        ))}
+      </Tabs>
+      <div className="max-h-[58vh] overflow-y-auto overflow-x-hidden pr-2 -mr-2">
+        {STEP_PANELS.map((panel, i) => (
+          <Box key={i} hidden={tab !== i} sx={{ display: tab === i ? 'block' : 'none' }}>
+            {panel}
+          </Box>
+        ))}
+      </div>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+        Last updated: {detailUpdatedAt ? new Date(detailUpdatedAt).toLocaleString() : '—'}
+      </Typography>
+    </>
+  );
+};
 
 const AdminEstatePlanningDialog: React.FC<AdminEstatePlanningDialogProps> = ({
   open,
@@ -85,24 +156,8 @@ const AdminEstatePlanningDialog: React.FC<AdminEstatePlanningDialogProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<EstatePlanningStaffRecord | null>(null);
   const [tab, setTab] = useState(0);
-
-  const [status, setStatus] = useState('draft');
-  const [currentStep, setCurrentStep] = useState(1);
   const [staffNotes, setStaffNotes] = useState('');
-  const [json1, setJson1] = useState('{}');
-  const [json2, setJson2] = useState('{}');
-  const [json3, setJson3] = useState('{}');
-  const [json4, setJson4] = useState('{}');
-
-  const resetFromRecord = useCallback((rec: EstatePlanningStaffRecord) => {
-    setStatus(rec.status || 'draft');
-    setCurrentStep(rec.current_step ?? 1);
-    setStaffNotes(rec.staff_notes || '');
-    setJson1(stringifyJson(rec.step1_personal));
-    setJson2(stringifyJson(rec.step2_heirs_legal));
-    setJson3(stringifyJson(rec.step3_distribution));
-    setJson4(stringifyJson(rec.step4_financials));
-  }, []);
+  const saveHandlerRef = useRef<(() => Promise<void>) | null>(null);
 
   const loadDetail = useCallback(async () => {
     if (!submissionId) return;
@@ -113,7 +168,7 @@ const AdminEstatePlanningDialog: React.FC<AdminEstatePlanningDialogProps> = ({
         useAdminToken: true,
       });
       setDetail(data as EstatePlanningStaffRecord);
-      resetFromRecord(data as EstatePlanningStaffRecord);
+      setStaffNotes(((data as EstatePlanningStaffRecord).staff_notes as string) || '');
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Failed to load submission';
       setError(msg);
@@ -121,7 +176,7 @@ const AdminEstatePlanningDialog: React.FC<AdminEstatePlanningDialogProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [submissionId, resetFromRecord]);
+  }, [submissionId]);
 
   useEffect(() => {
     if (open && submissionId) {
@@ -130,41 +185,18 @@ const AdminEstatePlanningDialog: React.FC<AdminEstatePlanningDialogProps> = ({
     }
   }, [open, submissionId, loadDetail]);
 
-  const handleSave = async () => {
-    if (!submissionId) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const payload = {
-        status,
-        current_step: Math.min(5, Math.max(1, Number(currentStep) || 1)),
-        staff_notes: staffNotes,
-        step1_personal: parseJsonField(json1, STEP_KEYS[0].label),
-        step2_heirs_legal: parseJsonField(json2, STEP_KEYS[1].label),
-        step3_distribution: parseJsonField(json3, STEP_KEYS[2].label),
-        step4_financials: parseJsonField(json4, STEP_KEYS[3].label),
-      };
-      const updated = await apiService.patchEstatePlanningStaffEdit(submissionId, payload, {
-        useAdminToken: true,
-      });
-      setDetail(updated as EstatePlanningStaffRecord);
-      resetFromRecord(updated as EstatePlanningStaffRecord);
-      onSaved?.();
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Save failed';
-      setError(msg);
-    } finally {
-      setSaving(false);
+  useEffect(() => {
+    if (detail?.staff_notes !== undefined) {
+      setStaffNotes(detail.staff_notes || '');
     }
-  };
+  }, [detail?.id, detail?.staff_notes]);
 
-  const jsonValues = [json1, json2, json3, json4];
-  const setJsonAt = (index: number, value: string) => {
-    if (index === 0) setJson1(value);
-    else if (index === 1) setJson2(value);
-    else if (index === 2) setJson3(value);
-    else setJson4(value);
-  };
+  const handleSaveSuccess = useCallback((rec: EstatePlanningStaffRecord) => {
+    setDetail(rec);
+    setStaffNotes(rec.staff_notes || '');
+    setError(null);
+    onSaved?.();
+  }, [onSaved]);
 
   return (
     <Dialog
@@ -193,77 +225,31 @@ const AdminEstatePlanningDialog: React.FC<AdminEstatePlanningDialogProps> = ({
             {error}
           </Alert>
         )}
-        {!loading && detail && (
+        {!loading && detail && submissionId && (
           <>
             {error && (
               <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
                 {error}
               </Alert>
             )}
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
-              <FormControl size="small" sx={{ minWidth: 160 }}>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  label="Status"
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                >
-                  <MenuItem value="draft">Draft</MenuItem>
-                  <MenuItem value="submitted">Submitted</MenuItem>
-                </Select>
-              </FormControl>
-              <TextField
-                size="small"
-                label="Current step"
-                type="number"
-                value={currentStep}
-                onChange={(e) => setCurrentStep(Number(e.target.value))}
-                inputProps={{ min: 1, max: 5 }}
-                sx={{ width: 120 }}
-              />
-              <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
-                Updated: {detail.updated_at ? new Date(detail.updated_at).toLocaleString() : '—'}
-              </Typography>
-            </Box>
-            <TextField
-              fullWidth
-              size="small"
-              label="Staff notes"
-              multiline
-              minRows={2}
-              value={staffNotes}
-              onChange={(e) => setStaffNotes(e.target.value)}
-              sx={{ mb: 2 }}
-            />
-            <Tabs
-              value={tab}
-              onChange={(_, v) => setTab(v)}
-              sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
+            <EstateFormProvider
+              key={`${detail.id}-${detail.updated_at ?? ''}`}
+              steps={ADMIN_ESTATE_STEPS}
+              initialFormData={staffRecordToFormData(detail)}
             >
-              {STEP_KEYS.map((s, i) => (
-                <Tab key={s.key} label={s.label} value={i} />
-              ))}
-            </Tabs>
-            {STEP_KEYS.map((_, i) => (
-              <Box key={STEP_KEYS[i].key} hidden={tab !== i}>
-                {tab === i && (
-                  <TextField
-                    fullWidth
-                    multiline
-                    minRows={16}
-                    value={jsonValues[i]}
-                    onChange={(e) => setJsonAt(i, e.target.value)}
-                    InputProps={{
-                      sx: { fontFamily: 'ui-monospace, monospace', fontSize: 13 },
-                    }}
-                    placeholder="{}"
-                  />
-                )}
-              </Box>
-            ))}
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-              Edit each step as JSON (same structure as saved in the API). Invalid JSON will block save.
-            </Typography>
+              <AdminEstateEditorInner
+                tab={tab}
+                setTab={setTab}
+                staffNotes={staffNotes}
+                setStaffNotes={setStaffNotes}
+                submissionId={submissionId}
+                detailUpdatedAt={detail.updated_at}
+                saveHandlerRef={saveHandlerRef}
+                onSaveSuccess={handleSaveSuccess}
+                onSaveError={(msg) => setError(msg)}
+                setSaving={setSaving}
+              />
+            </EstateFormProvider>
           </>
         )}
       </DialogContent>
@@ -273,8 +259,8 @@ const AdminEstatePlanningDialog: React.FC<AdminEstatePlanningDialogProps> = ({
         </Button>
         <Button
           variant="contained"
-          onClick={() => void handleSave()}
-          disabled={saving || loading || !detail}
+          disabled={loading || !detail || saving}
+          onClick={() => void saveHandlerRef.current?.()}
           sx={{ textTransform: 'none' }}
         >
           {saving ? 'Saving…' : 'Save changes'}

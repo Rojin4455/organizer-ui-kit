@@ -369,8 +369,8 @@ class ApiService {
 
   /** Staff-only estate planning list (filter by user_id). */
   async getEstatePlanningStaffList(userId, options = {}) {
-    const qs = new URLSearchParams({ user_id: String(userId) });
-    return this.request(`/form/tax-forms/estate-planning/all/?${qs.toString()}`, {
+    const qs = new URLSearchParams({ user_id: String(userId), status: 'submitted' });
+    return this.request(`/form/tax-forms/staff-estate-planning/?${qs.toString()}`, {
       method: 'GET',
       useAdminToken: options.useAdminToken !== false,
     });
@@ -378,15 +378,15 @@ class ApiService {
 
   /** Staff-only single submission (full staff serializer). */
   async getEstatePlanningStaffDetail(submissionId, options = {}) {
-    return this.request(`/form/tax-forms/estate-planning/${submissionId}/staff-detail/`, {
+    return this.request(`/form/tax-forms/staff-estate-planning/${submissionId}/`, {
       method: 'GET',
       useAdminToken: options.useAdminToken !== false,
     });
   }
 
-  /** Staff partial/full update of an estate submission. */
+  /** Staff partial update of an estate submission. */
   async patchEstatePlanningStaffEdit(submissionId, payload, options = {}) {
-    return this.request(`/form/tax-forms/estate-planning/${submissionId}/staff-edit/`, {
+    return this.request(`/form/tax-forms/staff-estate-planning/${submissionId}/`, {
       method: 'PATCH',
       body: payload,
       useAdminToken: options.useAdminToken !== false,

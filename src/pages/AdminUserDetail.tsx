@@ -201,7 +201,12 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
           const estateRaw = await apiService.getEstatePlanningStaffList(user.id, {
             useAdminToken: true,
           });
-          setEstateSubmissions(Array.isArray(estateRaw) ? estateRaw : []);
+          const estateList = Array.isArray(estateRaw)
+            ? estateRaw
+            : Array.isArray(estateRaw?.results)
+              ? estateRaw.results
+              : [];
+          setEstateSubmissions(estateList);
         } catch {
           setEstateSubmissions([]);
         }

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { signupUser, clearError } from '../store/authSlice';
+import { getPendingSsoRedirectUri } from '../constants/ssoRedirect';
 import businessLogo from '../assets/New-log.png';
 import { CheckCircleIcon } from 'lucide-react';
 
@@ -23,18 +24,23 @@ const Signup = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error, isAuthenticated, user } = useSelector((state: any) => state.auth);
+  const [searchParams] = useSearchParams();
+  const { loading, error, isAuthenticated, user, tokens } = useSelector((state: any) => state.auth);
+  const signupSearchQuery = searchParams.toString();
 
-  // Redirect after login/signup
+  // PostAuthSsoRedirect handles `?redirect_uri=` (return to App2). Otherwise go onboard or home.
   useEffect(() => {
-    if (isAuthenticated) {
-      if (user?.onboard_required) {
-        navigate('/onboard');
-      } else {
-        navigate('/');
-      }
+    if (!isAuthenticated) return;
+    if (!tokens?.access || !tokens?.refresh) return;
+
+    if (getPendingSsoRedirectUri(searchParams)) return;
+
+    if (user?.onboard_required) {
+      navigate('/onboard');
+    } else {
+      navigate('/');
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, tokens, navigate, searchParams]);
 
   // Clear errors on unmount
   useEffect(() => {
@@ -248,7 +254,10 @@ const Signup = () => {
 
               <p className="text-xs text-muted-foreground text-center">
                 Already have an account?{' '}
-                <Link to="/login" className="text-primary hover:underline font-medium">
+                <Link
+                  to={signupSearchQuery ? `/login?${signupSearchQuery}` : '/login'}
+                  className="text-primary hover:underline font-medium"
+                >
                   Sign in here
                 </Link>
               </p>

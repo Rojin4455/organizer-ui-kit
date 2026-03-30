@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import type { RootState } from '../store/store';
+import { SSO_REDIRECT_URI_STORAGE_KEY } from '../constants/ssoRedirect';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://tools.advancedtaxgroup.com/api';
 
@@ -30,6 +31,13 @@ const SSOHandlerPage: React.FC = () => {
 
   useEffect(() => {
     const redirectUri = searchParams.get('redirect_uri');
+    if (redirectUri) {
+      try {
+        sessionStorage.removeItem(SSO_REDIRECT_URI_STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
+    }
 
     if (!redirectUri) {
       navigate('/', { replace: true });

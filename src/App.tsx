@@ -27,6 +27,7 @@ import SSOHandlerPage from "./pages/SSOHandlerPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import { CrossAppLogoutHandler } from "./components/CrossAppLogoutHandler";
+import { PostAuthSsoRedirect } from "./components/PostAuthSsoRedirect";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter basename={import.meta.env.VITE_BASENAME || "/"}>
             <CrossAppLogoutHandler />
+            <PostAuthSsoRedirect />
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />

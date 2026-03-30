@@ -1,0 +1,3064 @@
+diff --git a/deploy_frontend.sh b/deploy_frontend.sh
+new file mode 100755
+index 0000000..7f02ea3
+--- /dev/null
++++ b/deploy_frontend.sh
+@@ -0,0 +1,136 @@
++#!/bin/bash
++
++# Load .env file
++if [ -f .env ]; then
++    # Load .env variables, ignoring comments
++    export $(grep -v '^\s*#' .env | xargs)
++fi
++
++# Required Variables checking
++REQUIRED_VARS=(
++  "KEY_PATH"
++  "SERVER_USER"
++  "SERVER_HOST"
++  "REMOTE_PARENT_DIR"
++  "VITE_API_URL"
++  "VITE_BASENAME"
++)
++
++MISSING_VARS=0
++for VAR in "${REQUIRED_VARS[@]}"; do
++  if [ -z "${!VAR}" ]; then
++    echo "Error: Required variable '$VAR' is not set."
++    MISSING_VARS=1
++  fi
++done
++
++if [ $MISSING_VARS -eq 1 ]; then
++  echo "Please set these variables in your .env file or environment."
++  exit 1
++fi
++
++REMOTE_TARGET_DIR="${REMOTE_PARENT_DIR}"
++
++echo "========================================"
++echo "Starting Frontend Deployment"
++echo "========================================"
++echo "Configuration:"
++echo "  Key Path: $KEY_PATH"
++echo "  Server: $SERVER_USER@$SERVER_HOST"
++echo "  Remote Dir: $REMOTE_TARGET_DIR"
++echo "  VITE_API_URL: $VITE_API_URL"
++echo "  VITE_BASENAME: $VITE_BASENAME"
++echo "  (VITE_API_URL must be the Django API base URL ending in /api, e.g. …/api.)"
++echo "========================================"
++
++# 1. Build the Project
++echo "Building project..."
++npm run build
++
++if [ $? -ne 0 ]; then
++    echo "Build failed! Aborting deployment."
++    exit 1
++fi
++
++# 2. Generate Local Manifest
++echo "Generating file manifest..."
++# Create a temporary file for the manifest
++MANIFEST_FILE="deploy_manifest.txt"
++# List all files relative to dist/
++cd dist
++find . -type f > "../$MANIFEST_FILE"
++cd ..
++
++# 3. Transfer Files
++echo "Transferring files to server..."
++# Use shopt to ensure dotfiles like .htaccess are included in dist/*
++shopt -s dotglob
++scp -i "$KEY_PATH" -r dist/* "${SERVER_USER}@${SERVER_HOST}:${REMOTE_TARGET_DIR}/"
++shopt -u dotglob
++scp -i "$KEY_PATH" "$MANIFEST_FILE" "${SERVER_USER}@${SERVER_HOST}:/tmp/"
++
++if [ $? -ne 0 ]; then
++    echo "File transfer failed! Aborting."
++    rm "$MANIFEST_FILE"
++    exit 1
++fi
++
++# 4. Remote Execution: Restart Nginx and Cleanup
++echo "Executing remote commands (Restart Nginx & Cleanup)..."
++
++# Construct the remote script
++REMOTE_SCRIPT="
++    echo 'Remote: Restarting Nginx...'
++    sudo systemctl restart nginx
++
++    echo 'Remote: Cleaning up old files...'
++    cd ${REMOTE_TARGET_DIR} || exit 1
++    
++    # Read manifest and delete files not in it
++    # We use comm to compare sorted lists of files
++    
++    # 1. Get list of current files on remote (relative to dist)
++    find . -type f | sort > /tmp/current_files.txt
++    
++    # 2. Sort the uploaded manifest
++    sort /tmp/${MANIFEST_FILE} > /tmp/sorted_manifest.txt
++    
++    # 3. Find files that are in current_files.txt but NOT in sorted_manifest.txt
++    # comm -23 suppresses lines in file 2 (manifest) and common lines, leaving only unique to file 1 (current remote)
++    comm -23 /tmp/current_files.txt /tmp/sorted_manifest.txt > /tmp/files_to_delete.txt
++    
++    if [ -s /tmp/files_to_delete.txt ]; then
++        echo 'Remote: Deleting the following obsolete files:'
++        cat /tmp/files_to_delete.txt
++        # xargs rm to delete
++        # Use tr to ensure safe handling if newlines (though standard find output is usually safe for simple filenames)
++        # For robustness with standard filenames:
++        while IFS= read -r file; do
++            rm \"\$file\"
++        done < /tmp/files_to_delete.txt
++    else
++        echo 'Remote: No obsolete files found.'
++    fi
++    
++    # Cleanup temporary files on remote
++    rm -f /tmp/current_files.txt /tmp/sorted_manifest.txt /tmp/files_to_delete.txt /tmp/${MANIFEST_FILE}
++    
++    echo 'Remote: Deployment & Cleanup Complete.'
++"
++
++# Execute remote script
++ssh -i "$KEY_PATH" "${SERVER_USER}@${SERVER_HOST}" "$REMOTE_SCRIPT"
++
++if [ $? -ne 0 ]; then
++    echo "Remote execution failed!"
++    # Cleanup local manifest even if remote failed
++    rm "$MANIFEST_FILE"
++    exit 1
++fi
++
++# Cleanup local manifest
++rm "$MANIFEST_FILE"
++
++echo "========================================"
++echo "Deployment Successfully Completed!"
++echo "========================================"
+diff --git a/src/App.tsx b/src/App.tsx
+index 08bdd95..5839750 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -22,8 +22,11 @@ import CreateAdmin from "./pages/CreateAdmin";
+ import ManageAdmins from "./pages/ManageAdmins";
+ import ClientProfileCreator from "./pages/ClientProfileCreator";
+ import ClientProfilePublicPage from "./pages/ClientProfilePublicPage";
++import EstatePlanningPage from "./pages/EstatePlanningPage";
++import SSOHandlerPage from "./pages/SSOHandlerPage";
+ import ProtectedRoute from "./components/ProtectedRoute";
+ import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
++import { CrossAppLogoutHandler } from "./components/CrossAppLogoutHandler";
+ 
+ const queryClient = new QueryClient();
+ 
+@@ -54,12 +57,15 @@ const App = () => (
+           <AuthHandler />
+           <Toaster />
+           <Sonner />
+-          <BrowserRouter>
++          <BrowserRouter basename={import.meta.env.VITE_BASENAME || "/"}>
++            <CrossAppLogoutHandler />
+             <Routes>
+               <Route path="/login" element={<Login />} />
+               <Route path="/signup" element={<Signup />} />
+               <Route path="/onboard" element={<ClientProfileCreator />} />
+               <Route path="/forgot-password" element={<ForgotPassword />} />
++              {/* SSO handler — redirect app2 users back with tokens */}
++              <Route path="/sso" element={<SSOHandlerPage />} />
+ 
+               {/* Admin Routes */}
+               <Route path="/atg-admin/login" element={<AdminLogin />} />
+@@ -95,6 +101,11 @@ const App = () => (
+                   <TaxEngagementLetter />
+                 </ProtectedRoute>
+               } />
++              {/* <Route path="/estate-planning" element={
++                <ProtectedRoute>
++                  <EstatePlanningPage />
++                </ProtectedRoute>
++              } /> */}
+               {/* Public profile by UUID — no auth required */}
+               <Route path="/profile/:identifier" element={<ClientProfilePublicPage />} />
+               {/* Public submission by ID (no auth). Same detail view as admin/user. */}
+diff --git a/src/components/AdminEstatePlanningDialog.tsx b/src/components/AdminEstatePlanningDialog.tsx
+new file mode 100644
+index 0000000..98c24ab
+--- /dev/null
++++ b/src/components/AdminEstatePlanningDialog.tsx
+@@ -0,0 +1,287 @@
++import React, { useEffect, useState, useCallback } from 'react';
++import {
++  Dialog,
++  DialogTitle,
++  DialogContent,
++  DialogActions,
++  Button,
++  Typography,
++  Box,
++  Tabs,
++  Tab,
++  TextField,
++  Alert,
++  CircularProgress,
++  MenuItem,
++  FormControl,
++  InputLabel,
++  Select,
++} from '@mui/material';
++import { apiService } from '../services/api';
++
++export interface EstatePlanningStaffRecord {
++  id: string;
++  user?: string;
++  status: string;
++  current_step: number;
++  step1_personal?: Record<string, unknown>;
++  step2_heirs_legal?: Record<string, unknown>;
++  step3_distribution?: Record<string, unknown>;
++  step4_financials?: Record<string, unknown>;
++  staff_notes?: string;
++  submitted_at?: string | null;
++  created_at?: string;
++  updated_at?: string;
++}
++
++interface AdminEstatePlanningDialogProps {
++  open: boolean;
++  submissionId: string | null;
++  onClose: () => void;
++  onSaved?: () => void;
++}
++
++const STEP_KEYS = [
++  { key: 'step1_personal' as const, label: 'Step 1 — Personal' },
++  { key: 'step2_heirs_legal' as const, label: 'Step 2 — Heirs & Legal' },
++  { key: 'step3_distribution' as const, label: 'Step 3 — Trust Distribution' },
++  { key: 'step4_financials' as const, label: 'Step 4 — Financial & Property' },
++];
++
++function stringifyJson(value: unknown): string {
++  if (value == null || (typeof value === 'object' && Object.keys(value as object).length === 0)) {
++    return '{}';
++  }
++  try {
++    return JSON.stringify(value, null, 2);
++  } catch {
++    return '{}';
++  }
++}
++
++function parseJsonField(raw: string, fieldLabel: string): Record<string, unknown> {
++  const t = raw.trim();
++  if (!t) return {};
++  try {
++    const parsed = JSON.parse(t);
++    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
++      throw new Error('Root must be a JSON object');
++    }
++    return parsed as Record<string, unknown>;
++  } catch (e: unknown) {
++    const msg = e instanceof Error ? e.message : 'Invalid JSON';
++    throw new Error(`${fieldLabel}: ${msg}`);
++  }
++}
++
++const AdminEstatePlanningDialog: React.FC<AdminEstatePlanningDialogProps> = ({
++  open,
++  submissionId,
++  onClose,
++  onSaved,
++}) => {
++  const [loading, setLoading] = useState(false);
++  const [saving, setSaving] = useState(false);
++  const [error, setError] = useState<string | null>(null);
++  const [detail, setDetail] = useState<EstatePlanningStaffRecord | null>(null);
++  const [tab, setTab] = useState(0);
++
++  const [status, setStatus] = useState('draft');
++  const [currentStep, setCurrentStep] = useState(1);
++  const [staffNotes, setStaffNotes] = useState('');
++  const [json1, setJson1] = useState('{}');
++  const [json2, setJson2] = useState('{}');
++  const [json3, setJson3] = useState('{}');
++  const [json4, setJson4] = useState('{}');
++
++  const resetFromRecord = useCallback((rec: EstatePlanningStaffRecord) => {
++    setStatus(rec.status || 'draft');
++    setCurrentStep(rec.current_step ?? 1);
++    setStaffNotes(rec.staff_notes || '');
++    setJson1(stringifyJson(rec.step1_personal));
++    setJson2(stringifyJson(rec.step2_heirs_legal));
++    setJson3(stringifyJson(rec.step3_distribution));
++    setJson4(stringifyJson(rec.step4_financials));
++  }, []);
++
++  const loadDetail = useCallback(async () => {
++    if (!submissionId) return;
++    setLoading(true);
++    setError(null);
++    try {
++      const data = await apiService.getEstatePlanningStaffDetail(submissionId, {
++        useAdminToken: true,
++      });
++      setDetail(data as EstatePlanningStaffRecord);
++      resetFromRecord(data as EstatePlanningStaffRecord);
++    } catch (e: unknown) {
++      const msg = e instanceof Error ? e.message : 'Failed to load submission';
++      setError(msg);
++      setDetail(null);
++    } finally {
++      setLoading(false);
++    }
++  }, [submissionId, resetFromRecord]);
++
++  useEffect(() => {
++    if (open && submissionId) {
++      setTab(0);
++      void loadDetail();
++    }
++  }, [open, submissionId, loadDetail]);
++
++  const handleSave = async () => {
++    if (!submissionId) return;
++    setSaving(true);
++    setError(null);
++    try {
++      const payload = {
++        status,
++        current_step: Math.min(5, Math.max(1, Number(currentStep) || 1)),
++        staff_notes: staffNotes,
++        step1_personal: parseJsonField(json1, STEP_KEYS[0].label),
++        step2_heirs_legal: parseJsonField(json2, STEP_KEYS[1].label),
++        step3_distribution: parseJsonField(json3, STEP_KEYS[2].label),
++        step4_financials: parseJsonField(json4, STEP_KEYS[3].label),
++      };
++      const updated = await apiService.patchEstatePlanningStaffEdit(submissionId, payload, {
++        useAdminToken: true,
++      });
++      setDetail(updated as EstatePlanningStaffRecord);
++      resetFromRecord(updated as EstatePlanningStaffRecord);
++      onSaved?.();
++    } catch (e: unknown) {
++      const msg = e instanceof Error ? e.message : 'Save failed';
++      setError(msg);
++    } finally {
++      setSaving(false);
++    }
++  };
++
++  const jsonValues = [json1, json2, json3, json4];
++  const setJsonAt = (index: number, value: string) => {
++    if (index === 0) setJson1(value);
++    else if (index === 1) setJson2(value);
++    else if (index === 2) setJson3(value);
++    else setJson4(value);
++  };
++
++  return (
++    <Dialog
++      open={open}
++      onClose={onClose}
++      maxWidth="lg"
++      fullWidth
++      PaperProps={{ sx: { maxHeight: '92vh' } }}
++    >
++      <DialogTitle sx={{ fontWeight: 600 }}>
++        Estate Planning Questionnaire
++        {detail?.id && (
++          <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
++            ID: {detail.id}
++          </Typography>
++        )}
++      </DialogTitle>
++      <DialogContent dividers>
++        {loading && (
++          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
++            <CircularProgress />
++          </Box>
++        )}
++        {!loading && error && !detail && (
++          <Alert severity="error" sx={{ mb: 2 }}>
++            {error}
++          </Alert>
++        )}
++        {!loading && detail && (
++          <>
++            {error && (
++              <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
++                {error}
++              </Alert>
++            )}
++            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
++              <FormControl size="small" sx={{ minWidth: 160 }}>
++                <InputLabel>Status</InputLabel>
++                <Select
++                  label="Status"
++                  value={status}
++                  onChange={(e) => setStatus(e.target.value)}
++                >
++                  <MenuItem value="draft">Draft</MenuItem>
++                  <MenuItem value="submitted">Submitted</MenuItem>
++                </Select>
++              </FormControl>
++              <TextField
++                size="small"
++                label="Current step"
++                type="number"
++                value={currentStep}
++                onChange={(e) => setCurrentStep(Number(e.target.value))}
++                inputProps={{ min: 1, max: 5 }}
++                sx={{ width: 120 }}
++              />
++              <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
++                Updated: {detail.updated_at ? new Date(detail.updated_at).toLocaleString() : '—'}
++              </Typography>
++            </Box>
++            <TextField
++              fullWidth
++              size="small"
++              label="Staff notes"
++              multiline
++              minRows={2}
++              value={staffNotes}
++              onChange={(e) => setStaffNotes(e.target.value)}
++              sx={{ mb: 2 }}
++            />
++            <Tabs
++              value={tab}
++              onChange={(_, v) => setTab(v)}
++              sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
++            >
++              {STEP_KEYS.map((s, i) => (
++                <Tab key={s.key} label={s.label} value={i} />
++              ))}
++            </Tabs>
++            {STEP_KEYS.map((_, i) => (
++              <Box key={STEP_KEYS[i].key} hidden={tab !== i}>
++                {tab === i && (
++                  <TextField
++                    fullWidth
++                    multiline
++                    minRows={16}
++                    value={jsonValues[i]}
++                    onChange={(e) => setJsonAt(i, e.target.value)}
++                    InputProps={{
++                      sx: { fontFamily: 'ui-monospace, monospace', fontSize: 13 },
++                    }}
++                    placeholder="{}"
++                  />
++                )}
++              </Box>
++            ))}
++            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
++              Edit each step as JSON (same structure as saved in the API). Invalid JSON will block save.
++            </Typography>
++          </>
++        )}
++      </DialogContent>
++      <DialogActions sx={{ px: 3, py: 2 }}>
++        <Button onClick={onClose} sx={{ textTransform: 'none' }}>
++          Close
++        </Button>
++        <Button
++          variant="contained"
++          onClick={() => void handleSave()}
++          disabled={saving || loading || !detail}
++          sx={{ textTransform: 'none' }}
++        >
++          {saving ? 'Saving…' : 'Save changes'}
++        </Button>
++      </DialogActions>
++    </Dialog>
++  );
++};
++
++export default AdminEstatePlanningDialog;
+diff --git a/src/components/CrossAppLogoutHandler.tsx b/src/components/CrossAppLogoutHandler.tsx
+new file mode 100644
+index 0000000..28164a9
+--- /dev/null
++++ b/src/components/CrossAppLogoutHandler.tsx
+@@ -0,0 +1,35 @@
++import { useLayoutEffect, useRef } from 'react';
++import { useDispatch, useSelector } from 'react-redux';
++import { useLocation, useNavigate } from 'react-router-dom';
++import { persistor, type RootState } from '../store/store';
++import { clearAllAuthAndPurgeAsync } from '../utils/authLogout';
++import { isCrossAppLogoutSearch } from '../constants/crossAppAuth';
++
++/**
++ * Runs after redux-persist rehydration. Clears App1 session when App2 (or a manual URL)
++ * includes `?cross_app_logout=1` (also accepts `true` or empty value).
++ * useLayoutEffect runs before child useEffects so Login cannot redirect to `/` first.
++ */
++export function CrossAppLogoutHandler() {
++  const dispatch = useDispatch();
++  const location = useLocation();
++  const navigate = useNavigate();
++  const rehydrated = useSelector(
++    (s: RootState) => s._persist?.rehydrated === true
++  );
++  const ranForSearch = useRef<string | null>(null);
++
++  useLayoutEffect(() => {
++    if (!rehydrated || !isCrossAppLogoutSearch(location.search)) return;
++    if (ranForSearch.current === location.search) return;
++    ranForSearch.current = location.search;
++
++    void (async () => {
++      await clearAllAuthAndPurgeAsync(dispatch, persistor);
++      navigate({ pathname: '/login', search: '' }, { replace: true });
++      ranForSearch.current = null;
++    })();
++  }, [rehydrated, location.search, dispatch, navigate]);
++
++  return null;
++}
+diff --git a/src/components/ProtectedRoute.tsx b/src/components/ProtectedRoute.tsx
+index d87e1db..eff28a9 100644
+--- a/src/components/ProtectedRoute.tsx
++++ b/src/components/ProtectedRoute.tsx
+@@ -1,6 +1,7 @@
+ import React from 'react';
+ import { useSelector } from 'react-redux';
+ import { Navigate, useLocation } from 'react-router-dom';
++import { CROSS_APP_LOGOUT_PARAM } from '../constants/crossAppAuth';
+ 
+ interface ProtectedRouteProps {
+   children: React.ReactNode;
+@@ -11,7 +12,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+   const location = useLocation();
+ 
+   if (!isAuthenticated) {
+-    return <Navigate to="/login" replace />;
++    const sp = new URLSearchParams(location.search);
++    const x = sp.get(CROSS_APP_LOGOUT_PARAM);
++    const loginSearch =
++      x !== null ? `?${CROSS_APP_LOGOUT_PARAM}=${encodeURIComponent(x || '1')}` : '';
++    return <Navigate to={`/login${loginSearch}`} replace />;
+   }
+ 
+   // Redirect to /onboard if required and the user is nowhere near onboard
+diff --git a/src/components/estate-planning/MultiStepEstateForm.tsx b/src/components/estate-planning/MultiStepEstateForm.tsx
+new file mode 100644
+index 0000000..88db56a
+--- /dev/null
++++ b/src/components/estate-planning/MultiStepEstateForm.tsx
+@@ -0,0 +1,193 @@
++import React from 'react';
++import { useEstateForm } from '../../contexts/EstateFormContext';
++import { useToast } from '@/hooks/use-toast';
++import { Card, CardContent } from '@/components/ui/card';
++import { Button } from '@/components/ui/button';
++import { Separator } from '@/components/ui/separator';
++
++import SidebarSteps from './SidebarSteps';
++import Step1Personal from './Step1Personal';
++import Step2Heirs from './Step2Heirs';
++import Step3TrustDistribution from './Step3TrustDistribution';
++import Step4Financials from './Step4Financials';
++
++const MultiStepEstateForm: React.FC = () => {
++    const { formData, currentStep, setCurrentStep, steps, setErrors } = useEstateForm();
++    const { toast } = useToast();
++
++    const renderStepContent = () => {
++        switch (currentStep) {
++            case 1:
++                return <Step1Personal />;
++            case 2:
++                return <Step2Heirs />;
++            case 3:
++                return <Step3TrustDistribution />;
++            case 4:
++                return <Step4Financials />;
++            case 5:
++                return (
++                    <div className="space-y-6 flex flex-col items-center justify-center min-h-[400px] text-center max-w-2xl mx-auto px-4">
++                        <h2 className="text-2xl font-semibold tracking-tight text-primary">FINAL CONSIDERATIONS PRIOR TO CONSULTATION</h2>
++                        <div className="space-y-4 text-muted-foreground text-base leading-relaxed">
++                            <p>
++                                Thank you for completing this Wealth Protection and Estate Planning Questionnaire. 
++                                Once we receive the completed questionnaire back into our office, we will begin reviewing the information and beginning the process of designing and drafting your estate plan.
++                            </p>
++                            <p>
++                                A member of our team will be in contact if we have any follow-up questions.
++                            </p>
++                        </div>
++                    </div>
++                );
++            default:
++                return <Step1Personal />;
++        }
++    };
++
++    const validateCurrentStep = (): boolean => {
++        const newErrors: Record<string, string> = {};
++
++        if (currentStep === 1) {
++            if (!formData.fullName) newErrors.fullName = "Full Name is required";
++            if (!formData.streetAddress) newErrors.streetAddress = "Street Address is required";
++            if (!formData.city) newErrors.city = "City is required";
++            if (!formData.state) newErrors.state = "State is required";
++            if (!formData.postalCode) newErrors.postalCode = "Postal Code is required";
++            if (!formData.dateOfBirth) newErrors.dateOfBirth = "Date of Birth is required";
++            if (!formData.email) newErrors.email = "Email is required";
++            if (!formData.phone) newErrors.phone = "Phone is required";
++            if (!formData.status) newErrors.status = "Status is required";
++            if (!formData.rentOrOwn) newErrors.rentOrOwn = "Please select an option";
++            if (!formData.country) newErrors.country = "Country is required";
++        } else if (currentStep === 2) {
++            if (formData.status === 'Married' || formData.status === 'Partner') {
++                if (!formData.spouseDob) newErrors.spouseDob = "Spouse Date of Birth is required";
++            }
++            if (!formData.hasChildren) newErrors.hasChildren = "Please indicate if you have children";
++            
++            if (formData.hasChildren === 'Yes' && formData.children.length > 0) {
++                formData.children.forEach((c, idx) => {
++                    if (!c.sonDaughter) newErrors[`child-${idx}-sonDaughter`] = "Required";
++                    if (!c.fullName) newErrors[`child-${idx}-fullName`] = "Required";
++                    if (!c.birthdate) newErrors[`child-${idx}-birthdate`] = "Required";
++                    if (idx < 2 && !c.parents) newErrors[`child-${idx}-parents`] = "Required";
++                });
++                if (!formData.guardian1) newErrors.guardian1 = "Guardian Choice #1 is required";
++            }
++
++            if (!formData.maritalSettlement) newErrors.maritalSettlement = "Required";
++            if (!formData.prePostMarriageContract) newErrors.prePostMarriageContract = "Required";
++            if (!formData.widowedFiledEstateTax) newErrors.widowedFiledEstateTax = "Required";
++            if (!formData.filedGiftTaxReturns) newErrors.filedGiftTaxReturns = "Required";
++            if (!formData.completedPreviousTrust) newErrors.completedPreviousTrust = "Required";
++
++            formData.disabilityPOAs.forEach((poa, idx) => {
++                if (idx < 2 && !poa) newErrors[`disabilityPOA-${idx}`] = "Choice required";
++            });
++            formData.medicalPOAs.forEach((poa, idx) => {
++                if (idx < 2 && !poa) newErrors[`medicalPOA-${idx}`] = "Choice required";
++            });
++            formData.successorTrustees.forEach((poa, idx) => {
++                if (idx < 2 && !poa) newErrors[`successorTrustee-${idx}`] = "Choice required";
++            });
++        } else if (currentStep === 3) {
++            if (!formData.estateDistributionMethod) newErrors.estateDistributionMethod = "Please select a distribution method";
++            if (formData.estateDistributionMethod === 'CUSTOM_OTHER' && !formData.customDistributionDescription) {
++                newErrors.customDistributionDescription = "Custom description is required";
++            }
++        } else if (currentStep === 4) {
++            if (!formData.hasLifeInsurance) newErrors.hasLifeInsurance = "Required";
++            if (formData.hasLifeInsurance === 'Yes' && !formData.lifeInsuranceDetails) {
++                newErrors.lifeInsuranceDetails = "Please provide details";
++            }
++
++            if (!formData.entityCountRange) newErrors.entityCountRange = "Required";
++            formData.businessEntities.forEach((e, idx) => {
++                if (!e.companyName) newErrors[`entity-${idx}-companyName`] = "Required";
++                if (!e.entityType) newErrors[`entity-${idx}-entityType`] = "Required";
++                if (!e.percentOwned) newErrors[`entity-${idx}-percentOwned`] = "Required";
++                if (!e.specificOwnershipName) newErrors[`entity-${idx}-specificOwnershipName`] = "Required";
++            });
++
++            if (!formData.propertiesCountRange) newErrors.propertiesCountRange = "Required";
++            formData.realProperties.forEach((p, idx) => {
++                if (!p.propertyType) newErrors[`prop-${idx}-propertyType`] = "Required";
++            });
++        }
++
++        const hasErrors = Object.keys(newErrors).length > 0;
++        setErrors(newErrors);
++
++        if (hasErrors) {
++            toast({
++                title: 'Missing Required Fields',
++                description: 'Please complete all required fields highlighted in red before proceeding.',
++                variant: 'destructive',
++            });
++            return false;
++        }
++
++        return true;
++    };
++
++    const handleNext = (e?: React.FormEvent) => {
++        if (e) e.preventDefault();
++        
++        if (!validateCurrentStep()) return;
++
++        if (currentStep < steps.length) {
++            setCurrentStep(currentStep + 1);
++        } else {
++            console.log('Estate Form submitted!');
++        }
++    };
++
++    const handlePrevious = () => {
++        if (currentStep > 1) {
++            setCurrentStep(currentStep - 1);
++        }
++    };
++
++    return (
++        <Card className="w-full max-w-6xl mx-auto">
++            <CardContent className="p-0 flex flex-col md:flex-row min-h-[600px]">
++                <div className="p-6 md:p-8 shrink-0 bg-background md:bg-transparent">
++                    <SidebarSteps />
++                </div>
++                
++                <Separator orientation="vertical" className="hidden md:block h-auto" />
++                <Separator orientation="horizontal" className="block md:hidden" />
++
++                <form className="flex-1 p-6 md:p-8 flex flex-col justify-between bg-background relative" noValidate onSubmit={handleNext}>
++                    <div className="mb-8">
++                        {renderStepContent()}
++                    </div>
++
++                    <div className="flex items-center justify-between pt-6 mt-auto border-t">
++                        {currentStep > 1 ? (
++                            <Button
++                                variant="outline"
++                                onClick={handlePrevious}
++                                type="button"
++                            >
++                                ← Previous
++                            </Button>
++                        ) : (
++                            <div></div>
++                        )}
++
++                        <Button
++                            type="submit"
++                            className="px-8"
++                        >
++                            {currentStep === steps.length ? 'Submit' : 'Next →'}
++                        </Button>
++                    </div>
++                </form>
++            </CardContent>
++        </Card>
++    );
++};
++
++export default MultiStepEstateForm;
+diff --git a/src/components/estate-planning/SidebarSteps.tsx b/src/components/estate-planning/SidebarSteps.tsx
+new file mode 100644
+index 0000000..7ed8077
+--- /dev/null
++++ b/src/components/estate-planning/SidebarSteps.tsx
+@@ -0,0 +1,56 @@
++import React from 'react';
++import { useEstateForm } from '../../contexts/EstateFormContext';
++import { cn } from '@/lib/utils';
++
++const SidebarSteps: React.FC = () => {
++    const { currentStep, steps } = useEstateForm();
++
++    return (
++        <div className="flex flex-col space-y-2 w-full md:w-64 md:border-r border-muted md:pr-6 md:min-h-[400px]">
++            {steps.map((step) => {
++                const isActive = currentStep === step.id;
++                const Icon = step.icon;
++                return (
++                    <div
++                        key={step.id}
++                        className={cn(
++                            "flex items-center gap-4 p-3 rounded-xl transition-all",
++                            isActive ? "" : "opacity-70"
++                        )}
++                    >
++                        <div
++                            className={cn(
++                                "flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0 transition-colors",
++                                isActive
++                                    ? "bg-primary text-primary-foreground shadow-md"
++                                    : "bg-background text-muted-foreground border"
++                            )}
++                        >
++                            <Icon className="w-5 h-5" />
++                        </div>
++                        <div className="flex flex-col">
++                            <span
++                                className={cn(
++                                    "text-sm font-semibold tracking-tight",
++                                    isActive ? "text-foreground" : "text-muted-foreground"
++                                )}
++                            >
++                                {step.title}
++                            </span>
++                            <span
++                                className={cn(
++                                    "text-xs",
++                                    isActive ? "text-muted-foreground" : "text-muted-foreground/70"
++                                )}
++                            >
++                                {step.description}
++                            </span>
++                        </div>
++                    </div>
++                );
++            })}
++        </div>
++    );
++};
++
++export default SidebarSteps;
+diff --git a/src/components/estate-planning/Step1Personal.tsx b/src/components/estate-planning/Step1Personal.tsx
+new file mode 100644
+index 0000000..ca1b9f5
+--- /dev/null
++++ b/src/components/estate-planning/Step1Personal.tsx
+@@ -0,0 +1,132 @@
++import React from 'react';
++import { useEstateForm } from '../../contexts/EstateFormContext';
++import { Input } from '@/components/ui/input';
++import { Label } from '@/components/ui/label';
++import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
++import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
++
++const Step1Personal: React.FC = () => {
++    const { formData, updateFormData, errors, clearError } = useEstateForm();
++
++    const handleChange = (field: keyof typeof formData, value: string) => {
++        updateFormData({ [field]: value });
++        clearError(field);
++    };
++
++    return (
++        <div className="space-y-6">
++            <div>
++                <h2 className="text-2xl font-semibold tracking-tight">Personal Information</h2>
++                <p className="text-sm text-muted-foreground mt-1">Gather primary user demographics and contact details.</p>
++            </div>
++
++            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
++                <div className="space-y-2">
++                    <Label htmlFor="fullName">Full Name <span className="text-destructive">*</span></Label>
++                    <Input id="fullName" value={formData.fullName} onChange={(e) => handleChange('fullName', e.target.value)} required />
++                    {errors.fullName && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.fullName}</p>}
++                </div>
++                <div className="space-y-2">
++                    <Label htmlFor="aliases">Other complete names/aliases</Label>
++                    <Input id="aliases" value={formData.aliases} onChange={(e) => handleChange('aliases', e.target.value)} />
++                </div>
++
++                <div className="space-y-3 md:col-span-2">
++                    <Label>Rent or Own Residence <span className="text-destructive">*</span></Label>
++                    <RadioGroup 
++                        value={formData.rentOrOwn} 
++                        onValueChange={(val) => handleChange('rentOrOwn', val)}
++                        className="flex gap-4"
++                    >
++                        <div className="flex items-center space-x-2">
++                            <RadioGroupItem value="Own" id="own" />
++                            <Label htmlFor="own" className="font-normal">Own</Label>
++                        </div>
++                        <div className="flex items-center space-x-2">
++                            <RadioGroupItem value="Rent" id="rent" />
++                            <Label htmlFor="rent" className="font-normal">Rent</Label>
++                        </div>
++                    </RadioGroup>
++                    {errors.rentOrOwn && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.rentOrOwn}</p>}
++                </div>
++
++                <div className="space-y-2 md:col-span-2">
++                    <Label htmlFor="streetAddress">Street Address <span className="text-destructive">*</span></Label>
++                    <Input id="streetAddress" value={formData.streetAddress} onChange={(e) => handleChange('streetAddress', e.target.value)} required />
++                    {errors.streetAddress && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.streetAddress}</p>}
++                </div>
++
++                <div className="space-y-2">
++                    <Label htmlFor="city">City <span className="text-destructive">*</span></Label>
++                    <Input id="city" value={formData.city} onChange={(e) => handleChange('city', e.target.value)} required />
++                    {errors.city && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.city}</p>}
++                </div>
++                <div className="space-y-2">
++                    <Label htmlFor="state">State <span className="text-destructive">*</span></Label>
++                    <Input id="state" value={formData.state} onChange={(e) => handleChange('state', e.target.value)} required />
++                    {errors.state && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.state}</p>}
++                </div>
++                
++                <div className="space-y-2">
++                    <Label htmlFor="postalCode">Postal Code <span className="text-destructive">*</span></Label>
++                    <Input id="postalCode" value={formData.postalCode} onChange={(e) => handleChange('postalCode', e.target.value)} required />
++                    {errors.postalCode && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.postalCode}</p>}
++                </div>
++                <div className="space-y-2">
++                    <Label htmlFor="country">Country <span className="text-destructive">*</span></Label>
++                    <Select value={formData.country} onValueChange={(val) => handleChange('country', val)}>
++                        <SelectTrigger id="country">
++                            <SelectValue placeholder="Select Country" />
++                        </SelectTrigger>
++                        <SelectContent>
++                            <SelectItem value="US">United States</SelectItem>
++                            <SelectItem value="CA">Canada</SelectItem>
++                            <SelectItem value="UK">United Kingdom</SelectItem>
++                            <SelectItem value="AU">Australia</SelectItem>
++                        </SelectContent>
++                    </Select>
++                    {errors.country && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.country}</p>}
++                </div>
++
++                <div className="space-y-2">
++                    <Label htmlFor="dateOfBirth">Date of Birth <span className="text-destructive">*</span></Label>
++                    <Input id="dateOfBirth" type="date" value={formData.dateOfBirth} onChange={(e) => handleChange('dateOfBirth', e.target.value)} required />
++                    {errors.dateOfBirth && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.dateOfBirth}</p>}
++                </div>
++                <div className="space-y-2">
++                    <Label htmlFor="email">Email <span className="text-destructive">*</span></Label>
++                    <Input id="email" type="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} required />
++                    {errors.email && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.email}</p>}
++                </div>
++
++                <div className="space-y-2">
++                    <Label htmlFor="phone">Phone <span className="text-destructive">*</span></Label>
++                    <Input id="phone" type="tel" value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} required />
++                    {errors.phone && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.phone}</p>}
++                </div>
++                <div className="space-y-2">
++                    <Label htmlFor="occupation">Occupation and Employer</Label>
++                    <Input id="occupation" value={formData.occupation} onChange={(e) => handleChange('occupation', e.target.value)} />
++                </div>
++
++                <div className="space-y-2 md:col-span-2">
++                    <Label htmlFor="status">Select Status <span className="text-destructive">*</span></Label>
++                    <Select value={formData.status} onValueChange={(val) => handleChange('status', val)}>
++                        <SelectTrigger id="status" className="max-w-xs">
++                            <SelectValue placeholder="Select Status" />
++                        </SelectTrigger>
++                        <SelectContent>
++                            <SelectItem value="Single">Single</SelectItem>
++                            <SelectItem value="Married">Married</SelectItem>
++                            <SelectItem value="Partner">Partner</SelectItem>
++                        </SelectContent>
++                    </Select>
++                    {errors.status && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.status}</p>}
++                    <p className="text-xs text-muted-foreground mt-1">If Married or Partner, spouse details will be requested in the next step.</p>
++                </div>
++            </div>
++        </div>
++    );
++};
++
++export default Step1Personal;
+diff --git a/src/components/estate-planning/Step2Heirs.tsx b/src/components/estate-planning/Step2Heirs.tsx
+new file mode 100644
+index 0000000..f418207
+--- /dev/null
++++ b/src/components/estate-planning/Step2Heirs.tsx
+@@ -0,0 +1,466 @@
++import React, { useRef } from 'react';
++import { useEstateForm, ChildData, HeirData } from '../../contexts/EstateFormContext';
++import { Input } from '@/components/ui/input';
++import { Label } from '@/components/ui/label';
++import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
++import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
++import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
++import { Separator } from '@/components/ui/separator';
++import { Button } from '@/components/ui/button';
++import { Plus, Trash2 } from 'lucide-react';
++
++const Step2Heirs: React.FC = () => {
++    const { formData, updateFormData, errors, clearError } = useEstateForm();
++
++    const isMarriedOrPartner = formData.status === 'Married' || formData.status === 'Partner';
++
++    const sectionRefs = {
++        spouse: useRef<HTMLDivElement>(null),
++        children: useRef<HTMLDivElement>(null),
++        heirs: useRef<HTMLDivElement>(null),
++        legal: useRef<HTMLDivElement>(null),
++        fiduciaries: useRef<HTMLDivElement>(null),
++    };
++
++    const scrollToSection = (section: keyof typeof sectionRefs) => {
++        sectionRefs[section]?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
++    };
++
++    // --- CHILDREN LOGIC ---
++    const handleNumChildrenChange = (val: string) => {
++        const num = parseInt(val, 10);
++        updateFormData({ numChildren: num });
++
++        const currentChildren = [...formData.children];
++        if (num > currentChildren.length) {
++            for (let i = currentChildren.length; i < num; i++) {
++                currentChildren.push({
++                    id: `child-${Date.now()}-${i}`,
++                    sonDaughter: '',
++                    fullName: '',
++                    birthdate: '',
++                    parents: ''
++                });
++            }
++        } else if (num < currentChildren.length) {
++            currentChildren.splice(num);
++        }
++        updateFormData({ children: currentChildren });
++    };
++
++    const updateChild = (index: number, field: keyof ChildData, value: string) => {
++        const newChildren = [...formData.children];
++        newChildren[index] = { ...newChildren[index], [field]: value };
++        updateFormData({ children: newChildren });
++        clearError(`child-${index}-${field}`);
++    };
++
++    // --- HEIRS LOGIC ---
++    const addHeir = () => {
++        if (formData.heirs.length < 4) {
++            updateFormData({ heirs: [...formData.heirs, { id: `heir-${Date.now()}`, name: '', relationship: '' }] });
++        }
++    };
++
++    const removeHeir = (index: number) => {
++        const newHeirs = formData.heirs.filter((_, i) => i !== index);
++        updateFormData({ heirs: newHeirs });
++    };
++
++    const updateHeir = (index: number, field: keyof HeirData, value: string) => {
++        const newHeirs = [...formData.heirs];
++        newHeirs[index] = { ...newHeirs[index], [field]: value };
++        updateFormData({ heirs: newHeirs });
++    };
++
++    // --- FIDUCIARY LOGIC ---
++    const addFiduciary = (field: 'disabilityPOAs' | 'medicalPOAs' | 'successorTrustees') => {
++        if (formData[field].length < 3) {
++            updateFormData({ [field]: [...formData[field], ''] });
++        }
++    };
++
++    const removeFiduciary = (field: 'disabilityPOAs' | 'medicalPOAs' | 'successorTrustees', index: number) => {
++        if (formData[field].length > 2) {
++            const newArr = formData[field].filter((_, i) => i !== index);
++            updateFormData({ [field]: newArr });
++        }
++    };
++
++    const updateFiduciary = (field: 'disabilityPOAs' | 'medicalPOAs' | 'successorTrustees', index: number, value: string) => {
++        const newArr = [...formData[field]];
++        newArr[index] = value;
++        updateFormData({ [field]: newArr });
++        // e.g. disabilityPOAs -> disabilityPOA-0
++        clearError(`${field.slice(0, -1)}-${index}`);
++    };
++
++    return (
++        <div className="space-y-6 relative">
++            <div>
++                <h2 className="text-2xl font-semibold tracking-tight">Heirs, Legal & Fiduciaries</h2>
++                <p className="text-sm text-muted-foreground mt-1">Complete your family, heir, and legal details below.</p>
++            </div>
++
++            {/* STICKY SUB-NAVIGATION */}
++            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur py-3 border-b border-muted -mx-4 px-4 md:-mx-8 md:px-8 mb-8 flex flex-wrap gap-2">
++                {isMarriedOrPartner && (
++                    <Button type="button" variant="secondary" size="sm" onClick={() => scrollToSection('spouse')}>Spouse</Button>
++                )}
++                <Button type="button" variant="secondary" size="sm" onClick={() => scrollToSection('children')}>Children</Button>
++                <Button type="button" variant="secondary" size="sm" onClick={() => scrollToSection('heirs')}>Other Heirs</Button>
++                <Button type="button" variant="secondary" size="sm" onClick={() => scrollToSection('legal')}>Legal Questions</Button>
++                <Button type="button" variant="secondary" size="sm" onClick={() => scrollToSection('fiduciaries')}>Fiduciaries</Button>
++            </div>
++
++            <div className="space-y-12 pb-8">
++                {/* SPOUSE / PARTNER */}
++                {isMarriedOrPartner && (
++                    <div ref={sectionRefs.spouse} className="space-y-6 scroll-mt-24">
++                        <div>
++                            <h3 className="text-lg font-medium tracking-tight border-l-4 border-primary pl-3">Spouse / Partner Information</h3>
++                        </div>
++                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/30 p-6 rounded-lg border">
++                            <div className="space-y-2">
++                                <Label htmlFor="spouseFullName">Spouse Full Name</Label>
++                                <Input id="spouseFullName" value={formData.spouseFullName} onChange={(e) => updateFormData({ spouseFullName: e.target.value })} />
++                            </div>
++                            <div className="space-y-2">
++                                <Label htmlFor="spouseAliases">Other Aliases of Spouse/Partner</Label>
++                                <Input id="spouseAliases" value={formData.spouseAliases} onChange={(e) => updateFormData({ spouseAliases: e.target.value })} />
++                            </div>
++
++                            <div className="space-y-2">
++                                <Label htmlFor="spouseDob">Spouse Date Of Birth <span className="text-destructive">*</span></Label>
++                                <Input id="spouseDob" type="date" value={formData.spouseDob} onChange={(e) => { updateFormData({ spouseDob: e.target.value }); clearError('spouseDob'); }} required />
++                                {errors.spouseDob && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.spouseDob}</p>}
++                            </div>
++                            <div className="space-y-2">
++                                <Label htmlFor="spouseOccupation">Spouse Occupation & Employer</Label>
++                                <Input id="spouseOccupation" value={formData.spouseOccupation} onChange={(e) => updateFormData({ spouseOccupation: e.target.value })} />
++                            </div>
++
++                            <div className="space-y-2">
++                                <Label htmlFor="spouseEmail">Spouse Email</Label>
++                                <Input id="spouseEmail" type="email" value={formData.spouseEmail} onChange={(e) => updateFormData({ spouseEmail: e.target.value })} />
++                            </div>
++                            <div className="space-y-2">
++                                <Label htmlFor="spousePhone">Spouse Phone Number</Label>
++                                <Input id="spousePhone" type="tel" value={formData.spousePhone} onChange={(e) => updateFormData({ spousePhone: e.target.value })} />
++                            </div>
++                        </div>
++                    </div>
++                )}
++
++                {/* SECTION A: Children & Descendants */}
++                <div ref={sectionRefs.children} className="space-y-6 scroll-mt-24">
++                    <div>
++                        <h3 className="text-lg font-medium tracking-tight border-l-4 border-primary pl-3">Section A: Children & Descendants</h3>
++                    </div>
++                    
++                    <div className="space-y-4">
++                        <div className="space-y-3">
++                            <Label>Do you or your partner have any children? <span className="text-destructive">*</span></Label>
++                            <RadioGroup 
++                                value={formData.hasChildren} 
++                                onValueChange={(val) => {
++                                    updateFormData({ hasChildren: val });
++                                    clearError('hasChildren');
++                                    if (val === 'No') {
++                                        updateFormData({ numChildren: 0, children: [] });
++                                    }
++                                }}
++                                className="flex gap-4"
++                            >
++                                <div className="flex items-center space-x-2">
++                                    <RadioGroupItem value="Yes" id="has-children-yes" />
++                                    <Label htmlFor="has-children-yes" className="font-normal">Yes</Label>
++                                </div>
++                                <div className="flex items-center space-x-2">
++                                    <RadioGroupItem value="No" id="has-children-no" />
++                                    <Label htmlFor="has-children-no" className="font-normal">No</Label>
++                                </div>
++                            </RadioGroup>
++                            {errors.hasChildren && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.hasChildren}</p>}
++                        </div>
++
++                        {formData.hasChildren === 'Yes' && (
++                            <div className="space-y-2">
++                                <Label htmlFor="numChildren">How many children?</Label>
++                                <Select 
++                                    value={formData.numChildren ? formData.numChildren.toString() : ''} 
++                                    onValueChange={handleNumChildrenChange}
++                                >
++                                    <SelectTrigger id="numChildren" className="max-w-[200px]">
++                                        <SelectValue placeholder="Select Number" />
++                                    </SelectTrigger>
++                                    <SelectContent>
++                                        {[1, 2, 3, 4, 5].map((num) => (
++                                            <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
++                                        ))}
++                                    </SelectContent>
++                                </Select>
++                                <p className="text-xs text-muted-foreground">Up to 5 dynamically supported.</p>
++                            </div>
++                        )}
++                    </div>
++
++                    {formData.children.length > 0 && (
++                        <div className="space-y-6 mt-4">
++                            {formData.children.map((child, index) => (
++                                <Card key={child.id} className="bg-muted/30">
++                                    <CardHeader className="py-3">
++                                        <CardTitle className="text-lg">Child {index + 1}</CardTitle>
++                                    </CardHeader>
++                                    <CardContent className="space-y-4 py-3">
++                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
++                                            <div className="space-y-2">
++                                                <Label>Son/Daughter</Label>
++                                                <Select 
++                                                    value={child.sonDaughter} 
++                                                    onValueChange={(val) => updateChild(index, 'sonDaughter', val)}
++                                                >
++                                                    <SelectTrigger>
++                                                        <SelectValue placeholder="Select" />
++                                                    </SelectTrigger>
++                                                    <SelectContent>
++                                                        <SelectItem value="Son">Son</SelectItem>
++                                                        <SelectItem value="Daughter">Daughter</SelectItem>
++                                                    </SelectContent>
++                                                </Select>
++                                                {errors[`child-${index}-sonDaughter`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`child-${index}-sonDaughter`]}</p>}
++                                            </div>
++                                            <div className="space-y-2">
++                                                <Label>Child Full Name <span className="text-destructive">*</span></Label>
++                                                <Input 
++                                                    value={child.fullName} 
++                                                    onChange={(e) => updateChild(index, 'fullName', e.target.value)} 
++                                                    required 
++                                                />
++                                                {errors[`child-${index}-fullName`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`child-${index}-fullName`]}</p>}
++                                            </div>
++                                            <div className="space-y-2">
++                                                <Label>Child Birthdate <span className="text-destructive">*</span></Label>
++                                                <Input 
++                                                    type="date" 
++                                                    value={child.birthdate} 
++                                                    onChange={(e) => updateChild(index, 'birthdate', e.target.value)} 
++                                                    required 
++                                                />
++                                                {errors[`child-${index}-birthdate`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`child-${index}-birthdate`]}</p>}
++                                            </div>
++                                            <div className="space-y-2">
++                                                <Label>Parent/s of Child <span className="text-destructive">*</span></Label>
++                                                <Input 
++                                                    value={child.parents} 
++                                                    onChange={(e) => updateChild(index, 'parents', e.target.value)}
++                                                    placeholder={index >= 2 ? "Parents if different" : ""}
++                                                    required={index < 2} 
++                                                />
++                                                {errors[`child-${index}-parents`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`child-${index}-parents`]}</p>}
++                                            </div>
++                                        </div>
++                                    </CardContent>
++                                </Card>
++                            ))}
++
++                            <div className="space-y-4 mt-6 bg-muted/30 p-6 rounded-lg border">
++                                <Label className="text-base font-semibold">Guardianship</Label>
++                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
++                                    <div className="space-y-2">
++                                        <Label htmlFor="guardian1">Guardian Choice #1 <span className="text-destructive">*</span></Label>
++                                        <Input id="guardian1" value={formData.guardian1} onChange={(e) => { updateFormData({ guardian1: e.target.value }); clearError('guardian1'); }} required />
++                                        {errors.guardian1 && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.guardian1}</p>}
++                                    </div>
++                                    <div className="space-y-2">
++                                        <Label htmlFor="guardian2">Guardian Choice #2</Label>
++                                        <Input id="guardian2" value={formData.guardian2} onChange={(e) => updateFormData({ guardian2: e.target.value })} />
++                                    </div>
++                                    <div className="space-y-2">
++                                        <Label htmlFor="guardian3">Guardian Choice #3</Label>
++                                        <Input id="guardian3" value={formData.guardian3} onChange={(e) => updateFormData({ guardian3: e.target.value })} />
++                                    </div>
++                                </div>
++                            </div>
++                        </div>
++                    )}
++                </div>
++
++                {/* SECTION B: Other Heirs */}
++                <div ref={sectionRefs.heirs} className="space-y-6 scroll-mt-24">
++                    <div className="flex items-center justify-between">
++                        <h3 className="text-lg font-medium tracking-tight border-l-4 border-primary pl-3">Section B: Other Heirs</h3>
++                        {formData.heirs.length < 4 && (
++                            <Button type="button" onClick={addHeir} size="sm" variant="outline" className="gap-2">
++                                <Plus className="w-4 h-4" /> Add Heir
++                            </Button>
++                        )}
++                    </div>
++                    
++                    {formData.heirs.length === 0 ? (
++                        <div className="text-sm text-muted-foreground p-6 bg-muted/20 rounded-lg text-center border-dashed border-2">
++                            No additional heirs added. Completely optional.
++                        </div>
++                    ) : (
++                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
++                            {formData.heirs.map((heir, index) => (
++                                <div key={heir.id} className="relative space-y-4 p-5 border rounded-lg bg-muted/30 group">
++                                    <div className="flex justify-between items-center">
++                                        <h4 className="font-semibold text-sm">Heir {index + 1}</h4>
++                                        <Button type="button" 
++                                            variant="ghost" 
++                                            size="icon" 
++                                            className="h-6 w-6 text-muted-foreground hover:text-destructive transition-opacity" 
++                                            onClick={() => removeHeir(index)}
++                                        >
++                                            <Trash2 className="w-4 h-4" />
++                                        </Button>
++                                    </div>
++                                    <div className="space-y-2">
++                                        <Label htmlFor={`heirName-${index}`}>Name</Label>
++                                        <Input id={`heirName-${index}`} value={heir.name} onChange={(e) => updateHeir(index, 'name', e.target.value)} />
++                                    </div>
++                                    <div className="space-y-2">
++                                        <Label htmlFor={`heirRel-${index}`}>Relationship</Label>
++                                        <Input id={`heirRel-${index}`} value={heir.relationship} onChange={(e) => updateHeir(index, 'relationship', e.target.value)} />
++                                    </div>
++                                </div>
++                            ))}
++                        </div>
++                    )}
++                </div>
++
++                {/* SECTION C: General Legal Questions */}
++                <div ref={sectionRefs.legal} className="space-y-6 scroll-mt-24">
++                    <div>
++                        <h3 className="text-lg font-medium tracking-tight border-l-4 border-primary pl-3">Section C: General Legal Questions</h3>
++                    </div>
++                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/30 p-6 rounded-lg border">
++                        {[
++                            { label: 'Payments for marital settlement?', field: 'maritalSettlement' },
++                            { label: 'Pre/post-marriage contract?', field: 'prePostMarriageContract' },
++                            { label: 'Widowed? (Filed estate tax return)', field: 'widowedFiledEstateTax' },
++                            { label: 'Filed gift tax returns?', field: 'filedGiftTaxReturns' },
++                            { label: 'Completed previous trust?', field: 'completedPreviousTrust' },
++                        ].map((q) => (
++                            <div key={q.field} className="space-y-3">
++                                <Label className="text-sm font-medium">{q.label}</Label>
++                                <RadioGroup 
++                                    value={formData[q.field as keyof typeof formData] as string} 
++                                    onValueChange={(val) => { updateFormData({ [q.field]: val }); clearError(q.field); }}
++                                    className="flex gap-4"
++                                >
++                                    <div className="flex items-center space-x-2">
++                                        <RadioGroupItem value="Yes" id={`${q.field}-yes`} />
++                                        <Label htmlFor={`${q.field}-yes`} className="font-normal">Yes</Label>
++                                    </div>
++                                    <div className="flex items-center space-x-2">
++                                        <RadioGroupItem value="No" id={`${q.field}-no`} />
++                                        <Label htmlFor={`${q.field}-no`} className="font-normal">No</Label>
++                                    </div>
++                                </RadioGroup>
++                                {errors[q.field] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[q.field]}</p>}
++                            </div>
++                        ))}
++                    </div>
++                </div>
++
++                {/* SECTION D: Fiduciaries */}
++                <div ref={sectionRefs.fiduciaries} className="space-y-6 scroll-mt-24">
++                    <div>
++                        <h3 className="text-lg font-medium tracking-tight border-l-4 border-primary pl-3">Section D: Fiduciaries</h3>
++                        <p className="text-sm text-muted-foreground mt-2">At least 2 choices are required for each role. You may add a 3rd optional choice.</p>
++                    </div>
++
++                    <div className="space-y-8">
++                        {/* Disability POAs */}
++                        <div className="space-y-4">
++                            <div className="flex justify-between items-center bg-muted/50 p-2 px-3 rounded-md">
++                                <Label className="text-base font-semibold">Financial Power of Attorney (Disability POA)</Label>
++                                {formData.disabilityPOAs.length < 3 && (
++                                    <Button type="button" onClick={() => addFiduciary('disabilityPOAs')} size="sm" variant="ghost" className="h-8 gap-1">
++                                        <Plus className="w-4 h-4" /> Add 3rd Choice
++                                    </Button>
++                                )}
++                            </div>
++                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-2">
++                                {formData.disabilityPOAs.map((poa, index) => (
++                                    <div key={index} className="space-y-2 relative">
++                                        <div className="flex justify-between items-center">
++                                            <Label htmlFor={`disabilityPOA-${index}`}>Choice #{index + 1} {index < 2 && <span className="text-destructive">*</span>}</Label>
++                                            {index === 2 && (
++                                                <Button type="button" size="icon" variant="ghost" className="h-5 w-5 hover:text-destructive" onClick={() => removeFiduciary('disabilityPOAs', index)}>
++                                                    <Trash2 className="w-3 h-3" />
++                                                </Button>
++                                            )}
++                                        </div>
++                                        <Input id={`disabilityPOA-${index}`} value={poa} onChange={(e) => updateFiduciary('disabilityPOAs', index, e.target.value)} required={index < 2} />
++                                        {errors[`disabilityPOA-${index}`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`disabilityPOA-${index}`]}</p>}
++                                    </div>
++                                ))}
++                            </div>
++                        </div>
++
++                        {/* Medical POAs */}
++                        <div className="space-y-4">
++                            <div className="flex justify-between items-center bg-muted/50 p-2 px-3 rounded-md">
++                                <Label className="text-base font-semibold">Medical Decision Maker (Medical POA)</Label>
++                                {formData.medicalPOAs.length < 3 && (
++                                    <Button type="button" onClick={() => addFiduciary('medicalPOAs')} size="sm" variant="ghost" className="h-8 gap-1">
++                                        <Plus className="w-4 h-4" /> Add 3rd Choice
++                                    </Button>
++                                )}
++                            </div>
++                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-2">
++                                {formData.medicalPOAs.map((poa, index) => (
++                                    <div key={index} className="space-y-2 relative">
++                                        <div className="flex justify-between items-center">
++                                            <Label htmlFor={`medicalPOAs-${index}`}>Choice #{index + 1} {index < 2 && <span className="text-destructive">*</span>}</Label>
++                                            {index === 2 && (
++                                                <Button type="button" size="icon" variant="ghost" className="h-5 w-5 hover:text-destructive" onClick={() => removeFiduciary('medicalPOAs', index)}>
++                                                    <Trash2 className="w-3 h-3" />
++                                                </Button>
++                                            )}
++                                        </div>
++                                        <Input id={`medicalPOAs-${index}`} value={poa} onChange={(e) => updateFiduciary('medicalPOAs', index, e.target.value)} required={index < 2} />
++                                        {errors[`medicalPOA-${index}`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`medicalPOA-${index}`]}</p>}
++                                    </div>
++                                ))}
++                            </div>
++                        </div>
++
++                        {/* Successor Trustees */}
++                        <div className="space-y-4">
++                            <div className="flex justify-between items-center bg-muted/50 p-2 px-3 rounded-md">
++                                <Label className="text-base font-semibold">Executors of Will/Trust (Successor Trustee)</Label>
++                                {formData.successorTrustees.length < 3 && (
++                                    <Button type="button" onClick={() => addFiduciary('successorTrustees')} size="sm" variant="ghost" className="h-8 gap-1">
++                                        <Plus className="w-4 h-4" /> Add 3rd Choice
++                                    </Button>
++                                )}
++                            </div>
++                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-2">
++                                {formData.successorTrustees.map((poa, index) => (
++                                    <div key={index} className="space-y-2 relative">
++                                        <div className="flex justify-between items-center">
++                                            <Label htmlFor={`successorTrustees-${index}`}>Choice #{index + 1} {index < 2 && <span className="text-destructive">*</span>}</Label>
++                                            {index === 2 && (
++                                                <Button type="button" size="icon" variant="ghost" className="h-5 w-5 hover:text-destructive" onClick={() => removeFiduciary('successorTrustees', index)}>
++                                                    <Trash2 className="w-3 h-3" />
++                                                </Button>
++                                            )}
++                                        </div>
++                                        <Input id={`successorTrustees-${index}`} value={poa} onChange={(e) => updateFiduciary('successorTrustees', index, e.target.value)} required={index < 2} />
++                                        {errors[`successorTrustee-${index}`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`successorTrustee-${index}`]}</p>}
++                                    </div>
++                                ))}
++                            </div>
++                        </div>
++                    </div>
++                </div>
++            </div>
++        </div>
++    );
++};
++
++export default Step2Heirs;
+diff --git a/src/components/estate-planning/Step3TrustDistribution.tsx b/src/components/estate-planning/Step3TrustDistribution.tsx
+new file mode 100644
+index 0000000..91b8ab4
+--- /dev/null
++++ b/src/components/estate-planning/Step3TrustDistribution.tsx
+@@ -0,0 +1,159 @@
++import React from 'react';
++import { useEstateForm } from '../../contexts/EstateFormContext';
++import { Label } from '@/components/ui/label';
++import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
++import { Textarea } from '@/components/ui/textarea';
++import { cn } from '@/lib/utils';
++import { Card } from '@/components/ui/card';
++
++// Enums for backend mapping
++const DISTRIBUTION_METHODS = [
++    {
++        id: 'EQUAL_DIVISION',
++        title: 'Equal Division',
++        description: 'Trust Estate is to be equally divided between all children and heirs (and a share going to the issue of a deceased child).'
++    },
++    {
++        id: 'STAGE_OF_LIFE',
++        title: '"Stage of Life" Distribution',
++        description: '(100% at age 18, 25% at age 21 and 25% at age 25, etc.)'
++    },
++    {
++        id: 'HEMS',
++        title: '"HEMS"',
++        description: '(assets are distributed as needed for Health, Education, Maintenance & Support)'
++    },
++    {
++        id: 'CUSTOM_OTHER',
++        title: 'Custom / Other',
++        description: 'I have a highly specific or different plan for my estate distribution.'
++    }
++];
++
++const PREDECEASED_PLANS = [
++    {
++        id: 'SHARED_SURVIVORS',
++        title: 'Share Among Survivors',
++        description: 'The deceased beneficiary\'s share is split evenly among the surviving listed beneficiaries.'
++    },
++    {
++        id: 'PASS_DESCENDANTS',
++        title: 'Pass to Descendants',
++        description: 'The deceased beneficiary\'s share passes down to their own children/descendants.'
++    }
++];
++
++const Step3TrustDistribution: React.FC = () => {
++    const { formData, updateFormData, errors, clearError } = useEstateForm();
++
++    return (
++        <div className="space-y-8">
++            <div>
++                <h2 className="text-2xl font-semibold tracking-tight">Trust Distribution Plan</h2>
++                <p className="text-sm text-muted-foreground mt-1">Design how your estate should be divided and handle contingencies.</p>
++            </div>
++
++            {/* Estate Distribution Method */}
++            <div className="space-y-4">
++                <Label className="text-lg font-semibold border-l-4 border-primary pl-3">
++                    How do you want your estate distributed? <span className="text-destructive">*</span>
++                </Label>
++                
++                <RadioGroup 
++                    value={formData.estateDistributionMethod} 
++                    onValueChange={(val) => { updateFormData({ estateDistributionMethod: val }); clearError('estateDistributionMethod'); }}
++                    className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2"
++                >
++                    {DISTRIBUTION_METHODS.map((method) => (
++                        <div key={method.id} className="relative">
++                            <RadioGroupItem 
++                                value={method.id} 
++                                id={`method-${method.id}`} 
++                                className="peer sr-only" 
++                            />
++                            <Label 
++                                htmlFor={`method-${method.id}`}
++                                className="flex flex-col h-full space-y-2 rounded-lg border-2 border-muted bg-background p-4 hover:bg-muted/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all"
++                            >
++                                <span className="font-semibold text-base">{method.title}</span>
++                                <span className="font-normal text-sm text-muted-foreground">{method.description}</span>
++                            </Label>
++                        </div>
++                    ))}
++                </RadioGroup>
++                {errors.estateDistributionMethod && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.estateDistributionMethod}</p>}
++
++                {/* Smooth Reveal Custom Description Area */}
++                <div 
++                    className={cn(
++                        "grid transition-all duration-300 ease-in-out",
++                        formData.estateDistributionMethod === 'CUSTOM_OTHER' ? "grid-rows-[1fr] opacity-100 mt-4" : "grid-rows-[0fr] opacity-0"
++                    )}
++                >
++                    <div className="overflow-hidden">
++                        <Card className="p-4 bg-muted/30 border-dashed">
++                            <Label htmlFor="customDescription" className="mb-2 block font-medium">Please describe your custom plan <span className="text-destructive">*</span></Label>
++                            <Textarea 
++                                id="customDescription"
++                                placeholder="Describe your specific percentages, conditions, or alternative heirs here..."
++                                value={formData.customDistributionDescription}
++                                onChange={(e) => { updateFormData({ customDistributionDescription: e.target.value }); clearError('customDistributionDescription'); }}
++                                className="min-h-[120px] bg-background"
++                                required={formData.estateDistributionMethod === 'CUSTOM_OTHER'}
++                            />
++                            {errors.customDistributionDescription && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.customDistributionDescription}</p>}
++                        </Card>
++                    </div>
++                </div>
++            </div>
++
++            {/* Predeceased Beneficiary Plan */}
++            <div className="space-y-4 pt-4 border-t">
++                <Label className="text-lg font-semibold border-l-4 border-primary pl-3">
++                    If a beneficiary passes away before you, what happens to their share?
++                </Label>
++                
++                <RadioGroup 
++                    value={formData.predeceasedBeneficiaryPlan} 
++                    onValueChange={(val) => updateFormData({ predeceasedBeneficiaryPlan: val })}
++                    className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2"
++                >
++                    {PREDECEASED_PLANS.map((plan) => (
++                        <div key={plan.id} className="relative">
++                            <RadioGroupItem 
++                                value={plan.id} 
++                                id={`plan-${plan.id}`} 
++                                className="peer sr-only" 
++                            />
++                            <Label 
++                                htmlFor={`plan-${plan.id}`}
++                                className="flex flex-col h-full space-y-1 rounded-lg border-2 border-muted bg-background p-4 hover:bg-muted/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all"
++                            >
++                                <span className="font-semibold text-base">{plan.title}</span>
++                                <span className="font-normal text-sm text-muted-foreground">{plan.description}</span>
++                            </Label>
++                        </div>
++                    ))}
++                </RadioGroup>
++            </div>
++
++            {/* Additional Information */}
++            <div className="space-y-4 pt-4 border-t">
++                <Label htmlFor="additionalInformation" className="text-lg font-semibold border-l-4 border-primary pl-3">
++                    Additional Estate Planning Goals
++                </Label>
++                <p className="text-sm text-muted-foreground">Are there any specific concerns, charitable inclinations, or specific gifts (e.g., leaving a specific car or house to a specific person) you wish to note?</p>
++                <Textarea 
++                    id="additionalInformation"
++                    placeholder="Enter any open-ended requests or goals here..."
++                    value={formData.additionalInformation}
++                    onChange={(e) => updateFormData({ additionalInformation: e.target.value })}
++                    className="min-h-[120px]"
++                />
++            </div>
++
++        </div>
++    );
++};
++
++export default Step3TrustDistribution;
+diff --git a/src/components/estate-planning/Step4Financials.tsx b/src/components/estate-planning/Step4Financials.tsx
+new file mode 100644
+index 0000000..ae645e8
+--- /dev/null
++++ b/src/components/estate-planning/Step4Financials.tsx
+@@ -0,0 +1,500 @@
++import React, { useRef } from 'react';
++import { useEstateForm, CashAccount, InvestmentAccount, BusinessEntity, RealProperty } from '../../contexts/EstateFormContext';
++import { Input } from '@/components/ui/input';
++import { Label } from '@/components/ui/label';
++import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
++import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
++import { Textarea } from '@/components/ui/textarea';
++import { Button } from '@/components/ui/button';
++import { Separator } from '@/components/ui/separator';
++import { Plus, Trash2 } from 'lucide-react';
++import { cn } from '@/lib/utils';
++
++// Reusable UI Wrapper for dynamic block items
++const DynamicFormCard: React.FC<{ title: string; onRemove?: () => void; children: React.ReactNode }> = ({ title, onRemove, children }) => (
++    <div className="relative space-y-4 p-5 border rounded-lg bg-muted/30 group">
++        <div className="flex justify-between items-center">
++            <h4 className="font-semibold text-sm border-b-2 border-primary/20 pb-1 pr-4 inline-block">{title}</h4>
++            {onRemove && (
++                <Button type="button" 
++                    variant="ghost" 
++                    size="icon" 
++                    className="h-6 w-6 text-muted-foreground hover:text-destructive transition-opacity" 
++                    onClick={onRemove}
++                >
++                    <Trash2 className="w-4 h-4" />
++                </Button>
++            )}
++        </div>
++        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
++            {children}
++        </div>
++    </div>
++);
++
++const Step4Financials: React.FC = () => {
++    const { formData, updateFormData, errors, clearError } = useEstateForm();
++
++    const sectionRefs = {
++        cash: useRef<HTMLDivElement>(null),
++        investments: useRef<HTMLDivElement>(null),
++        insurance: useRef<HTMLDivElement>(null),
++        business: useRef<HTMLDivElement>(null),
++        properties: useRef<HTMLDivElement>(null),
++    };
++
++    const scrollToSection = (section: keyof typeof sectionRefs) => {
++        sectionRefs[section]?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
++    };
++
++    // --- CASH ACCOUNTS (Max 5) ---
++    const addCashAccount = () => {
++        if (formData.cashAccounts.length < 5) {
++            updateFormData({ 
++                cashAccounts: [...formData.cashAccounts, { id: `cash-${Date.now()}`, bankName: '', nameOnAccount: '', accountType: '' }] 
++            });
++        }
++    };
++    const updateCashAccount = (index: number, field: keyof CashAccount, value: string) => {
++        const arr = [...formData.cashAccounts];
++        arr[index] = { ...arr[index], [field]: value };
++        updateFormData({ cashAccounts: arr });
++    };
++    const removeCashAccount = (index: number) => {
++        updateFormData({ cashAccounts: formData.cashAccounts.filter((_, i) => i !== index) });
++    };
++
++    // --- INVESTMENT ACCOUNTS (Max 3) ---
++    const addInvestmentAccount = () => {
++        if (formData.investmentAccounts.length < 3) {
++            updateFormData({ 
++                investmentAccounts: [...formData.investmentAccounts, { id: `inv-${Date.now()}`, brokerageName: '', accountType: '', owner: '' }] 
++            });
++        }
++    };
++    const updateInvestmentAccount = (index: number, field: keyof InvestmentAccount, value: string) => {
++        const arr = [...formData.investmentAccounts];
++        arr[index] = { ...arr[index], [field]: value };
++        updateFormData({ investmentAccounts: arr });
++    };
++    const removeInvestmentAccount = (index: number) => {
++        updateFormData({ investmentAccounts: formData.investmentAccounts.filter((_, i) => i !== index) });
++    };
++
++    // --- BUSINESS ENTITIES ---
++    const handleEntityRangeChange = (val: string) => {
++        updateFormData({ entityCountRange: val });
++        
++        let targetLength = 0;
++        if (val === '0') targetLength = 0;
++        else if (val === '1-4') targetLength = 1;
++        else if (val === '5-8') targetLength = 5;
++        else if (val === '8-10') targetLength = 8;
++        else if (val === '11+') targetLength = 11;
++
++        const currentEntities = [...formData.businessEntities];
++        if (targetLength > currentEntities.length) {
++            for (let i = currentEntities.length; i < targetLength; i++) {
++                currentEntities.push({
++                    id: `entity-${Date.now()}-${i}`,
++                    companyName: '',
++                    entityType: '',
++                    percentOwned: '',
++                    specificOwnershipName: ''
++                });
++            }
++        } else if (targetLength === 0) {
++            currentEntities.length = 0; // Clear all
++        }
++        updateFormData({ businessEntities: currentEntities });
++    };
++
++    const addEntity = () => {
++        updateFormData({
++            businessEntities: [...formData.businessEntities, {
++                id: `entity-${Date.now()}`, companyName: '', entityType: '', percentOwned: '', specificOwnershipName: ''
++            }]
++        });
++    };
++
++    const updateEntity = (index: number, field: keyof BusinessEntity, value: string) => {
++        const arr = [...formData.businessEntities];
++        arr[index] = { ...arr[index], [field]: value };
++        updateFormData({ businessEntities: arr });
++        clearError(`entity-${index}-${field}`);
++    };
++
++    const removeEntity = (index: number) => {
++        updateFormData({ businessEntities: formData.businessEntities.filter((_, i) => i !== index) });
++    };
++
++    // --- REAL PROPERTIES ---
++    const handlePropertyRangeChange = (val: string) => {
++        updateFormData({ propertiesCountRange: val });
++        
++        let targetLength = 0;
++        if (val === '0') targetLength = 0;
++        else if (val === '1' || val === '2' || val === '3' || val === '4') targetLength = parseInt(val, 10);
++        else if (val === '5-8') targetLength = 5;
++        else if (val === '8-10') targetLength = 8;
++
++        const currentProps = [...formData.realProperties];
++        if (targetLength > currentProps.length) {
++            for (let i = currentProps.length; i < targetLength; i++) {
++                currentProps.push({
++                    id: `prop-${Date.now()}-${i}`,
++                    address: '',
++                    propertyType: '',
++                    percentOwned: '',
++                    nameOnDeed: '',
++                    value: ''
++                });
++            }
++        } else if (targetLength < currentProps.length && targetLength >= 0) {
++            // If they change to a smaller exact number like '1' we truncate.
++            // But if they are in '5-8' and click '5-8', it shouldn't truncate manually added 6th props
++            // unless we strictly enforce it. We'll strict enforce for simplicity.
++            currentProps.length = targetLength;
++        }
++        updateFormData({ realProperties: currentProps });
++    };
++
++    const addProperty = () => {
++        updateFormData({
++            realProperties: [...formData.realProperties, {
++                id: `prop-${Date.now()}`, address: '', propertyType: '', percentOwned: '', nameOnDeed: '', value: ''
++            }]
++        });
++    };
++
++    const updateProperty = (index: number, field: keyof RealProperty, value: string) => {
++        const arr = [...formData.realProperties];
++        arr[index] = { ...arr[index], [field]: value };
++        updateFormData({ realProperties: arr });
++        clearError(`prop-${index}-${field}`);
++    };
++
++    const removeProperty = (index: number) => {
++        updateFormData({ realProperties: formData.realProperties.filter((_, i) => i !== index) });
++    };
++
++    const formatCurrency = (val: string) => {
++        if (!val) return '';
++        const numeric = val.replace(/\D/g, '');
++        if (!numeric) return '';
++        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Number(numeric));
++    };
++
++    return (
++        <div className="space-y-6 relative">
++            <div>
++                <h2 className="text-2xl font-semibold tracking-tight">Financial, Business & Real Property Assets</h2>
++                <p className="text-sm text-muted-foreground mt-1">Capture liquid assets (cash/investments), life insurance status, and illiquid business entity ownership.</p>
++            </div>
++
++            {/* STICKY SUB-NAVIGATION */}
++            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur py-3 border-b border-muted -mx-4 px-4 md:-mx-8 md:px-8 flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
++                <Button type="button" variant="secondary" size="sm" onClick={() => scrollToSection('cash')}>Cash Accounts</Button>
++                <Button type="button" variant="secondary" size="sm" onClick={() => scrollToSection('investments')}>Investments</Button>
++                <Button type="button" variant="secondary" size="sm" onClick={() => scrollToSection('insurance')}>Life Insurance</Button>
++                <Button type="button" variant="secondary" size="sm" onClick={() => scrollToSection('business')}>Business Entities</Button>
++                <Button type="button" variant="secondary" size="sm" onClick={() => scrollToSection('properties')}>Real Property</Button>
++            </div>
++
++            <div className="space-y-12 pb-8 pt-4">
++
++                {/* SECTION A: CASH ACCOUNTS */}
++                <div ref={sectionRefs.cash} className="space-y-6 scroll-mt-24">
++                    <div className="flex items-center justify-between">
++                        <div>
++                            <h3 className="text-lg font-medium tracking-tight border-l-4 border-primary pl-3">Section A: Cash Accounts</h3>
++                            <p className="text-sm text-muted-foreground pl-4 mt-1">Only list personal accounts. Do not list any business accounts.</p>
++                        </div>
++                        {formData.cashAccounts.length < 5 && (
++                            <Button type="button" onClick={addCashAccount} size="sm" variant="outline" className="gap-2 shrink-0">
++                                <Plus className="w-4 h-4" /> Add Cash Account
++                            </Button>
++                        )}
++                    </div>
++
++                    {formData.cashAccounts.length === 0 ? (
++                        <div className="text-sm text-muted-foreground p-6 bg-muted/20 rounded-lg text-center border-dashed border-2">
++                            No personal cash accounts added.
++                        </div>
++                    ) : (
++                        <div className="space-y-4">
++                            {formData.cashAccounts.map((account, index) => (
++                                <DynamicFormCard key={account.id} title={`Cash Account ${index + 1}`} onRemove={() => removeCashAccount(index)}>
++                                    <div className="space-y-2">
++                                        <Label>Bank Name</Label>
++                                        <Input value={account.bankName} onChange={(e) => updateCashAccount(index, 'bankName', e.target.value)} />
++                                    </div>
++                                    <div className="space-y-2">
++                                        <Label>Name on Account</Label>
++                                        <Input value={account.nameOnAccount} onChange={(e) => updateCashAccount(index, 'nameOnAccount', e.target.value)} />
++                                    </div>
++                                    <div className="space-y-2 md:col-span-2">
++                                        <Label>Account Type (e.g. Checking, Savings)</Label>
++                                        <Input value={account.accountType} onChange={(e) => updateCashAccount(index, 'accountType', e.target.value)} />
++                                    </div>
++                                </DynamicFormCard>
++                            ))}
++                        </div>
++                    )}
++                </div>
++
++                <Separator />
++
++                {/* SECTION B: INVESTMENT ACCOUNTS */}
++                <div ref={sectionRefs.investments} className="space-y-6 scroll-mt-24">
++                    <div className="flex items-center justify-between">
++                        <h3 className="text-lg font-medium tracking-tight border-l-4 border-primary pl-3">Section B: Investment Accounts</h3>
++                        {formData.investmentAccounts.length < 3 && (
++                            <Button type="button" onClick={addInvestmentAccount} size="sm" variant="outline" className="gap-2 shrink-0">
++                                <Plus className="w-4 h-4" /> Add Investment
++                            </Button>
++                        )}
++                    </div>
++
++                    {formData.investmentAccounts.length === 0 ? (
++                        <div className="text-sm text-muted-foreground p-6 bg-muted/20 rounded-lg text-center border-dashed border-2">
++                            No investment accounts added.
++                        </div>
++                    ) : (
++                        <div className="space-y-4">
++                            {formData.investmentAccounts.map((inv, index) => (
++                                <DynamicFormCard key={inv.id} title={`Investment Account ${index + 1}`} onRemove={() => removeInvestmentAccount(index)}>
++                                    <div className="space-y-2">
++                                        <Label>Brokerage Name</Label>
++                                        <Input value={inv.brokerageName} onChange={(e) => updateInvestmentAccount(index, 'brokerageName', e.target.value)} />
++                                    </div>
++                                    <div className="space-y-2">
++                                        <Label>Account Type</Label>
++                                        <Input value={inv.accountType} onChange={(e) => updateInvestmentAccount(index, 'accountType', e.target.value)} />
++                                    </div>
++                                    <div className="space-y-2 md:col-span-2">
++                                        <Label>Owner of Account</Label>
++                                        <Input value={inv.owner} onChange={(e) => updateInvestmentAccount(index, 'owner', e.target.value)} />
++                                    </div>
++                                </DynamicFormCard>
++                            ))}
++                        </div>
++                    )}
++                </div>
++
++                <Separator />
++
++                {/* SECTION C: LIFE INSURANCE */}
++                <div ref={sectionRefs.insurance} className="space-y-6 scroll-mt-24">
++                    <div>
++                        <h3 className="text-lg font-medium tracking-tight border-l-4 border-primary pl-3">Section C: Life Insurance</h3>
++                    </div>
++                    
++                    <div className="bg-muted/30 p-6 rounded-lg border space-y-4">
++                        <div className="space-y-3">
++                            <Label>Do you have any life insurance policies?</Label>
++                            <RadioGroup 
++                                value={formData.hasLifeInsurance} 
++                                onValueChange={(val) => {
++                                    updateFormData({ hasLifeInsurance: val });
++                                    clearError('hasLifeInsurance');
++                                    if (val === 'No') updateFormData({ lifeInsuranceDetails: '' });
++                                }}
++                                className="flex gap-4"
++                            >
++                                <div className="flex items-center space-x-2">
++                                    <RadioGroupItem value="Yes" id="li-yes" />
++                                    <Label htmlFor="li-yes" className="font-normal">Yes</Label>
++                                </div>
++                                <div className="flex items-center space-x-2">
++                                    <RadioGroupItem value="No" id="li-no" />
++                                    <Label htmlFor="li-no" className="font-normal">No</Label>
++                                </div>
++                            </RadioGroup>
++                            {errors.hasLifeInsurance && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.hasLifeInsurance}</p>}
++                        </div>
++
++                        {formData.hasLifeInsurance === 'Yes' && (
++                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
++                                <Label htmlFor="li-details">Please provide details (Provider, Type, Benefit Amount, etc.)</Label>
++                                <Textarea 
++                                    id="li-details" 
++                                    className="min-h-[100px] bg-background" 
++                                    value={formData.lifeInsuranceDetails}
++                                    onChange={(e) => { updateFormData({ lifeInsuranceDetails: e.target.value }); clearError('lifeInsuranceDetails'); }}
++                                />
++                                {errors.lifeInsuranceDetails && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.lifeInsuranceDetails}</p>}
++                            </div>
++                        )}
++                    </div>
++                </div>
++
++                <Separator />
++
++                {/* SECTION D: BUSINESS INTERESTS */}
++                <div ref={sectionRefs.business} className="space-y-6 scroll-mt-24">
++                    <div>
++                        <h3 className="text-lg font-medium tracking-tight border-l-4 border-primary pl-3">Section D: Business Interests / LLCs</h3>
++                    </div>
++
++                    <div className="space-y-4">
++                        <Label>How many entities do you own entirely or partially?</Label>
++                        <Select value={formData.entityCountRange} onValueChange={(val) => { handleEntityRangeChange(val); clearError('entityCountRange'); }}>
++                            <SelectTrigger className="max-w-[200px]">
++                                <SelectValue placeholder="Select Range" />
++                            </SelectTrigger>
++                            <SelectContent>
++                                <SelectItem value="0">None (0)</SelectItem>
++                                <SelectItem value="1-4">1-4 Entities</SelectItem>
++                                <SelectItem value="5-8">5-8 Entities</SelectItem>
++                                <SelectItem value="8-10">8-10 Entities</SelectItem>
++                                <SelectItem value="11+">11+ Entities</SelectItem>
++                            </SelectContent>
++                        </Select>
++                        {errors.entityCountRange && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.entityCountRange}</p>}
++                        <p className="text-xs text-muted-foreground w-full max-w-xl">
++                            If you have selected a range, we have seeded a starting amount of entities for you below. You can click "Add Another Entity" at the bottom of the list to match your exact count without overwhelming your screen.
++                        </p>
++                    </div>
++
++                    {formData.businessEntities.length > 0 && (
++                        <div className="space-y-4 mt-6">
++                            {formData.businessEntities.map((entity, index) => (
++                                <DynamicFormCard key={entity.id} title={`Business Entity ${index + 1}`} onRemove={() => removeEntity(index)}>
++                                    <div className="space-y-2 md:col-span-2">
++                                        <Label>Name of the Company <span className="text-destructive">*</span></Label>
++                                        <Input value={entity.companyName} onChange={(e) => updateEntity(index, 'companyName', e.target.value)} required />
++                                        {errors[`entity-${index}-companyName`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`entity-${index}-companyName`]}</p>}
++                                    </div>
++                                    <div className="space-y-2">
++                                        <Label>Type of Entity <span className="text-destructive">*</span></Label>
++                                        <Select value={entity.entityType} onValueChange={(val) => updateEntity(index, 'entityType', val)}>
++                                            <SelectTrigger>
++                                                <SelectValue placeholder="Select Type" />
++                                            </SelectTrigger>
++                                            <SelectContent>
++                                                <SelectItem value="LLC">LLC</SelectItem>
++                                                <SelectItem value="Corporation">Corporation</SelectItem>
++                                                <SelectItem value="Partnership">Partnership</SelectItem>
++                                                <SelectItem value="Other">Other</SelectItem>
++                                            </SelectContent>
++                                        </Select>
++                                        {errors[`entity-${index}-entityType`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`entity-${index}-entityType`]}</p>}
++                                    </div>
++                                    <div className="space-y-2">
++                                        <Label>% Owned <span className="text-destructive">*</span></Label>
++                                        <Input 
++                                            type="number" 
++                                            min="0" max="100" 
++                                            placeholder="e.g. 50"
++                                            value={entity.percentOwned} 
++                                            onChange={(e) => updateEntity(index, 'percentOwned', e.target.value)} 
++                                            required 
++                                        />
++                                        {errors[`entity-${index}-percentOwned`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`entity-${index}-percentOwned`]}</p>}
++                                    </div>
++                                    <div className="space-y-2 md:col-span-2">
++                                        <Label>Specific Ownership Name <span className="text-destructive">*</span></Label>
++                                        <Input 
++                                            value={entity.specificOwnershipName} 
++                                            onChange={(e) => updateEntity(index, 'specificOwnershipName', e.target.value)} 
++                                            placeholder="List specific name (e.g. your name, spouse, holding company, Roth IRA)"
++                                            required 
++                                        />
++                                        {errors[`entity-${index}-specificOwnershipName`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`entity-${index}-specificOwnershipName`]}</p>}
++                                    </div>
++                                </DynamicFormCard>
++                            ))}
++                            
++                            <Button type="button" onClick={addEntity} variant="outline" className="w-full border-dashed gap-2">
++                                <Plus className="w-4 h-4" /> Add Another Entity
++                            </Button>
++                        </div>
++                    )}
++                </div>
++
++                <Separator />
++
++                {/* SECTION E: REAL PROPERTY INTERESTS */}
++                <div ref={sectionRefs.properties} className="space-y-6 scroll-mt-24">
++                    <div>
++                        <h3 className="text-lg font-medium tracking-tight border-l-4 border-primary pl-3">Section E: Real Property Interests</h3>
++                    </div>
++
++                    <div className="space-y-4">
++                        <Label>How many properties do you own?</Label>
++                        <RadioGroup 
++                            value={formData.propertiesCountRange} 
++                            onValueChange={(val) => { handlePropertyRangeChange(val); clearError('propertiesCountRange'); }}
++                            className="flex flex-wrap gap-4"
++                        >
++                            {['0', '1', '2', '3', '4', '5-8', '8-10'].map((opt) => (
++                                <div key={opt} className="flex items-center space-x-2">
++                                    <RadioGroupItem value={opt} id={`prop-${opt}`} />
++                                    <Label htmlFor={`prop-${opt}`} className="font-normal">{opt}</Label>
++                                </div>
++                            ))}
++                        </RadioGroup>
++                        {errors.propertiesCountRange && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.propertiesCountRange}</p>}
++                    </div>
++
++                    {formData.realProperties.length > 0 && (
++                        <div className="space-y-4 mt-6">
++                            {formData.realProperties.map((prop, index) => (
++                                <DynamicFormCard key={prop.id} title={`Property ${index + 1}`} onRemove={() => removeProperty(index)}>
++                                    <div className="space-y-2 md:col-span-2">
++                                        <Label>Property Address</Label>
++                                        <Input value={prop.address} onChange={(e) => updateProperty(index, 'address', e.target.value)} />
++                                    </div>
++                                    <div className="space-y-2">
++                                        <Label>Type of Property <span className="text-destructive">*</span></Label>
++                                        <Select value={prop.propertyType} onValueChange={(val) => updateProperty(index, 'propertyType', val)}>
++                                            <SelectTrigger>
++                                                <SelectValue placeholder="Select Type" />
++                                            </SelectTrigger>
++                                            <SelectContent>
++                                                <SelectItem value="Primary Residence">Primary Residence</SelectItem>
++                                                <SelectItem value="Secondary Home">Secondary Home</SelectItem>
++                                                <SelectItem value="Vacation">Vacation</SelectItem>
++                                                <SelectItem value="Income Property">Income Property</SelectItem>
++                                                <SelectItem value="Other">Other</SelectItem>
++                                            </SelectContent>
++                                        </Select>
++                                        {errors[`prop-${index}-propertyType`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`prop-${index}-propertyType`]}</p>}
++                                    </div>
++                                    <div className="space-y-2">
++                                        <Label>% Owned</Label>
++                                        <Input 
++                                            type="number" min="0" max="100" placeholder="e.g. 100"
++                                            value={prop.percentOwned} 
++                                            onChange={(e) => updateProperty(index, 'percentOwned', e.target.value)} 
++                                        />
++                                    </div>
++                                    <div className="space-y-2">
++                                        <Label>Name on Deed</Label>
++                                        <Input value={prop.nameOnDeed} onChange={(e) => updateProperty(index, 'nameOnDeed', e.target.value)} />
++                                    </div>
++                                    <div className="space-y-2">
++                                        <Label>Value</Label>
++                                        <Input 
++                                            value={prop.value} 
++                                            onChange={(e) => updateProperty(index, 'value', formatCurrency(e.target.value))} 
++                                            placeholder="$1,250,000"
++                                        />
++                                    </div>
++                                </DynamicFormCard>
++                            ))}
++                            
++                            <Button type="button" onClick={addProperty} variant="outline" className="w-full border-dashed gap-2">
++                                <Plus className="w-4 h-4" /> Add Another Property
++                            </Button>
++                        </div>
++                    )}
++                </div>
++
++            </div>
++        </div>
++    );
++};
++
++export default Step4Financials;
+diff --git a/src/constants/crossAppAuth.ts b/src/constants/crossAppAuth.ts
+new file mode 100644
+index 0000000..c4286aa
+--- /dev/null
++++ b/src/constants/crossAppAuth.ts
+@@ -0,0 +1,7 @@
++/** Must match App2 (`atg-trust` authLogout) query name. */
++export const CROSS_APP_LOGOUT_PARAM = 'cross_app_logout';
++
++export function isCrossAppLogoutSearch(search: string): boolean {
++  const v = new URLSearchParams(search).get(CROSS_APP_LOGOUT_PARAM);
++  return v === '1' || v === 'true' || v === '';
++}
+diff --git a/src/contexts/EstateFormContext.tsx b/src/contexts/EstateFormContext.tsx
+new file mode 100644
+index 0000000..8edb31f
+--- /dev/null
++++ b/src/contexts/EstateFormContext.tsx
+@@ -0,0 +1,226 @@
++import React, { createContext, useContext, useState, ReactNode } from 'react';
++
++export interface ChildData {
++    id: string;
++    sonDaughter: string;
++    fullName: string;
++    birthdate: string;
++    parents: string;
++}
++
++export interface HeirData {
++    id: string;
++    name: string;
++    relationship: string;
++}
++
++export interface CashAccount {
++    id: string;
++    bankName: string;
++    nameOnAccount: string;
++    accountType: string;
++}
++
++export interface InvestmentAccount {
++    id: string;
++    brokerageName: string;
++    accountType: string;
++    owner: string;
++}
++
++export interface BusinessEntity {
++    id: string;
++    companyName: string;
++    entityType: string;
++    percentOwned: string;
++    specificOwnershipName: string;
++}
++
++export interface RealProperty {
++    id: string;
++    address: string;
++    propertyType: string;
++    percentOwned: string;
++    nameOnDeed: string;
++    value: string;
++}
++
++export interface EstateFormData {
++    // Step 1: Personal
++    fullName: string;
++    aliases: string;
++    rentOrOwn: string;
++    streetAddress: string;
++    city: string;
++    state: string;
++    country: string;
++    postalCode: string;
++    dateOfBirth: string;
++    email: string;
++    phone: string;
++    occupation: string;
++    status: string;
++
++    // Step 2: Spouse (Conditional)
++    spouseFullName: string;
++    spouseOccupation: string;
++    spouseDob: string;
++    spouseAliases: string;
++    spouseEmail: string;
++    spousePhone: string;
++
++    // Step 2A: Children & Guardians
++    hasChildren: string;
++    numChildren: number;
++    children: ChildData[];
++    guardian1: string;
++    guardian2: string;
++    guardian3: string;
++
++    // Step 2B: Other Heirs
++    heirs: HeirData[];
++
++    // Step 2C: General Legal Questions
++    maritalSettlement: string; // 'Yes' | 'No' | ''
++    prePostMarriageContract: string; 
++    widowedFiledEstateTax: string;
++    filedGiftTaxReturns: string;
++    completedPreviousTrust: string;
++
++    // Step 2D: Fiduciaries (POAs and Trustees)
++    disabilityPOAs: string[];
++    medicalPOAs: string[];
++    successorTrustees: string[];
++
++    // Step 3: Trust Distribution
++    estateDistributionMethod: string;
++    customDistributionDescription: string;
++    predeceasedBeneficiaryPlan: string;
++    additionalInformation: string;
++
++    // Step 4: Financial, Business & Real Property
++    cashAccounts: CashAccount[];
++    investmentAccounts: InvestmentAccount[];
++    hasLifeInsurance: string;
++    lifeInsuranceDetails: string;
++    entityCountRange: string;
++    businessEntities: BusinessEntity[];
++    propertiesCountRange: string;
++    realProperties: RealProperty[];
++}
++
++interface EstateFormContextType {
++    formData: EstateFormData;
++    updateFormData: (data: Partial<EstateFormData>) => void;
++    currentStep: number;
++    setCurrentStep: (step: number) => void;
++    progress: number;
++    updateProgress: (progress: number) => void;
++    errors: Record<string, string>;
++    setErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
++    clearError: (field: string) => void;
++    steps: {
++        id: number;
++        title: string;
++        description: string;
++        icon: React.ElementType;
++    }[];
++}
++
++const defaultFormData: EstateFormData = {
++    fullName: '',
++    aliases: '',
++    rentOrOwn: '',
++    streetAddress: '',
++    city: '',
++    state: '',
++    country: '',
++    postalCode: '',
++    dateOfBirth: '',
++    email: '',
++    phone: '',
++    occupation: '',
++    status: '',
++    
++    spouseFullName: '',
++    spouseOccupation: '',
++    spouseDob: '',
++    spouseAliases: '',
++    spouseEmail: '',
++    spousePhone: '',
++    
++    hasChildren: '',
++    numChildren: 0,
++    children: [],
++    guardian1: '',
++    guardian2: '',
++    guardian3: '',
++
++    heirs: [],
++
++    maritalSettlement: '',
++    prePostMarriageContract: '',
++    widowedFiledEstateTax: '',
++    filedGiftTaxReturns: '',
++    completedPreviousTrust: '',
++
++    disabilityPOAs: ['', ''],
++    medicalPOAs: ['', ''],
++    successorTrustees: ['', ''],
++
++    estateDistributionMethod: '',
++    customDistributionDescription: '',
++    predeceasedBeneficiaryPlan: '',
++    additionalInformation: '',
++
++    cashAccounts: [],
++    investmentAccounts: [],
++    hasLifeInsurance: '',
++    lifeInsuranceDetails: '',
++    entityCountRange: '',
++    businessEntities: [],
++    propertiesCountRange: '',
++    realProperties: [],
++};
++
++const EstateFormContext = createContext<EstateFormContextType | undefined>(undefined);
++
++export const useEstateForm = () => {
++    const context = useContext(EstateFormContext);
++    if (!context) {
++        throw new Error('useEstateForm must be used within a EstateFormProvider');
++    }
++    return context;
++};
++
++export const EstateFormProvider: React.FC<{
++    children: ReactNode;
++    steps: { id: number; title: string; description: string; icon: React.ElementType }[];
++}> = ({ children, steps }) => {
++    const [formData, setFormData] = useState<EstateFormData>(defaultFormData);
++    const [currentStep, setCurrentStep] = useState(1);
++    const [progress, setProgress] = useState(0);
++    const [errors, setErrors] = useState<Record<string, string>>({});
++
++    const updateFormData = (data: Partial<EstateFormData>) => {
++        setFormData((prev) => ({ ...prev, ...data }));
++    };
++
++    const updateProgress = (newProgress: number) => {
++        setProgress(newProgress);
++    };
++
++    const clearError = (field: string) => {
++        setErrors(prev => {
++            const newErrors = { ...prev };
++            delete newErrors[field];
++            return newErrors;
++        });
++    };
++
++    return (
++        <EstateFormContext.Provider value={{ formData, updateFormData, currentStep, setCurrentStep, progress, updateProgress, errors, setErrors, clearError, steps }}>
++            {children}
++        </EstateFormContext.Provider>
++    );
++};
+diff --git a/src/pages/AdminUserDetail.tsx b/src/pages/AdminUserDetail.tsx
+index e8042cc..b72814a 100644
+--- a/src/pages/AdminUserDetail.tsx
++++ b/src/pages/AdminUserDetail.tsx
+@@ -33,12 +33,14 @@ import {
+   SwapHoriz as FlipIcon,
+   Description as DescriptionIcon,
+   Logout as LogoutIcon,
++  Assignment as AssignmentIcon,
+ } from '@mui/icons-material';
+ import { useDispatch, useSelector } from 'react-redux';
+ import { useNavigate } from 'react-router-dom';
+ import { apiService } from '../services/api';
+ import { useToast } from '@/hooks/use-toast';
+ import { FormDetailView } from '../components/FormDetailView';
++import AdminEstatePlanningDialog from '../components/AdminEstatePlanningDialog';
+ import { clearAllAuthAndPurge } from '../utils/authLogout';
+ import { persistor } from '../store/store';
+ import businessLogo from '../assets/New-log.png';
+@@ -71,6 +73,16 @@ interface EngagementLetter {
+   updated_at: string;
+ }
+ 
++/** Estate planning staff list row (matches backend staff serializer). */
++interface EstateSubmissionRow {
++  id: string;
++  status: string;
++  current_step: number;
++  submitted_at: string | null;
++  updated_at: string;
++  user?: string;
++}
++
+ interface AdminUserDetailProps {
+   user: User;
+   onBack: () => void;
+@@ -103,6 +115,9 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
+   const [reassigningId, setReassigningId] = useState<string | null>(null);
+   /** Display names derived from submission_data (business name, first+last, entity name) for admin table */
+   const [formDisplayNames, setFormDisplayNames] = useState<Record<string, string>>({});
++  const [estateSubmissions, setEstateSubmissions] = useState<EstateSubmissionRow[]>([]);
++  const [estateDialogOpen, setEstateDialogOpen] = useState(false);
++  const [selectedEstateId, setSelectedEstateId] = useState<string | null>(null);
+ 
+   // Get permissions or default to false
+   const isSuperAdmin = permissions?.is_super_admin || false;
+@@ -111,10 +126,12 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
+   const canViewRental = isSuperAdmin || permissions?.can_view_rental_organizer || false;
+   const canViewFlip = isSuperAdmin || permissions?.can_view_flip_organizer || false;
+   const canViewEngagement = isSuperAdmin || permissions?.can_view_engagement_letter || false;
++  const canViewEstatePlanning =
++    isSuperAdmin || permissions?.can_list_users || false;
+ 
+   useEffect(() => {
+     loadUserForms();
+-  }, [user.id]);
++  }, [user.id, canViewEstatePlanning]);
+ 
+   /** Derive display name from submission_data (same logic as client organizers). */
+   const getDisplayNameFromSubmission = (formType: string, submissionData: any): string | null => {
+@@ -178,6 +195,19 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
+         }
+       });
+       setFormDisplayNames(names);
++
++      if (canViewEstatePlanning) {
++        try {
++          const estateRaw = await apiService.getEstatePlanningStaffList(user.id, {
++            useAdminToken: true,
++          });
++          setEstateSubmissions(Array.isArray(estateRaw) ? estateRaw : []);
++        } catch {
++          setEstateSubmissions([]);
++        }
++      } else {
++        setEstateSubmissions([]);
++      }
+     } catch (error: any) {
+       console.error('Error loading user forms:', error);
+       toast({
+@@ -197,6 +227,7 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
+   if (canViewRental) availableTabs.push({ type: 'rental', index: availableTabs.length });
+   if (canViewFlip) availableTabs.push({ type: 'flip', index: availableTabs.length });
+   if (canViewEngagement) availableTabs.push({ type: 'engagement', index: availableTabs.length });
++  if (canViewEstatePlanning) availableTabs.push({ type: 'estate', index: availableTabs.length });
+ 
+   const getCurrentTabType = () => {
+     return availableTabs[activeTab]?.type || null;
+@@ -211,6 +242,11 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
+     setDetailDialogOpen(true);
+   };
+ 
++  const handleViewEstateSubmission = (row: EstateSubmissionRow) => {
++    setSelectedEstateId(row.id);
++    setEstateDialogOpen(true);
++  };
++
+   const loadAdminFlipForms = async () => {
+     try {
+       setLoadingAdminForms(true);
+@@ -293,6 +329,8 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
+         return forms.flip;
+       case 'engagement':
+         return []; // Engagement letter is handled separately
++      case 'estate':
++        return []; // Estate planning uses estateSubmissions state
+       default:
+         return [];
+     }
+@@ -310,6 +348,8 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
+         return 'Flip Organizer';
+       case 'engagement':
+         return 'Engagement Letter';
++      case 'estate':
++        return 'Estate Planning Questionnaire';
+       default:
+         return '';
+     }
+@@ -490,12 +530,97 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
+                   label={`Engagement Letter ${engagementLetter ? '(Signed)' : '(Not Signed)'}`}
+                 />
+               )}
++              {canViewEstatePlanning && (
++                <Tab
++                  icon={<AssignmentIcon />}
++                  iconPosition="start"
++                  label={`Estate Planning (${estateSubmissions.length})`}
++                />
++              )}
+             </Tabs>
+ 
+             {loading ? (
+               <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                 <CircularProgress />
+               </Box>
++            ) : getCurrentTabType() === 'estate' ? (
++              estateSubmissions.length === 0 ? (
++                <Alert severity="info" sx={{ borderRadius: 2 }}>
++                  No estate planning questionnaire submissions for this user.
++                </Alert>
++              ) : (
++                <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 2, border: '1px solid #e2e8f0' }}>
++                  <Table>
++                    <TableHead>
++                      <TableRow sx={{ backgroundColor: '#f8fafc' }}>
++                        <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Submission ID</TableCell>
++                        <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Status</TableCell>
++                        <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Step</TableCell>
++                        <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Submitted</TableCell>
++                        <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Updated</TableCell>
++                        <TableCell align="center" sx={{ fontWeight: 600, color: '#1e293b' }}>Actions</TableCell>
++                      </TableRow>
++                    </TableHead>
++                    <TableBody>
++                      {estateSubmissions.map((row) => (
++                        <TableRow
++                          key={row.id}
++                          sx={{
++                            '&:hover': { backgroundColor: '#f8fafc' },
++                            '&:last-child td': { borderBottom: 0 },
++                          }}
++                        >
++                          <TableCell>
++                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
++                              {row.id}
++                            </Typography>
++                          </TableCell>
++                          <TableCell>
++                            <Chip
++                              label={row.status === 'submitted' ? 'Submitted' : 'Draft'}
++                              color={getStatusColor(row.status) as any}
++                              size="small"
++                              sx={{ fontWeight: 500 }}
++                            />
++                          </TableCell>
++                          <TableCell>
++                            <Typography variant="body2">{row.current_step ?? '—'}</Typography>
++                          </TableCell>
++                          <TableCell>
++                            <Typography variant="body2" color="text.secondary">
++                              {row.submitted_at ? formatDate(row.submitted_at) : '—'}
++                            </Typography>
++                          </TableCell>
++                          <TableCell>
++                            <Typography variant="body2" color="text.secondary">
++                              {row.updated_at ? formatDate(row.updated_at) : '—'}
++                            </Typography>
++                          </TableCell>
++                          <TableCell align="center">
++                            <Button
++                              variant="outlined"
++                              size="small"
++                              startIcon={<ViewIcon />}
++                              onClick={() => handleViewEstateSubmission(row)}
++                              sx={{
++                                textTransform: 'none',
++                                borderColor: '#3b82f6',
++                                color: '#3b82f6',
++                                '&:hover': {
++                                  borderColor: '#2563eb',
++                                  backgroundColor: '#eff6ff',
++                                },
++                              }}
++                            >
++                              View / Edit
++                            </Button>
++                          </TableCell>
++                        </TableRow>
++                      ))}
++                    </TableBody>
++                  </Table>
++                </TableContainer>
++              )
+             ) : getCurrentTabType() === 'engagement' ? (
+               // Engagement Letter Tab
+               engagementLetter ? (
+@@ -971,6 +1096,16 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
+           </Button>
+         </DialogActions>
+       </Dialog>
++
++      <AdminEstatePlanningDialog
++        open={estateDialogOpen}
++        submissionId={selectedEstateId}
++        onClose={() => {
++          setEstateDialogOpen(false);
++          setSelectedEstateId(null);
++        }}
++        onSaved={() => void loadUserForms()}
++      />
+     </Box>
+   );
+ };
+diff --git a/src/pages/ClientProfileCreator.tsx b/src/pages/ClientProfileCreator.tsx
+index 9e8e05f..e8728cf 100644
+--- a/src/pages/ClientProfileCreator.tsx
++++ b/src/pages/ClientProfileCreator.tsx
+@@ -107,11 +107,11 @@ const ClientProfileCreator = () => {
+         e.preventDefault();
+ 
+         // Validate: each non-first-year business must have its own prior-year return
+-        const missingFile = businesses.some(b => b.isFirstYear === 'no' && !b.priorYearReturn);
+-        if (missingFile) {
+-            toast.error('Please upload prior-year tax returns for every non-first-year business.');
+-            return;
+-        }
++        // const missingFile = businesses.some(b => b.isFirstYear === 'no' && !b.priorYearReturn);
++        // if (missingFile) {
++        //     toast.error('Please upload prior-year tax returns for every non-first-year business.');
++        //     return;
++        // }
+ 
+         setIsLoading(true);
+         setUploadProgress(0);
+@@ -355,10 +355,10 @@ const ClientProfileCreator = () => {
+                                                 </div>
+                                                 {business.isFirstYear === 'no' && (
+                                                     <div className="space-y-2 p-3 border rounded-md bg-background">
+-                                                        <Label htmlFor={`priorYearReturn-${index}`}>
+-                                                            Prior-Year Tax Return <span className="text-destructive">*</span>
+-                                                        </Label>
+-                                                        <p className="text-xs text-muted-foreground">
++                                                        {/* <Label htmlFor={`priorYearReturn-${index}`}>
++                                                            Prior-Year Tax Return
++                                                        </Label> */}
++                                                        {/* <p className="text-xs text-muted-foreground">
+                                                             Please upload the prior-year tax return for this business.
+                                                         </p>
+                                                         <Input
+@@ -367,7 +367,10 @@ const ClientProfileCreator = () => {
+                                                             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                                             required
+                                                             onChange={(e) => handleBusinessFileChange(index, e.target.files?.[0] ?? null)}
+-                                                        />
++                                                        /> */}
++                                                        <p className="text-sm font-bold text-red-500">
++                                                            *Please upload your prior year tax return to your SmartVault Account
++                                                        </p>
+                                                     </div>
+                                                 )}
+                                             </CardContent>
+@@ -410,7 +413,7 @@ const ClientProfileCreator = () => {
+                                 {isLoading && (
+                                     <div className="w-full">
+                                         <div className="flex justify-between text-xs text-muted-foreground mb-1">
+-                                            <span>{uploadProgress < 100 ? 'Uploading files…' : 'Syncing with CRM…'}</span>
++                                            <span>{uploadProgress < 100 ? 'Uploading files…' : 'Processing…'}</span>
+                                             <span>{uploadProgress}%</span>
+                                         </div>
+                                         <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+diff --git a/src/pages/EstatePlanningPage.tsx b/src/pages/EstatePlanningPage.tsx
+new file mode 100644
+index 0000000..b419f18
+--- /dev/null
++++ b/src/pages/EstatePlanningPage.tsx
+@@ -0,0 +1,139 @@
++import React from 'react';
++import { EstateFormProvider } from '../contexts/EstateFormContext';
++import MultiStepEstateForm from '../components/estate-planning/MultiStepEstateForm';
++import { AppBar, Toolbar, Box, Typography, IconButton } from '@mui/material';
++import { Settings as SettingsIcon } from '@mui/icons-material';
++import { User, Users, FileCheck, ScrollText, Landmark, LogOut } from 'lucide-react';
++
++import businessLogo from '../assets/New-log.png';
++import {
++    DropdownMenu,
++    DropdownMenuContent,
++    DropdownMenuItem,
++    DropdownMenuLabel,
++    DropdownMenuSeparator,
++    DropdownMenuTrigger,
++} from '@/components/ui/dropdown-menu';
++import { Avatar, AvatarFallback } from '@/components/ui/avatar';
++import { useSelector, useDispatch } from 'react-redux';
++import { clearAllAuthAndPurge } from '../utils/authLogout';
++import { useNavigate } from 'react-router-dom';
++import { persistor } from '../store/store';
++
++const estateSteps = [
++    { id: 1, title: 'Personal Information', description: 'Demographics & contact details', icon: User },
++    { id: 2, title: 'Heirs & Legal', description: 'Dependents, Fiduciaries & Legal', icon: Users },
++    { id: 3, title: 'Trust Distribution', description: 'Asset allocation & contingencies', icon: ScrollText },
++    { id: 4, title: 'Financial, Business & Property', description: 'Assets & Real Estate', icon: Landmark },
++    { id: 5, title: 'Review & Submit', description: 'Finalize and launch', icon: FileCheck },
++];
++
++const EstatePlanningPage: React.FC = () => {
++    const navigate = useNavigate();
++    const dispatch = useDispatch();
++    const { user } = useSelector((state: any) => state.auth);
++
++    const handleLogout = () => {
++        clearAllAuthAndPurge(dispatch, persistor);
++        navigate('/login');
++    };
++
++    const getInitials = (username: string) => {
++        return username ? username.slice(0, 2).toUpperCase() : 'U';
++    };
++
++    return (
++        <div className="min-h-screen bg-background flex flex-col font-sans">
++            {/* Common Navbar mirroring ClientProfileCreator but minimalized */}
++            <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', zIndex: 1200 }}>
++                <Toolbar sx={{
++                    flexWrap: { xs: 'wrap', sm: 'nowrap' },
++                    minHeight: { xs: 'auto', sm: '64px' },
++                    py: { xs: 1, sm: 0 },
++                    gap: { xs: 1, sm: 0 }
++                }}>
++                    <Box sx={{
++                        mr: { xs: 1, sm: 2 },
++                        display: 'flex',
++                        alignItems: 'center',
++                        flexShrink: 0
++                    }}>
++                        <Box
++                            component="img"
++                            src={businessLogo}
++                            alt="Business Logo"
++                            sx={{ height: '40px', width: 'auto', maxHeight: { xs: '32px', sm: '40px' } }}
++                        />
++                    </Box>
++                    <Typography
++                        variant="h6"
++                        component="div"
++                        sx={{
++                            flexGrow: 1,
++                            color: '#1e293b',
++                            fontWeight: 600,
++                            fontSize: { xs: '1rem', sm: '1.25rem' },
++                            display: { xs: 'none', sm: 'block' }
++                        }}
++                    >
++                        Tax Organizer Pro
++                    </Typography>
++                    <Box sx={{
++                        display: 'flex',
++                        alignItems: 'center',
++                        gap: { xs: 1, sm: 2 },
++                        width: { xs: '100%', sm: 'auto' },
++                        justifyContent: { xs: 'space-between', sm: 'flex-end' },
++                        order: { xs: 3, sm: 2 }
++                    }}>
++                        <DropdownMenu>
++                            <DropdownMenuTrigger asChild>
++                                <IconButton
++                                    color="inherit"
++                                    sx={{
++                                        color: '#64748b',
++                                        flexShrink: 0
++                                    }}
++                                >
++                                    <SettingsIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />
++                                </IconButton>
++                            </DropdownMenuTrigger>
++                            <DropdownMenuContent align="end" className="w-56" style={{ zIndex: 1300 }}>
++                                <DropdownMenuLabel>
++                                    <div className="flex items-center gap-3">
++                                        <Avatar className="h-8 w-8">
++                                            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
++                                                {getInitials(user?.username)}
++                                            </AvatarFallback>
++                                        </Avatar>
++                                        <div className="flex flex-col">
++                                            <span className="text-sm font-medium">{user?.username || 'User'}</span>
++                                            {user?.email && (
++                                                <span className="text-xs text-muted-foreground">{user.email}</span>
++                                            )}
++                                        </div>
++                                    </div>
++                                </DropdownMenuLabel>
++                                <DropdownMenuSeparator />
++                                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
++                                    <LogOut className="mr-2 h-4 w-4" />
++                                    <span>Logout</span>
++                                </DropdownMenuItem>
++                            </DropdownMenuContent>
++                        </DropdownMenu>
++                    </Box>
++                </Toolbar>
++            </AppBar>
++
++            <div className="flex-grow p-4 md:p-8 flex justify-center items-start pt-12">
++                <div className="w-full">
++                    <EstateFormProvider steps={estateSteps}>
++                        <MultiStepEstateForm />
++                    </EstateFormProvider>
++                </div>
++            </div>
++        </div>
++    );
++};
++
++export default EstatePlanningPage;
+diff --git a/src/pages/Index.tsx b/src/pages/Index.tsx
+index 92e1ac4..7ca0320 100644
+--- a/src/pages/Index.tsx
++++ b/src/pages/Index.tsx
+@@ -1,7 +1,28 @@
++import { useEffect } from 'react';
++import { useNavigate, useSearchParams } from 'react-router-dom';
++import { useSelector } from 'react-redux';
+ import { TaxOrganizerApp } from '../components/TaxOrganizerApp';
++import type { RootState } from '../store/store';
+ 
+ const Index = () => {
++  const [searchParams] = useSearchParams();
++  const navigate = useNavigate();
++  const { tokens } = useSelector((state: RootState) => state.auth);
++  const rehydrated = useSelector((state: RootState) => state._persist?.rehydrated === true);
++
++  useEffect(() => {
++    const redirectUri = searchParams.get('redirect_uri');
++    if (!redirectUri || !rehydrated) return;
++
++    const access =
++      tokens?.access || (typeof localStorage !== 'undefined' ? localStorage.getItem('accessToken') : null);
++    if (access) {
++      navigate(`/sso?redirect_uri=${encodeURIComponent(redirectUri)}`, { replace: true });
++    }
++  }, [searchParams, rehydrated, tokens?.access, navigate]);
++
+   return <TaxOrganizerApp />;
+ };
+ 
+ export default Index;
++
+diff --git a/src/pages/Login.tsx b/src/pages/Login.tsx
+index e916c1b..7765e76 100644
+--- a/src/pages/Login.tsx
++++ b/src/pages/Login.tsx
+@@ -1,12 +1,13 @@
+ import React, { useState, useEffect, useRef } from 'react';
+ import { useDispatch, useSelector } from 'react-redux';
+-import { useNavigate, Link } from 'react-router-dom';
++import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+ import { Input } from '@/components/ui/input';
+ import { Label } from '@/components/ui/label';
+ import { Button } from '@/components/ui/button';
+ import { Alert, AlertDescription } from '@/components/ui/alert';
+ import { loginUser, clearError, resetLoading } from '../store/authSlice';
++import { CROSS_APP_LOGOUT_PARAM } from '../constants/crossAppAuth';
+ import businessLogo from '../assets/New-log.png';
+ import { Checkbox } from '@/components/ui/checkbox';
+ import { InfoIcon, ArrowRight } from 'lucide-react';
+@@ -22,18 +23,27 @@ const Login = () => {
+ 
+   const dispatch = useDispatch();
+   const navigate = useNavigate();
+-  const { loading, error, isAuthenticated, user } = useSelector((state: any) => state.auth);
++  const [searchParams] = useSearchParams();
++  const redirectUri = searchParams.get('redirect_uri');
++  const { loading, error, isAuthenticated, user, tokens } = useSelector((state: any) => state.auth);
+   const loginTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+ 
+   useEffect(() => {
++    if (searchParams.has(CROSS_APP_LOGOUT_PARAM)) return;
++
+     if (isAuthenticated) {
++      if (redirectUri && tokens?.access && tokens?.refresh) {
++        // SSO flow: redirect back to app1's /sso with redirect_uri so it can issue the code
++        navigate(`/sso?redirect_uri=${encodeURIComponent(redirectUri)}`, { replace: true });
++        return;
++      }
+       if (user?.onboard_required) {
+         navigate('/onboard');
+       } else {
+         navigate('/');
+       }
+     }
+-  }, [isAuthenticated, user, navigate]);
++  }, [isAuthenticated, user, tokens, redirectUri, navigate, searchParams]);
+ 
+   // Reset any stuck loading state from previous session (e.g. persisted before we fixed persist)
+   useEffect(() => {
+diff --git a/src/pages/SSOHandlerPage.tsx b/src/pages/SSOHandlerPage.tsx
+new file mode 100644
+index 0000000..2df9170
+--- /dev/null
++++ b/src/pages/SSOHandlerPage.tsx
+@@ -0,0 +1,102 @@
++import React, { useEffect, useState } from 'react';
++import { useSelector } from 'react-redux';
++import { useNavigate, useSearchParams } from 'react-router-dom';
++import { Loader2 } from 'lucide-react';
++import type { RootState } from '../store/store';
++
++const API_BASE = import.meta.env.VITE_API_URL || 'https://tools.advancedtaxgroup.com/api';
++
++/**
++ * SSOHandlerPage — App1 route: /sso
++ *
++ * If the user is already authenticated:
++ *   1. Call POST /api/form/sso/issue-code/  (with Bearer token) to get a one-time code.
++ *   2. Redirect the user to app2's /sso-callback?code=<uuid>.
++ *
++ * If not authenticated:
++ *   → Forward to /login?redirect=<redirect_uri> so the user can log in first.
++ *
++ * The short-lived opaque code (not the JWT) travels via the URL, so no sensitive
++ * data is ever exposed in browser or server logs.
++ */
++const SSOHandlerPage: React.FC = () => {
++  const { tokens } = useSelector((state: RootState) => state.auth);
++  const rehydrated = useSelector(
++    (state: RootState) => state._persist?.rehydrated === true
++  );
++  const [searchParams] = useSearchParams();
++  const navigate = useNavigate();
++  const [error, setError] = useState<string | null>(null);
++
++  useEffect(() => {
++    const redirectUri = searchParams.get('redirect_uri');
++
++    if (!redirectUri) {
++      navigate('/', { replace: true });
++      return;
++    }
++
++    // PersistGate uses loading={null}, so auth is empty until redux-persist rehydrates.
++    // Avoid sending an already-signed-in user through /login or racing issue-code without tokens.
++    if (!rehydrated) {
++      return;
++    }
++
++    const access =
++      tokens?.access || (typeof localStorage !== 'undefined' ? localStorage.getItem('accessToken') : null);
++
++    if (!access) {
++      // Not logged in — send to login, preserving the redirect_uri
++      navigate(`/login?redirect_uri=${encodeURIComponent(redirectUri)}`, { replace: true });
++      return;
++    }
++
++    // Authenticated — ask the backend for a single-use code
++    const issueCode = async () => {
++      try {
++        const res = await fetch(`${API_BASE}/form/sso/issue-code/`, {
++          method: 'POST',
++          headers: {
++            'Authorization': `Bearer ${access}`,
++            'Content-Type': 'application/json',
++          },
++        });
++
++        if (!res.ok) {
++          const body = await res.json().catch(() => ({}));
++          throw new Error(body.error || `Failed to issue SSO code (${res.status})`);
++        }
++
++        const { code } = await res.json();
++        // Redirect app2 with only the opaque code — no JWT in the URL
++        window.location.replace(`${redirectUri}?code=${encodeURIComponent(code)}`);
++      } catch (err: unknown) {
++        setError(
++          err instanceof Error ? err.message : 'SSO failed. Please try again.'
++        );
++      }
++    };
++
++    issueCode();
++  }, [rehydrated, tokens?.access, searchParams, navigate]);
++
++  if (error) {
++    return (
++      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
++        <p className="text-destructive text-sm">{error}</p>
++        <button className="text-primary underline text-sm" onClick={() => window.location.reload()}>
++          Retry
++        </button>
++      </div>
++    );
++  }
++
++  return (
++    <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-muted-foreground">
++      <Loader2 className="h-8 w-8 animate-spin" />
++      <p className="text-sm">Authenticating…</p>
++    </div>
++  );
++};
++
++export default SSOHandlerPage;
+diff --git a/src/services/api.js b/src/services/api.js
+index c13e843..05b82ca 100644
+--- a/src/services/api.js
++++ b/src/services/api.js
+@@ -367,6 +367,32 @@ class ApiService {
+     });
+   }
+ 
++  /** Staff-only estate planning list (filter by user_id). */
++  async getEstatePlanningStaffList(userId, options = {}) {
++    const qs = new URLSearchParams({ user_id: String(userId) });
++    return this.request(`/form/tax-forms/estate-planning/all/?${qs.toString()}`, {
++      method: 'GET',
++      useAdminToken: options.useAdminToken !== false,
++    });
++  }
++
++  /** Staff-only single submission (full staff serializer). */
++  async getEstatePlanningStaffDetail(submissionId, options = {}) {
++    return this.request(`/form/tax-forms/estate-planning/${submissionId}/staff-detail/`, {
++      method: 'GET',
++      useAdminToken: options.useAdminToken !== false,
++    });
++  }
++
++  /** Staff partial/full update of an estate submission. */
++  async patchEstatePlanningStaffEdit(submissionId, payload, options = {}) {
++    return this.request(`/form/tax-forms/estate-planning/${submissionId}/staff-edit/`, {
++      method: 'PATCH',
++      body: payload,
++      useAdminToken: options.useAdminToken !== false,
++    });
++  }
++
+   /** Reassign a submission from the current admin to a target client (admin only). */
+   async reassignSubmissionToClient(submissionId, formType, targetUserId) {
+     return this.request('/form/admin/submissions/reassign/', {
+diff --git a/src/utils/authLogout.ts b/src/utils/authLogout.ts
+index fa65650..dd6ffe9 100644
+--- a/src/utils/authLogout.ts
++++ b/src/utils/authLogout.ts
+@@ -32,5 +32,16 @@ export function clearAllAuthAndPurge(
+   dispatch(logout());
+   dispatch(adminLogout());
+   clearAllAuthStorage();
+-  persistor.purge();
++  void persistor.purge();
++}
++
++/** Same as clearAllAuthAndPurge but waits for persist purge (needed before navigation / rehydrate races). */
++export async function clearAllAuthAndPurgeAsync(
++  dispatch: Dispatch,
++  persistor: Persistor
++): Promise<void> {
++  dispatch(logout());
++  dispatch(adminLogout());
++  clearAllAuthStorage();
++  await persistor.purge();
+ }
+diff --git a/vite.config.ts b/vite.config.ts
+index 25c5589..647b839 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -1,22 +1,26 @@
+-import { defineConfig } from "vite";
++import { defineConfig, loadEnv } from "vite";
+ import react from "@vitejs/plugin-react-swc";
+ import path from "path";
+ import { componentTagger } from "lovable-tagger";
+ 
+ // https://vitejs.dev/config/
+-export default defineConfig(({ mode }) => ({
+-  server: {
+-    host: "::",
+-    port: 8080,
+-  },
+-  plugins: [
+-    react(),
+-    mode === 'development' &&
+-    componentTagger(),
+-  ].filter(Boolean),
+-  resolve: {
+-    alias: {
+-      "@": path.resolve(__dirname, "./src"),
++export default defineConfig(({ mode }) => {
++  const env = loadEnv(mode, process.cwd(), "");
++  return {
++    server: {
++      host: "::",
++      port: 8080,
+     },
+-  },
+-}));
++    base: env.VITE_BASENAME || "/",
++    plugins: [
++      react(),
++      mode === 'development' &&
++      componentTagger(),
++    ].filter(Boolean),
++    resolve: {
++      alias: {
++        "@": path.resolve(__dirname, "./src"),
++      },
++    },
++  };
++});

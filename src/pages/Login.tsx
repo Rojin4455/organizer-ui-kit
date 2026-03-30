@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { loginUser, clearError, resetLoading } from '../store/authSlice';
+import { loginUser, logout, clearError, resetLoading } from '../store/authSlice';
 import { CROSS_APP_LOGOUT_PARAM } from '../constants/crossAppAuth';
+import { getPendingSsoRedirectUri } from '../constants/ssoRedirect';
 import businessLogo from '../assets/New-log.png';
 import { Checkbox } from '@/components/ui/checkbox';
 import { InfoIcon, ArrowRight } from 'lucide-react';
@@ -24,24 +25,27 @@ const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirectUri = searchParams.get('redirect_uri');
+  const redirectUri = getPendingSsoRedirectUri(searchParams);
   const { loading, error, isAuthenticated, user, tokens } = useSelector((state: any) => state.auth);
   const loginTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (searchParams.has(CROSS_APP_LOGOUT_PARAM)) return;
+  const authSearchQuery = searchParams.toString();
 
-    if (isAuthenticated) {
-      if (redirectUri && tokens?.access && tokens?.refresh) {
-        // SSO flow: redirect back to app1's /sso with redirect_uri so it can issue the code
-        navigate(`/sso?redirect_uri=${encodeURIComponent(redirectUri)}`, { replace: true });
-        return;
-      }
-      if (user?.onboard_required) {
-        navigate('/onboard');
-      } else {
-        navigate('/');
-      }
+  useEffect(() => {
+    if (searchParams.has(CROSS_APP_LOGOUT_PARAM)) {
+      dispatch(logout());
+      return;
+    }
+
+    if (!isAuthenticated) return;
+
+    // PostAuthSsoRedirect (global) sends redirect_uri flows to /sso
+    if (redirectUri && tokens?.access && tokens?.refresh) return;
+
+    if (user?.onboard_required) {
+      navigate('/onboard');
+    } else {
+      navigate('/');
     }
   }, [isAuthenticated, user, tokens, redirectUri, navigate, searchParams]);
 
@@ -96,7 +100,13 @@ const Login = () => {
         <Alert className="border-blue-200 bg-blue-50 text-blue-900">
           <InfoIcon className="h-4 w-4 text-blue-600" />
           <AlertDescription className="ml-2 text-blue-900">
-            <span className="font-semibold">New to the Tax Toolbox?</span> You'll need to create an account first. No existing account? <Link to="/signup" className="font-semibold underline hover:text-blue-700">Sign up here →</Link>
+            <span className="font-semibold">New to the Tax Toolbox?</span> You'll need to create an account first. No existing account?{' '}
+            <Link
+              to={authSearchQuery ? `/signup?${authSearchQuery}` : '/signup'}
+              className="font-semibold underline hover:text-blue-700"
+            >
+              Sign up here →
+            </Link>
           </AlertDescription>
         </Alert>
 
@@ -154,7 +164,10 @@ const Login = () => {
                     Remember me
                   </Label>
                 </div>
-                <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                <Link
+                  to={authSearchQuery ? `/forgot-password?${authSearchQuery}` : '/forgot-password'}
+                  className="text-sm text-primary hover:underline"
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -169,7 +182,10 @@ const Login = () => {
               </Button>
               <p className="text-xs text-muted-foreground text-center">
                 Don't have an account?{' '}
-                <Link to="/signup" className="text-primary hover:underline font-medium">
+                <Link
+                  to={authSearchQuery ? `/signup?${authSearchQuery}` : '/signup'}
+                  className="text-primary hover:underline font-medium"
+                >
                   Create one here
                 </Link>
               </p>
@@ -185,7 +201,7 @@ const Login = () => {
               <p className="text-sm text-green-800">
                 Create your account in minutes to access your tax organizer and get started with your tax preparation.
               </p>
-              <Link to="/signup">
+              <Link to={authSearchQuery ? `/signup?${authSearchQuery}` : '/signup'}>
                 <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
                   Create Account Now
                   <ArrowRight className="ml-2 h-4 w-4" />
