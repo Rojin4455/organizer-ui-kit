@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Trash2 } from 'lucide-react';
 
 const Step2Heirs: React.FC = () => {
-    const { formData, updateFormData, errors, clearError } = useEstateForm();
+    const { formData, updateFormData, errors, clearError, readOnly } = useEstateForm();
 
     const isMarriedOrPartner = formData.status === 'Married' || formData.status === 'Partner';
 
@@ -123,30 +123,30 @@ const Step2Heirs: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/30 p-6 rounded-lg border">
                             <div className="space-y-2">
                                 <Label htmlFor="spouseFullName">Spouse Full Name</Label>
-                                <Input id="spouseFullName" value={formData.spouseFullName} onChange={(e) => updateFormData({ spouseFullName: e.target.value })} />
+                                <Input id="spouseFullName" value={formData.spouseFullName} onChange={(e) => updateFormData({ spouseFullName: e.target.value })} disabled={readOnly} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="spouseAliases">Other Aliases of Spouse/Partner</Label>
-                                <Input id="spouseAliases" value={formData.spouseAliases} onChange={(e) => updateFormData({ spouseAliases: e.target.value })} />
+                                <Input id="spouseAliases" value={formData.spouseAliases} onChange={(e) => updateFormData({ spouseAliases: e.target.value })} disabled={readOnly} />
                             </div>
 
                             <div className="space-y-2">
                                 <Label htmlFor="spouseDob">Spouse Date Of Birth <span className="text-destructive">*</span></Label>
-                                <Input id="spouseDob" type="date" value={formData.spouseDob} onChange={(e) => { updateFormData({ spouseDob: e.target.value }); clearError('spouseDob'); }} required />
+                                <Input id="spouseDob" type="date" value={formData.spouseDob} onChange={(e) => { updateFormData({ spouseDob: e.target.value }); clearError('spouseDob'); }} required disabled={readOnly} />
                                 {errors.spouseDob && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.spouseDob}</p>}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="spouseOccupation">Spouse Occupation & Employer</Label>
-                                <Input id="spouseOccupation" value={formData.spouseOccupation} onChange={(e) => updateFormData({ spouseOccupation: e.target.value })} />
+                                <Input id="spouseOccupation" value={formData.spouseOccupation} onChange={(e) => updateFormData({ spouseOccupation: e.target.value })} disabled={readOnly} />
                             </div>
 
                             <div className="space-y-2">
                                 <Label htmlFor="spouseEmail">Spouse Email</Label>
-                                <Input id="spouseEmail" type="email" value={formData.spouseEmail} onChange={(e) => updateFormData({ spouseEmail: e.target.value })} />
+                                <Input id="spouseEmail" type="email" value={formData.spouseEmail} onChange={(e) => updateFormData({ spouseEmail: e.target.value })} disabled={readOnly} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="spousePhone">Spouse Phone Number</Label>
-                                <Input id="spousePhone" type="tel" value={formData.spousePhone} onChange={(e) => updateFormData({ spousePhone: e.target.value })} />
+                                <Input id="spousePhone" type="tel" value={formData.spousePhone} onChange={(e) => updateFormData({ spousePhone: e.target.value })} disabled={readOnly} />
                             </div>
                         </div>
                     </div>
@@ -171,6 +171,7 @@ const Step2Heirs: React.FC = () => {
                                     }
                                 }}
                                 className="flex gap-4"
+                                disabled={readOnly}
                             >
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="Yes" id="has-children-yes" />
@@ -190,6 +191,7 @@ const Step2Heirs: React.FC = () => {
                                 <Select 
                                     value={formData.numChildren ? formData.numChildren.toString() : ''} 
                                     onValueChange={handleNumChildrenChange}
+                                    disabled={readOnly}
                                 >
                                     <SelectTrigger id="numChildren" className="max-w-[200px]">
                                         <SelectValue placeholder="Select Number" />
@@ -219,6 +221,7 @@ const Step2Heirs: React.FC = () => {
                                                 <Select 
                                                     value={child.sonDaughter} 
                                                     onValueChange={(val) => updateChild(index, 'sonDaughter', val)}
+                                                    disabled={readOnly}
                                                 >
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Select" />
@@ -236,6 +239,7 @@ const Step2Heirs: React.FC = () => {
                                                     value={child.fullName} 
                                                     onChange={(e) => updateChild(index, 'fullName', e.target.value)} 
                                                     required 
+                                                    disabled={readOnly}
                                                 />
                                                 {errors[`child-${index}-fullName`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`child-${index}-fullName`]}</p>}
                                             </div>
@@ -246,6 +250,7 @@ const Step2Heirs: React.FC = () => {
                                                     value={child.birthdate} 
                                                     onChange={(e) => updateChild(index, 'birthdate', e.target.value)} 
                                                     required 
+                                                    disabled={readOnly}
                                                 />
                                                 {errors[`child-${index}-birthdate`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`child-${index}-birthdate`]}</p>}
                                             </div>
@@ -256,6 +261,7 @@ const Step2Heirs: React.FC = () => {
                                                     onChange={(e) => updateChild(index, 'parents', e.target.value)}
                                                     placeholder={index >= 2 ? "Parents if different" : ""}
                                                     required={index < 2} 
+                                                    disabled={readOnly}
                                                 />
                                                 {errors[`child-${index}-parents`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`child-${index}-parents`]}</p>}
                                             </div>
@@ -269,16 +275,16 @@ const Step2Heirs: React.FC = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div className="space-y-2">
                                         <Label htmlFor="guardian1">Guardian Choice #1 <span className="text-destructive">*</span></Label>
-                                        <Input id="guardian1" value={formData.guardian1} onChange={(e) => { updateFormData({ guardian1: e.target.value }); clearError('guardian1'); }} required />
+                                        <Input id="guardian1" value={formData.guardian1} onChange={(e) => { updateFormData({ guardian1: e.target.value }); clearError('guardian1'); }} required disabled={readOnly} />
                                         {errors.guardian1 && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.guardian1}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="guardian2">Guardian Choice #2</Label>
-                                        <Input id="guardian2" value={formData.guardian2} onChange={(e) => updateFormData({ guardian2: e.target.value })} />
+                                        <Input id="guardian2" value={formData.guardian2} onChange={(e) => updateFormData({ guardian2: e.target.value })} disabled={readOnly} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="guardian3">Guardian Choice #3</Label>
-                                        <Input id="guardian3" value={formData.guardian3} onChange={(e) => updateFormData({ guardian3: e.target.value })} />
+                                        <Input id="guardian3" value={formData.guardian3} onChange={(e) => updateFormData({ guardian3: e.target.value })} disabled={readOnly} />
                                     </div>
                                 </div>
                             </div>
@@ -290,7 +296,7 @@ const Step2Heirs: React.FC = () => {
                 <div ref={sectionRefs.heirs} className="space-y-6 scroll-mt-24">
                     <div className="flex items-center justify-between">
                         <h3 className="text-lg font-medium tracking-tight border-l-4 border-primary pl-3">Section B: Other Heirs</h3>
-                        {formData.heirs.length < 4 && (
+                        {!readOnly && formData.heirs.length < 4 && (
                             <Button type="button" onClick={addHeir} size="sm" variant="outline" className="gap-2">
                                 <Plus className="w-4 h-4" /> Add Heir
                             </Button>
@@ -307,6 +313,7 @@ const Step2Heirs: React.FC = () => {
                                 <div key={heir.id} className="relative space-y-4 p-5 border rounded-lg bg-muted/30 group">
                                     <div className="flex justify-between items-center">
                                         <h4 className="font-semibold text-sm">Heir {index + 1}</h4>
+                                        {!readOnly && (
                                         <Button type="button" 
                                             variant="ghost" 
                                             size="icon" 
@@ -315,14 +322,15 @@ const Step2Heirs: React.FC = () => {
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </Button>
+                                        )}
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor={`heirName-${index}`}>Name</Label>
-                                        <Input id={`heirName-${index}`} value={heir.name} onChange={(e) => updateHeir(index, 'name', e.target.value)} />
+                                        <Input id={`heirName-${index}`} value={heir.name} onChange={(e) => updateHeir(index, 'name', e.target.value)} disabled={readOnly} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor={`heirRel-${index}`}>Relationship</Label>
-                                        <Input id={`heirRel-${index}`} value={heir.relationship} onChange={(e) => updateHeir(index, 'relationship', e.target.value)} />
+                                        <Input id={`heirRel-${index}`} value={heir.relationship} onChange={(e) => updateHeir(index, 'relationship', e.target.value)} disabled={readOnly} />
                                     </div>
                                 </div>
                             ))}
@@ -349,6 +357,7 @@ const Step2Heirs: React.FC = () => {
                                     value={formData[q.field as keyof typeof formData] as string} 
                                     onValueChange={(val) => { updateFormData({ [q.field]: val }); clearError(q.field); }}
                                     className="flex gap-4"
+                                    disabled={readOnly}
                                 >
                                     <div className="flex items-center space-x-2">
                                         <RadioGroupItem value="Yes" id={`${q.field}-yes`} />
@@ -377,7 +386,7 @@ const Step2Heirs: React.FC = () => {
                         <div className="space-y-4">
                             <div className="flex justify-between items-center bg-muted/50 p-2 px-3 rounded-md">
                                 <Label className="text-base font-semibold">Financial Power of Attorney (Disability POA)</Label>
-                                {formData.disabilityPOAs.length < 3 && (
+                                {!readOnly && formData.disabilityPOAs.length < 3 && (
                                     <Button type="button" onClick={() => addFiduciary('disabilityPOAs')} size="sm" variant="ghost" className="h-8 gap-1">
                                         <Plus className="w-4 h-4" /> Add 3rd Choice
                                     </Button>
@@ -388,13 +397,13 @@ const Step2Heirs: React.FC = () => {
                                     <div key={index} className="space-y-2 relative">
                                         <div className="flex justify-between items-center">
                                             <Label htmlFor={`disabilityPOA-${index}`}>Choice #{index + 1} {index < 2 && <span className="text-destructive">*</span>}</Label>
-                                            {index === 2 && (
+                                            {index === 2 && !readOnly && (
                                                 <Button type="button" size="icon" variant="ghost" className="h-5 w-5 hover:text-destructive" onClick={() => removeFiduciary('disabilityPOAs', index)}>
                                                     <Trash2 className="w-3 h-3" />
                                                 </Button>
                                             )}
                                         </div>
-                                        <Input id={`disabilityPOA-${index}`} value={poa} onChange={(e) => updateFiduciary('disabilityPOAs', index, e.target.value)} required={index < 2} />
+                                        <Input id={`disabilityPOA-${index}`} value={poa} onChange={(e) => updateFiduciary('disabilityPOAs', index, e.target.value)} required={index < 2} disabled={readOnly} />
                                         {errors[`disabilityPOA-${index}`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`disabilityPOA-${index}`]}</p>}
                                     </div>
                                 ))}
@@ -405,7 +414,7 @@ const Step2Heirs: React.FC = () => {
                         <div className="space-y-4">
                             <div className="flex justify-between items-center bg-muted/50 p-2 px-3 rounded-md">
                                 <Label className="text-base font-semibold">Medical Decision Maker (Medical POA)</Label>
-                                {formData.medicalPOAs.length < 3 && (
+                                {!readOnly && formData.medicalPOAs.length < 3 && (
                                     <Button type="button" onClick={() => addFiduciary('medicalPOAs')} size="sm" variant="ghost" className="h-8 gap-1">
                                         <Plus className="w-4 h-4" /> Add 3rd Choice
                                     </Button>
@@ -416,13 +425,13 @@ const Step2Heirs: React.FC = () => {
                                     <div key={index} className="space-y-2 relative">
                                         <div className="flex justify-between items-center">
                                             <Label htmlFor={`medicalPOAs-${index}`}>Choice #{index + 1} {index < 2 && <span className="text-destructive">*</span>}</Label>
-                                            {index === 2 && (
+                                            {index === 2 && !readOnly && (
                                                 <Button type="button" size="icon" variant="ghost" className="h-5 w-5 hover:text-destructive" onClick={() => removeFiduciary('medicalPOAs', index)}>
                                                     <Trash2 className="w-3 h-3" />
                                                 </Button>
                                             )}
                                         </div>
-                                        <Input id={`medicalPOAs-${index}`} value={poa} onChange={(e) => updateFiduciary('medicalPOAs', index, e.target.value)} required={index < 2} />
+                                        <Input id={`medicalPOAs-${index}`} value={poa} onChange={(e) => updateFiduciary('medicalPOAs', index, e.target.value)} required={index < 2} disabled={readOnly} />
                                         {errors[`medicalPOA-${index}`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`medicalPOA-${index}`]}</p>}
                                     </div>
                                 ))}
@@ -433,7 +442,7 @@ const Step2Heirs: React.FC = () => {
                         <div className="space-y-4">
                             <div className="flex justify-between items-center bg-muted/50 p-2 px-3 rounded-md">
                                 <Label className="text-base font-semibold">Executors of Will/Trust (Successor Trustee)</Label>
-                                {formData.successorTrustees.length < 3 && (
+                                {!readOnly && formData.successorTrustees.length < 3 && (
                                     <Button type="button" onClick={() => addFiduciary('successorTrustees')} size="sm" variant="ghost" className="h-8 gap-1">
                                         <Plus className="w-4 h-4" /> Add 3rd Choice
                                     </Button>
@@ -444,13 +453,13 @@ const Step2Heirs: React.FC = () => {
                                     <div key={index} className="space-y-2 relative">
                                         <div className="flex justify-between items-center">
                                             <Label htmlFor={`successorTrustees-${index}`}>Choice #{index + 1} {index < 2 && <span className="text-destructive">*</span>}</Label>
-                                            {index === 2 && (
+                                            {index === 2 && !readOnly && (
                                                 <Button type="button" size="icon" variant="ghost" className="h-5 w-5 hover:text-destructive" onClick={() => removeFiduciary('successorTrustees', index)}>
                                                     <Trash2 className="w-3 h-3" />
                                                 </Button>
                                             )}
                                         </div>
-                                        <Input id={`successorTrustees-${index}`} value={poa} onChange={(e) => updateFiduciary('successorTrustees', index, e.target.value)} required={index < 2} />
+                                        <Input id={`successorTrustees-${index}`} value={poa} onChange={(e) => updateFiduciary('successorTrustees', index, e.target.value)} required={index < 2} disabled={readOnly} />
                                         {errors[`successorTrustee-${index}`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`successorTrustee-${index}`]}</p>}
                                     </div>
                                 ))}

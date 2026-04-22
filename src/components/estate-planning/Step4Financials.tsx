@@ -11,11 +11,11 @@ import { Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Reusable UI Wrapper for dynamic block items
-const DynamicFormCard: React.FC<{ title: string; onRemove?: () => void; children: React.ReactNode }> = ({ title, onRemove, children }) => (
+const DynamicFormCard: React.FC<{ title: string; onRemove?: () => void; readOnly?: boolean; children: React.ReactNode }> = ({ title, onRemove, readOnly, children }) => (
     <div className="relative space-y-4 p-5 border rounded-lg bg-muted/30 group">
         <div className="flex justify-between items-center">
             <h4 className="font-semibold text-sm border-b-2 border-primary/20 pb-1 pr-4 inline-block">{title}</h4>
-            {onRemove && (
+            {onRemove && !readOnly && (
                 <Button type="button" 
                     variant="ghost" 
                     size="icon" 
@@ -33,7 +33,7 @@ const DynamicFormCard: React.FC<{ title: string; onRemove?: () => void; children
 );
 
 const Step4Financials: React.FC = () => {
-    const { formData, updateFormData, errors, clearError } = useEstateForm();
+    const { formData, updateFormData, errors, clearError, readOnly } = useEstateForm();
 
     const sectionRefs = {
         cash: useRef<HTMLDivElement>(null),
@@ -210,7 +210,7 @@ const Step4Financials: React.FC = () => {
                             <h3 className="text-lg font-medium tracking-tight border-l-4 border-primary pl-3">Section A: Cash Accounts</h3>
                             <p className="text-sm text-muted-foreground pl-4 mt-1">Only list personal accounts. Do not list any business accounts.</p>
                         </div>
-                        {formData.cashAccounts.length < 5 && (
+                        {!readOnly && formData.cashAccounts.length < 5 && (
                             <Button type="button" onClick={addCashAccount} size="sm" variant="outline" className="gap-2 shrink-0">
                                 <Plus className="w-4 h-4" /> Add Cash Account
                             </Button>
@@ -224,18 +224,18 @@ const Step4Financials: React.FC = () => {
                     ) : (
                         <div className="space-y-4">
                             {formData.cashAccounts.map((account, index) => (
-                                <DynamicFormCard key={account.id} title={`Cash Account ${index + 1}`} onRemove={() => removeCashAccount(index)}>
+                                <DynamicFormCard key={account.id} title={`Cash Account ${index + 1}`} onRemove={() => removeCashAccount(index)} readOnly={readOnly}>
                                     <div className="space-y-2">
                                         <Label>Bank Name</Label>
-                                        <Input value={account.bankName} onChange={(e) => updateCashAccount(index, 'bankName', e.target.value)} />
+                                        <Input value={account.bankName} onChange={(e) => updateCashAccount(index, 'bankName', e.target.value)} disabled={readOnly} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Name on Account</Label>
-                                        <Input value={account.nameOnAccount} onChange={(e) => updateCashAccount(index, 'nameOnAccount', e.target.value)} />
+                                        <Input value={account.nameOnAccount} onChange={(e) => updateCashAccount(index, 'nameOnAccount', e.target.value)} disabled={readOnly} />
                                     </div>
                                     <div className="space-y-2 md:col-span-2">
                                         <Label>Account Type (e.g. Checking, Savings)</Label>
-                                        <Input value={account.accountType} onChange={(e) => updateCashAccount(index, 'accountType', e.target.value)} />
+                                        <Input value={account.accountType} onChange={(e) => updateCashAccount(index, 'accountType', e.target.value)} disabled={readOnly} />
                                     </div>
                                 </DynamicFormCard>
                             ))}
@@ -249,7 +249,7 @@ const Step4Financials: React.FC = () => {
                 <div ref={sectionRefs.investments} className="space-y-6 scroll-mt-24">
                     <div className="flex items-center justify-between">
                         <h3 className="text-lg font-medium tracking-tight border-l-4 border-primary pl-3">Section B: Investment Accounts</h3>
-                        {formData.investmentAccounts.length < 3 && (
+                        {!readOnly && formData.investmentAccounts.length < 3 && (
                             <Button type="button" onClick={addInvestmentAccount} size="sm" variant="outline" className="gap-2 shrink-0">
                                 <Plus className="w-4 h-4" /> Add Investment
                             </Button>
@@ -263,18 +263,18 @@ const Step4Financials: React.FC = () => {
                     ) : (
                         <div className="space-y-4">
                             {formData.investmentAccounts.map((inv, index) => (
-                                <DynamicFormCard key={inv.id} title={`Investment Account ${index + 1}`} onRemove={() => removeInvestmentAccount(index)}>
+                                <DynamicFormCard key={inv.id} title={`Investment Account ${index + 1}`} onRemove={() => removeInvestmentAccount(index)} readOnly={readOnly}>
                                     <div className="space-y-2">
                                         <Label>Brokerage Name</Label>
-                                        <Input value={inv.brokerageName} onChange={(e) => updateInvestmentAccount(index, 'brokerageName', e.target.value)} />
+                                        <Input value={inv.brokerageName} onChange={(e) => updateInvestmentAccount(index, 'brokerageName', e.target.value)} disabled={readOnly} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Account Type</Label>
-                                        <Input value={inv.accountType} onChange={(e) => updateInvestmentAccount(index, 'accountType', e.target.value)} />
+                                        <Input value={inv.accountType} onChange={(e) => updateInvestmentAccount(index, 'accountType', e.target.value)} disabled={readOnly} />
                                     </div>
                                     <div className="space-y-2 md:col-span-2">
                                         <Label>Owner of Account</Label>
-                                        <Input value={inv.owner} onChange={(e) => updateInvestmentAccount(index, 'owner', e.target.value)} />
+                                        <Input value={inv.owner} onChange={(e) => updateInvestmentAccount(index, 'owner', e.target.value)} disabled={readOnly} />
                                     </div>
                                 </DynamicFormCard>
                             ))}
@@ -301,6 +301,7 @@ const Step4Financials: React.FC = () => {
                                     if (val === 'No') updateFormData({ lifeInsuranceDetails: '' });
                                 }}
                                 className="flex gap-4"
+                                disabled={readOnly}
                             >
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="Yes" id="li-yes" />
@@ -322,6 +323,7 @@ const Step4Financials: React.FC = () => {
                                     className="min-h-[100px] bg-background" 
                                     value={formData.lifeInsuranceDetails}
                                     onChange={(e) => { updateFormData({ lifeInsuranceDetails: e.target.value }); clearError('lifeInsuranceDetails'); }}
+                                    disabled={readOnly}
                                 />
                                 {errors.lifeInsuranceDetails && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.lifeInsuranceDetails}</p>}
                             </div>
@@ -339,7 +341,7 @@ const Step4Financials: React.FC = () => {
 
                     <div className="space-y-4">
                         <Label>How many entities do you own entirely or partially?</Label>
-                        <Select value={formData.entityCountRange} onValueChange={(val) => { handleEntityRangeChange(val); clearError('entityCountRange'); }}>
+                        <Select value={formData.entityCountRange} onValueChange={(val) => { handleEntityRangeChange(val); clearError('entityCountRange'); }} disabled={readOnly}>
                             <SelectTrigger className="max-w-[200px]">
                                 <SelectValue placeholder="Select Range" />
                             </SelectTrigger>
@@ -360,15 +362,15 @@ const Step4Financials: React.FC = () => {
                     {formData.businessEntities.length > 0 && (
                         <div className="space-y-4 mt-6">
                             {formData.businessEntities.map((entity, index) => (
-                                <DynamicFormCard key={entity.id} title={`Business Entity ${index + 1}`} onRemove={() => removeEntity(index)}>
+                                <DynamicFormCard key={entity.id} title={`Business Entity ${index + 1}`} onRemove={() => removeEntity(index)} readOnly={readOnly}>
                                     <div className="space-y-2 md:col-span-2">
                                         <Label>Name of the Company <span className="text-destructive">*</span></Label>
-                                        <Input value={entity.companyName} onChange={(e) => updateEntity(index, 'companyName', e.target.value)} required />
+                                        <Input value={entity.companyName} onChange={(e) => updateEntity(index, 'companyName', e.target.value)} required disabled={readOnly} />
                                         {errors[`entity-${index}-companyName`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`entity-${index}-companyName`]}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Type of Entity <span className="text-destructive">*</span></Label>
-                                        <Select value={entity.entityType} onValueChange={(val) => updateEntity(index, 'entityType', val)}>
+                                        <Select value={entity.entityType} onValueChange={(val) => updateEntity(index, 'entityType', val)} disabled={readOnly}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select Type" />
                                             </SelectTrigger>
@@ -390,6 +392,7 @@ const Step4Financials: React.FC = () => {
                                             value={entity.percentOwned} 
                                             onChange={(e) => updateEntity(index, 'percentOwned', e.target.value)} 
                                             required 
+                                            disabled={readOnly}
                                         />
                                         {errors[`entity-${index}-percentOwned`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`entity-${index}-percentOwned`]}</p>}
                                     </div>
@@ -400,15 +403,18 @@ const Step4Financials: React.FC = () => {
                                             onChange={(e) => updateEntity(index, 'specificOwnershipName', e.target.value)} 
                                             placeholder="List specific name (e.g. your name, spouse, holding company, Roth IRA)"
                                             required 
+                                            disabled={readOnly}
                                         />
                                         {errors[`entity-${index}-specificOwnershipName`] && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors[`entity-${index}-specificOwnershipName`]}</p>}
                                     </div>
                                 </DynamicFormCard>
                             ))}
                             
+                            {!readOnly && (
                             <Button type="button" onClick={addEntity} variant="outline" className="w-full border-dashed gap-2">
                                 <Plus className="w-4 h-4" /> Add Another Entity
                             </Button>
+                            )}
                         </div>
                     )}
                 </div>
@@ -427,6 +433,7 @@ const Step4Financials: React.FC = () => {
                             value={formData.propertiesCountRange} 
                             onValueChange={(val) => { handlePropertyRangeChange(val); clearError('propertiesCountRange'); }}
                             className="flex flex-wrap gap-4"
+                            disabled={readOnly}
                         >
                             {['0', '1', '2', '3', '4', '5-8', '8-10'].map((opt) => (
                                 <div key={opt} className="flex items-center space-x-2">
@@ -441,14 +448,14 @@ const Step4Financials: React.FC = () => {
                     {formData.realProperties.length > 0 && (
                         <div className="space-y-4 mt-6">
                             {formData.realProperties.map((prop, index) => (
-                                <DynamicFormCard key={prop.id} title={`Property ${index + 1}`} onRemove={() => removeProperty(index)}>
+                                <DynamicFormCard key={prop.id} title={`Property ${index + 1}`} onRemove={() => removeProperty(index)} readOnly={readOnly}>
                                     <div className="space-y-2 md:col-span-2">
                                         <Label>Property Address</Label>
-                                        <Input value={prop.address} onChange={(e) => updateProperty(index, 'address', e.target.value)} />
+                                        <Input value={prop.address} onChange={(e) => updateProperty(index, 'address', e.target.value)} disabled={readOnly} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Type of Property <span className="text-destructive">*</span></Label>
-                                        <Select value={prop.propertyType} onValueChange={(val) => updateProperty(index, 'propertyType', val)}>
+                                        <Select value={prop.propertyType} onValueChange={(val) => updateProperty(index, 'propertyType', val)} disabled={readOnly}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select Type" />
                                             </SelectTrigger>
@@ -468,11 +475,12 @@ const Step4Financials: React.FC = () => {
                                             type="number" min="0" max="100" placeholder="e.g. 100"
                                             value={prop.percentOwned} 
                                             onChange={(e) => updateProperty(index, 'percentOwned', e.target.value)} 
+                                            disabled={readOnly}
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Name on Deed</Label>
-                                        <Input value={prop.nameOnDeed} onChange={(e) => updateProperty(index, 'nameOnDeed', e.target.value)} />
+                                        <Input value={prop.nameOnDeed} onChange={(e) => updateProperty(index, 'nameOnDeed', e.target.value)} disabled={readOnly} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Value</Label>
@@ -480,14 +488,17 @@ const Step4Financials: React.FC = () => {
                                             value={prop.value} 
                                             onChange={(e) => updateProperty(index, 'value', formatCurrency(e.target.value))} 
                                             placeholder="$1,250,000"
+                                            disabled={readOnly}
                                         />
                                     </div>
                                 </DynamicFormCard>
                             ))}
                             
+                            {!readOnly && (
                             <Button type="button" onClick={addProperty} variant="outline" className="w-full border-dashed gap-2">
                                 <Plus className="w-4 h-4" /> Add Another Property
                             </Button>
+                            )}
                         </div>
                     )}
                 </div>

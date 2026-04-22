@@ -12,7 +12,9 @@ export const TaxExtensionBanner = ({ onNavigate, onClose }) => {
   };
 
   return (
-    <Box sx={{ 
+    <>
+    {""}
+    {/* <Box sx={{ 
       position: 'sticky', 
       top: 0, 
       zIndex: 10,
@@ -93,7 +95,8 @@ export const TaxExtensionBanner = ({ onNavigate, onClose }) => {
           </Button>
         </Box>
       </Alert>
-    </Box>
+    </Box> */}
+    </>
   );
 };
 

@@ -118,6 +118,7 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
   const [estateSubmissions, setEstateSubmissions] = useState<EstateSubmissionRow[]>([]);
   const [estateDialogOpen, setEstateDialogOpen] = useState(false);
   const [selectedEstateId, setSelectedEstateId] = useState<string | null>(null);
+  const [onboardRequired, setOnboardRequired] = useState(false);
 
   // Get permissions or default to false
   const isSuperAdmin = permissions?.is_super_admin || false;
@@ -176,6 +177,7 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
       } else {
         setEngagementLetter(null);
       }
+      setOnboardRequired(response.onboard_required === true);
       // Load submission data for each form to show generated titles (business name, first+last, entity name)
       const allForms: { id: string; form_type: string }[] = [
         ...personal.map((f: FormSubmission) => ({ id: f.id, form_type: 'personal' })),
@@ -215,6 +217,7 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
       }
     } catch (error: any) {
       console.error('Error loading user forms:', error);
+      setOnboardRequired(false);
       toast({
         title: 'Error',
         description: 'Failed to load user forms. Please try again.',
@@ -225,14 +228,21 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
     }
   };
 
-  // Build available tabs based on permissions
+  // Build available tabs based on permissions; hide organizer + engagement when user must finish onboarding
+  const showOrganizerTabs = !onboardRequired;
   const availableTabs = [];
-  if (canViewPersonal) availableTabs.push({ type: 'personal', index: availableTabs.length });
-  if (canViewBusiness) availableTabs.push({ type: 'business', index: availableTabs.length });
-  if (canViewRental) availableTabs.push({ type: 'rental', index: availableTabs.length });
-  if (canViewFlip) availableTabs.push({ type: 'flip', index: availableTabs.length });
-  if (canViewEngagement) availableTabs.push({ type: 'engagement', index: availableTabs.length });
+  if (canViewPersonal && showOrganizerTabs) availableTabs.push({ type: 'personal', index: availableTabs.length });
+  if (canViewBusiness && showOrganizerTabs) availableTabs.push({ type: 'business', index: availableTabs.length });
+  if (canViewRental && showOrganizerTabs) availableTabs.push({ type: 'rental', index: availableTabs.length });
+  if (canViewFlip && showOrganizerTabs) availableTabs.push({ type: 'flip', index: availableTabs.length });
+  if (canViewEngagement && showOrganizerTabs) availableTabs.push({ type: 'engagement', index: availableTabs.length });
   if (canViewEstatePlanning) availableTabs.push({ type: 'estate', index: availableTabs.length });
+
+  const tabCount = availableTabs.length;
+
+  useEffect(() => {
+    setActiveTab((prev) => (prev >= tabCount ? 0 : prev));
+  }, [tabCount]);
 
   const getCurrentTabType = () => {
     return availableTabs[activeTab]?.type || null;
@@ -487,68 +497,78 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
         {/* Forms Tabs */}
         <Card sx={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)' }}>
           <CardContent>
-            <Tabs
-              value={activeTab}
-              onChange={handleTabChange}
-              sx={{
-                borderBottom: '1px solid #e2e8f0',
-                mb: 3,
-                '& .MuiTab-root': {
-                  textTransform: 'none',
-                  fontWeight: 500,
-                  minHeight: 48,
-                },
-              }}
-            >
-              {canViewPersonal && (
-                <Tab
-                  icon={<PersonIcon />}
-                  iconPosition="start"
-                  label={`Personal Organizer (${forms.personal.length})`}
-                />
-              )}
-              {canViewBusiness && (
-                <Tab
-                  icon={<BusinessIcon />}
-                  iconPosition="start"
-                  label={`Business Organizer (${forms.business.length})`}
-                />
-              )}
-              {canViewRental && (
-                <Tab
-                  icon={<HomeIcon />}
-                  iconPosition="start"
-                  label={`Rental Property (${forms.rental.length})`}
-                />
-              )}
-              {canViewFlip && (
-                <Tab
-                  icon={<FlipIcon />}
-                  iconPosition="start"
-                  label={`Flip Organizer (${forms.flip.length})`}
-                />
-              )}
-              {canViewEngagement && (
-                <Tab
-                  icon={<DescriptionIcon />}
-                  iconPosition="start"
-                  label={`Engagement Letter ${engagementLetter ? '(Signed)' : '(Not Signed)'}`}
-                />
-              )}
-              {canViewEstatePlanning && (
-                <Tab
-                  icon={<AssignmentIcon />}
-                  iconPosition="start"
-                  label={`Estate Planning (${estateSubmissions.length})`}
-                />
-              )}
-            </Tabs>
+            {tabCount === 0 && !loading ? (
+              <Alert severity="info" sx={{ borderRadius: 2 }}>
+                {onboardRequired
+                  ? 'This client has not finished onboarding yet. Tax organizer and engagement letter tabs are hidden until onboarding is complete.'
+                  : 'No sections are available for this user with your current permissions.'}
+              </Alert>
+            ) : (
+              <>
+                {tabCount > 0 && (
+                  <Tabs
+                    value={activeTab}
+                    onChange={handleTabChange}
+                    sx={{
+                      borderBottom: '1px solid #e2e8f0',
+                      mb: 3,
+                      '& .MuiTab-root': {
+                        textTransform: 'none',
+                        fontWeight: 500,
+                        minHeight: 48,
+                      },
+                    }}
+                  >
+                    {canViewPersonal && showOrganizerTabs && (
+                      <Tab
+                        icon={<PersonIcon />}
+                        iconPosition="start"
+                        label={`Personal Organizer (${forms.personal.length})`}
+                      />
+                    )}
+                    {canViewBusiness && showOrganizerTabs && (
+                      <Tab
+                        icon={<BusinessIcon />}
+                        iconPosition="start"
+                        label={`Business Organizer (${forms.business.length})`}
+                      />
+                    )}
+                    {canViewRental && showOrganizerTabs && (
+                      <Tab
+                        icon={<HomeIcon />}
+                        iconPosition="start"
+                        label={`Rental Property (${forms.rental.length})`}
+                      />
+                    )}
+                    {canViewFlip && showOrganizerTabs && (
+                      <Tab
+                        icon={<FlipIcon />}
+                        iconPosition="start"
+                        label={`Flip Organizer (${forms.flip.length})`}
+                      />
+                    )}
+                    {canViewEngagement && showOrganizerTabs && (
+                      <Tab
+                        icon={<DescriptionIcon />}
+                        iconPosition="start"
+                        label={`Engagement Letter ${engagementLetter ? '(Signed)' : '(Not Signed)'}`}
+                      />
+                    )}
+                    {canViewEstatePlanning && (
+                      <Tab
+                        icon={<AssignmentIcon />}
+                        iconPosition="start"
+                        label={`Estate Planning (${estateSubmissions.length})`}
+                      />
+                    )}
+                  </Tabs>
+                )}
 
-            {loading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress />
-              </Box>
-            ) : getCurrentTabType() === 'estate' ? (
+                {loading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                    <CircularProgress />
+                  </Box>
+                ) : getCurrentTabType() === 'estate' ? (
               estateSubmissions.length === 0 ? (
                 <Alert severity="info" sx={{ borderRadius: 2 }}>
                   No estate planning questionnaire submissions for this user.
@@ -995,6 +1015,8 @@ const AdminUserDetail: React.FC<AdminUserDetailProps> = ({ user, onBack }) => {
                   </TableBody>
                 </Table>
               </TableContainer>
+            )}
+              </>
             )}
           </CardContent>
         </Card>

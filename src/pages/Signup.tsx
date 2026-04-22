@@ -25,6 +25,12 @@ const Signup = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const redirectUri = getPendingSsoRedirectUri(searchParams);
+  const queryRedirectUri = searchParams.get('redirect_uri');
+  const normalizeBaseUrl = (url?: string | null) => (url || '').trim().replace(/\/+$/, '');
+  const app2Base = normalizeBaseUrl(import.meta.env.VITE_APP2_URL);
+  // UI copy should reflect only the current URL param, not previously persisted SSO state.
+  const isEstatePlannerFlow = !!queryRedirectUri && !!app2Base && queryRedirectUri.startsWith(app2Base);
   const { loading, error, isAuthenticated, user, tokens } = useSelector((state: any) => state.auth);
   const signupSearchQuery = searchParams.toString();
 
@@ -139,7 +145,10 @@ const Signup = () => {
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircleIcon className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                <span><strong>Access Toolbox:</strong> Start your tax preparation</span>
+                <span>
+                  <strong>{isEstatePlannerFlow ? 'Access Planner' : 'Access Toolbox'}:</strong>{' '}
+                  {isEstatePlannerFlow ? 'Start your estate planning' : 'Start your tax preparation'}
+                </span>
               </li>
             </ul>
           </CardContent>
@@ -152,7 +161,11 @@ const Signup = () => {
               <img src={businessLogo} alt="Business Logo" className="h-16 w-auto" />
             </div>
             <CardTitle className="text-2xl font-bold">Create Your Account</CardTitle>
-            <CardDescription>Get started with your tax organizer in just a few minutes</CardDescription>
+            <CardDescription>
+              {isEstatePlannerFlow
+                ? 'Get started with your Estate Planning Questionnaire in just a few minutes'
+                : 'Get started with your tax organizer in just a few minutes'}
+            </CardDescription>
           </CardHeader>
 
           <form onSubmit={handleSubmit}>

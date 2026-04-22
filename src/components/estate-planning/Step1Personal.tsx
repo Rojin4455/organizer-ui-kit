@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const Step1Personal: React.FC = () => {
-    const { formData, updateFormData, errors, clearError } = useEstateForm();
+    const { formData, updateFormData, errors, clearError, readOnly } = useEstateForm();
 
     const handleChange = (field: keyof typeof formData, value: string) => {
         updateFormData({ [field]: value });
@@ -23,12 +23,12 @@ const Step1Personal: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                     <Label htmlFor="fullName">Full Name <span className="text-destructive">*</span></Label>
-                    <Input id="fullName" value={formData.fullName} onChange={(e) => handleChange('fullName', e.target.value)} required />
+                    <Input id="fullName" value={formData.fullName} onChange={(e) => handleChange('fullName', e.target.value)} required disabled={readOnly} />
                     {errors.fullName && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.fullName}</p>}
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="aliases">Other complete names/aliases</Label>
-                    <Input id="aliases" value={formData.aliases} onChange={(e) => handleChange('aliases', e.target.value)} />
+                    <Input id="aliases" value={formData.aliases} onChange={(e) => handleChange('aliases', e.target.value)} disabled={readOnly} />
                 </div>
 
                 <div className="space-y-3 md:col-span-2">
@@ -37,6 +37,7 @@ const Step1Personal: React.FC = () => {
                         value={formData.rentOrOwn} 
                         onValueChange={(val) => handleChange('rentOrOwn', val)}
                         className="flex gap-4"
+                        disabled={readOnly}
                     >
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="Own" id="own" />
@@ -52,29 +53,29 @@ const Step1Personal: React.FC = () => {
 
                 <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="streetAddress">Street Address <span className="text-destructive">*</span></Label>
-                    <Input id="streetAddress" value={formData.streetAddress} onChange={(e) => handleChange('streetAddress', e.target.value)} required />
+                    <Input id="streetAddress" value={formData.streetAddress} onChange={(e) => handleChange('streetAddress', e.target.value)} required disabled={readOnly} />
                     {errors.streetAddress && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.streetAddress}</p>}
                 </div>
 
                 <div className="space-y-2">
                     <Label htmlFor="city">City <span className="text-destructive">*</span></Label>
-                    <Input id="city" value={formData.city} onChange={(e) => handleChange('city', e.target.value)} required />
+                    <Input id="city" value={formData.city} onChange={(e) => handleChange('city', e.target.value)} required disabled={readOnly} />
                     {errors.city && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.city}</p>}
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="state">State <span className="text-destructive">*</span></Label>
-                    <Input id="state" value={formData.state} onChange={(e) => handleChange('state', e.target.value)} required />
+                    <Input id="state" value={formData.state} onChange={(e) => handleChange('state', e.target.value)} required disabled={readOnly} />
                     {errors.state && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.state}</p>}
                 </div>
                 
                 <div className="space-y-2">
                     <Label htmlFor="postalCode">Postal Code <span className="text-destructive">*</span></Label>
-                    <Input id="postalCode" value={formData.postalCode} onChange={(e) => handleChange('postalCode', e.target.value)} required />
+                    <Input id="postalCode" value={formData.postalCode} onChange={(e) => handleChange('postalCode', e.target.value)} required disabled={readOnly} />
                     {errors.postalCode && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.postalCode}</p>}
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="country">Country <span className="text-destructive">*</span></Label>
-                    <Select value={formData.country} onValueChange={(val) => handleChange('country', val)}>
+                    <Select value={formData.country} onValueChange={(val) => handleChange('country', val)} disabled={readOnly}>
                         <SelectTrigger id="country">
                             <SelectValue placeholder="Select Country" />
                         </SelectTrigger>
@@ -90,28 +91,28 @@ const Step1Personal: React.FC = () => {
 
                 <div className="space-y-2">
                     <Label htmlFor="dateOfBirth">Date of Birth <span className="text-destructive">*</span></Label>
-                    <Input id="dateOfBirth" type="date" value={formData.dateOfBirth} onChange={(e) => handleChange('dateOfBirth', e.target.value)} required />
+                    <Input id="dateOfBirth" type="date" value={formData.dateOfBirth} onChange={(e) => handleChange('dateOfBirth', e.target.value)} required disabled={readOnly} />
                     {errors.dateOfBirth && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.dateOfBirth}</p>}
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="email">Email <span className="text-destructive">*</span></Label>
-                    <Input id="email" type="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} required />
+                    <Input id="email" type="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} required disabled={readOnly} />
                     {errors.email && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.email}</p>}
                 </div>
 
                 <div className="space-y-2">
                     <Label htmlFor="phone">Phone <span className="text-destructive">*</span></Label>
-                    <Input id="phone" type="tel" value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} required />
+                    <Input id="phone" type="tel" value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} required disabled={readOnly} />
                     {errors.phone && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.phone}</p>}
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="occupation">Occupation and Employer</Label>
-                    <Input id="occupation" value={formData.occupation} onChange={(e) => handleChange('occupation', e.target.value)} />
+                    <Input id="occupation" value={formData.occupation} onChange={(e) => handleChange('occupation', e.target.value)} disabled={readOnly} />
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="status">Select Status <span className="text-destructive">*</span></Label>
-                    <Select value={formData.status} onValueChange={(val) => handleChange('status', val)}>
+                    <Select value={formData.status} onValueChange={(val) => handleChange('status', val)} disabled={readOnly}>
                         <SelectTrigger id="status" className="max-w-xs">
                             <SelectValue placeholder="Select Status" />
                         </SelectTrigger>

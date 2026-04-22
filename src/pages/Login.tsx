@@ -26,8 +26,15 @@ const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectUri = getPendingSsoRedirectUri(searchParams);
+  const queryRedirectUri = searchParams.get('redirect_uri');
   const { loading, error, isAuthenticated, user, tokens } = useSelector((state: any) => state.auth);
   const loginTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const normalizeBaseUrl = (url?: string | null) => (url || '').trim().replace(/\/+$/, '');
+  const app2Base = normalizeBaseUrl(import.meta.env.VITE_APP2_URL);
+  // UI copy should reflect only the current URL param, not previously persisted SSO state.
+  const isEstatePlannerFlow = !!queryRedirectUri && !!app2Base && queryRedirectUri.startsWith(app2Base);
+ console.log(queryRedirectUri, redirectUri, app2Base, isEstatePlannerFlow);
+
 
   const authSearchQuery = searchParams.toString();
 
@@ -100,7 +107,10 @@ const Login = () => {
         <Alert className="border-blue-200 bg-blue-50 text-blue-900">
           <InfoIcon className="h-4 w-4 text-blue-600" />
           <AlertDescription className="ml-2 text-blue-900">
-            <span className="font-semibold">New to the Tax Toolbox?</span> You'll need to create an account first. No existing account?{' '}
+            <span className="font-semibold">
+              {isEstatePlannerFlow ? 'New to the Estate Planner?' : 'New to the Tax Toolbox?'}
+            </span>{' '}
+            You'll need to create an account first. No existing account?{' '}
             <Link
               to={authSearchQuery ? `/signup?${authSearchQuery}` : '/signup'}
               className="font-semibold underline hover:text-blue-700"
@@ -199,7 +209,9 @@ const Login = () => {
             <div className="text-center space-y-3">
               <h3 className="font-semibold text-green-900">Ready to get started?</h3>
               <p className="text-sm text-green-800">
-                Create your account in minutes to access your tax organizer and get started with your tax preparation.
+                Create your account in minutes to access your{' '}
+                {isEstatePlannerFlow ? 'estate plan' : 'tax organizer'} and get started with your{' '}
+                {isEstatePlannerFlow ? 'Estate Planning Questionnaire' : 'tax preparation'}.
               </p>
               <Link to={authSearchQuery ? `/signup?${authSearchQuery}` : '/signup'}>
                 <Button className="w-full bg-green-600 hover:bg-green-700 text-white">

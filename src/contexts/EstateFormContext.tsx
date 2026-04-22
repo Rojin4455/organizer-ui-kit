@@ -119,6 +119,8 @@ interface EstateFormContextType {
     errors: Record<string, string>;
     setErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
     clearError: (field: string) => void;
+    /** When true, step UIs are display-only (e.g. admin view mode). */
+    readOnly: boolean;
     steps: {
         id: number;
         title: string;
@@ -347,7 +349,9 @@ export const EstateFormProvider: React.FC<{
     steps: { id: number; title: string; description: string; icon: React.ElementType }[];
     /** Initialize state (e.g. admin editing an existing submission). */
     initialFormData?: EstateFormData;
-}> = ({ children, steps, initialFormData }) => {
+    /** Display-only controls (admin review). Defaults to false. */
+    readOnly?: boolean;
+}> = ({ children, steps, initialFormData, readOnly = false }) => {
     const [formData, setFormData] = useState<EstateFormData>(() =>
         initialFormData ? { ...initialFormData } : { ...defaultFormData }
     );
@@ -372,7 +376,7 @@ export const EstateFormProvider: React.FC<{
     };
 
     return (
-        <EstateFormContext.Provider value={{ formData, updateFormData, currentStep, setCurrentStep, progress, updateProgress, errors, setErrors, clearError, steps }}>
+        <EstateFormContext.Provider value={{ formData, updateFormData, currentStep, setCurrentStep, progress, updateProgress, errors, setErrors, clearError, readOnly, steps }}>
             {children}
         </EstateFormContext.Provider>
     );

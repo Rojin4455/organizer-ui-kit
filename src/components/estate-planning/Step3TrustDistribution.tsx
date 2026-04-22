@@ -44,7 +44,7 @@ const PREDECEASED_PLANS = [
 ];
 
 const Step3TrustDistribution: React.FC = () => {
-    const { formData, updateFormData, errors, clearError } = useEstateForm();
+    const { formData, updateFormData, errors, clearError, readOnly } = useEstateForm();
 
     return (
         <div className="space-y-8">
@@ -63,6 +63,7 @@ const Step3TrustDistribution: React.FC = () => {
                     value={formData.estateDistributionMethod} 
                     onValueChange={(val) => { updateFormData({ estateDistributionMethod: val }); clearError('estateDistributionMethod'); }}
                     className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2"
+                    disabled={readOnly}
                 >
                     {DISTRIBUTION_METHODS.map((method) => (
                         <div key={method.id} className="relative">
@@ -100,6 +101,7 @@ const Step3TrustDistribution: React.FC = () => {
                                 onChange={(e) => { updateFormData({ customDistributionDescription: e.target.value }); clearError('customDistributionDescription'); }}
                                 className="min-h-[120px] bg-background"
                                 required={formData.estateDistributionMethod === 'CUSTOM_OTHER'}
+                                disabled={readOnly}
                             />
                             {errors.customDistributionDescription && <p className="text-[0.8rem] font-medium text-destructive mt-1">{errors.customDistributionDescription}</p>}
                         </Card>
@@ -117,6 +119,7 @@ const Step3TrustDistribution: React.FC = () => {
                     value={formData.predeceasedBeneficiaryPlan} 
                     onValueChange={(val) => updateFormData({ predeceasedBeneficiaryPlan: val })}
                     className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2"
+                    disabled={readOnly}
                 >
                     {PREDECEASED_PLANS.map((plan) => (
                         <div key={plan.id} className="relative">
@@ -149,6 +152,7 @@ const Step3TrustDistribution: React.FC = () => {
                     value={formData.additionalInformation}
                     onChange={(e) => updateFormData({ additionalInformation: e.target.value })}
                     className="min-h-[120px]"
+                    disabled={readOnly}
                 />
             </div>
 
