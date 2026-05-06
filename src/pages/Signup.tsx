@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { signupUser, clearError } from '../store/authSlice';
+import { getPendingSsoRedirectUri } from '../constants/ssoRedirect';
 import businessLogo from '../assets/New-log.png';
 import { CheckCircleIcon } from 'lucide-react';
 
@@ -23,18 +24,29 @@ const Signup = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error, isAuthenticated, user } = useSelector((state: any) => state.auth);
+  const [searchParams] = useSearchParams();
+  const redirectUri = getPendingSsoRedirectUri(searchParams);
+  const queryRedirectUri = searchParams.get('redirect_uri');
+  const normalizeBaseUrl = (url?: string | null) => (url || '').trim().replace(/\/+$/, '');
+  const app2Base = normalizeBaseUrl(import.meta.env.VITE_APP2_URL);
+  // UI copy should reflect only the current URL param, not previously persisted SSO state.
+  const isEstatePlannerFlow = !!queryRedirectUri && !!app2Base && queryRedirectUri.startsWith(app2Base);
+  const { loading, error, isAuthenticated, user, tokens } = useSelector((state: any) => state.auth);
+  const signupSearchQuery = searchParams.toString();
 
-  // Redirect after login/signup
+  // PostAuthSsoRedirect handles `?redirect_uri=` (return to App2). Otherwise go onboard or home.
   useEffect(() => {
-    if (isAuthenticated) {
-      if (user?.onboard_required) {
-        navigate('/onboard');
-      } else {
-        navigate('/');
-      }
+    if (!isAuthenticated) return;
+    if (!tokens?.access || !tokens?.refresh) return;
+
+    if (getPendingSsoRedirectUri(searchParams)) return;
+
+    if (user?.onboard_required) {
+      navigate('/onboard');
+    } else {
+      navigate('/');
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, tokens, navigate, searchParams]);
 
   // Clear errors on unmount
   useEffect(() => {
@@ -133,7 +145,10 @@ const Signup = () => {
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircleIcon className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                <span><strong>Access Toolbox:</strong> Start your tax preparation</span>
+                <span>
+                  <strong>{isEstatePlannerFlow ? 'Access Planner' : 'Access Toolbox'}:</strong>{' '}
+                  {isEstatePlannerFlow ? 'Start your estate planning' : 'Start your tax preparation'}
+                </span>
               </li>
             </ul>
           </CardContent>
@@ -146,7 +161,11 @@ const Signup = () => {
               <img src={businessLogo} alt="Business Logo" className="h-16 w-auto" />
             </div>
             <CardTitle className="text-2xl font-bold">Create Your Account</CardTitle>
-            <CardDescription>Get started with your tax organizer in just a few minutes</CardDescription>
+            <CardDescription>
+              {isEstatePlannerFlow
+                ? 'Get started with your Estate Planning Questionnaire in just a few minutes'
+                : 'Get started with your tax organizer in just a few minutes'}
+            </CardDescription>
           </CardHeader>
 
           <form onSubmit={handleSubmit}>
@@ -248,7 +267,10 @@ const Signup = () => {
 
               <p className="text-xs text-muted-foreground text-center">
                 Already have an account?{' '}
-                <Link to="/login" className="text-primary hover:underline font-medium">
+                <Link
+                  to={signupSearchQuery ? `/login?${signupSearchQuery}` : '/login'}
+                  className="text-primary hover:underline font-medium"
+                >
                   Sign in here
                 </Link>
               </p>

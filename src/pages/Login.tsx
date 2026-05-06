@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { loginUser, clearError, resetLoading } from '../store/authSlice';
+import { loginUser, logout, clearError, resetLoading } from '../store/authSlice';
+import { CROSS_APP_LOGOUT_PARAM } from '../constants/crossAppAuth';
+import { getPendingSsoRedirectUri } from '../constants/ssoRedirect';
 import businessLogo from '../assets/New-log.png';
 import { Checkbox } from '@/components/ui/checkbox';
 import { InfoIcon, ArrowRight } from 'lucide-react';
@@ -22,18 +24,37 @@ const Login = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error, isAuthenticated, user } = useSelector((state: any) => state.auth);
+  const [searchParams] = useSearchParams();
+  const redirectUri = getPendingSsoRedirectUri(searchParams);
+  const queryRedirectUri = searchParams.get('redirect_uri');
+  const { loading, error, isAuthenticated, user, tokens } = useSelector((state: any) => state.auth);
   const loginTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const normalizeBaseUrl = (url?: string | null) => (url || '').trim().replace(/\/+$/, '');
+  const app2Base = normalizeBaseUrl(import.meta.env.VITE_APP2_URL);
+  // UI copy should reflect only the current URL param, not previously persisted SSO state.
+  const isEstatePlannerFlow = !!queryRedirectUri && !!app2Base && queryRedirectUri.startsWith(app2Base);
+ console.log(queryRedirectUri, redirectUri, app2Base, isEstatePlannerFlow);
+
+
+  const authSearchQuery = searchParams.toString();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      if (user?.onboard_required) {
-        navigate('/onboard');
-      } else {
-        navigate('/');
-      }
+    if (searchParams.has(CROSS_APP_LOGOUT_PARAM)) {
+      dispatch(logout());
+      return;
     }
-  }, [isAuthenticated, user, navigate]);
+
+    if (!isAuthenticated) return;
+
+    // PostAuthSsoRedirect (global) sends redirect_uri flows to /sso
+    if (redirectUri && tokens?.access && tokens?.refresh) return;
+
+    if (user?.onboard_required) {
+      navigate('/onboard');
+    } else {
+      navigate('/');
+    }
+  }, [isAuthenticated, user, tokens, redirectUri, navigate, searchParams]);
 
   // Reset any stuck loading state from previous session (e.g. persisted before we fixed persist)
   useEffect(() => {
@@ -86,7 +107,16 @@ const Login = () => {
         <Alert className="border-blue-200 bg-blue-50 text-blue-900">
           <InfoIcon className="h-4 w-4 text-blue-600" />
           <AlertDescription className="ml-2 text-blue-900">
-            <span className="font-semibold">New to the Tax Toolbox?</span> You'll need to create an account first. No existing account? <Link to="/signup" className="font-semibold underline hover:text-blue-700">Sign up here →</Link>
+            <span className="font-semibold">
+              {isEstatePlannerFlow ? 'New to the Estate Planner?' : 'New to the Tax Toolbox?'}
+            </span>{' '}
+            You'll need to create an account first. No existing account?{' '}
+            <Link
+              to={authSearchQuery ? `/signup?${authSearchQuery}` : '/signup'}
+              className="font-semibold underline hover:text-blue-700"
+            >
+              Sign up here →
+            </Link>
           </AlertDescription>
         </Alert>
 
@@ -144,7 +174,10 @@ const Login = () => {
                     Remember me
                   </Label>
                 </div>
-                <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                <Link
+                  to={authSearchQuery ? `/forgot-password?${authSearchQuery}` : '/forgot-password'}
+                  className="text-sm text-primary hover:underline"
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -159,7 +192,10 @@ const Login = () => {
               </Button>
               <p className="text-xs text-muted-foreground text-center">
                 Don't have an account?{' '}
-                <Link to="/signup" className="text-primary hover:underline font-medium">
+                <Link
+                  to={authSearchQuery ? `/signup?${authSearchQuery}` : '/signup'}
+                  className="text-primary hover:underline font-medium"
+                >
                   Create one here
                 </Link>
               </p>
@@ -173,9 +209,11 @@ const Login = () => {
             <div className="text-center space-y-3">
               <h3 className="font-semibold text-green-900">Ready to get started?</h3>
               <p className="text-sm text-green-800">
-                Create your account in minutes to access your tax organizer and get started with your tax preparation.
+                Create your account in minutes to access your{' '}
+                {isEstatePlannerFlow ? 'estate plan' : 'tax organizer'} and get started with your{' '}
+                {isEstatePlannerFlow ? 'Estate Planning Questionnaire' : 'tax preparation'}.
               </p>
-              <Link to="/signup">
+              <Link to={authSearchQuery ? `/signup?${authSearchQuery}` : '/signup'}>
                 <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
                   Create Account Now
                   <ArrowRight className="ml-2 h-4 w-4" />

@@ -32,5 +32,16 @@ export function clearAllAuthAndPurge(
   dispatch(logout());
   dispatch(adminLogout());
   clearAllAuthStorage();
-  persistor.purge();
+  void persistor.purge();
+}
+
+/** Same as clearAllAuthAndPurge but waits for persist purge (needed before navigation / rehydrate races). */
+export async function clearAllAuthAndPurgeAsync(
+  dispatch: Dispatch,
+  persistor: Persistor
+): Promise<void> {
+  dispatch(logout());
+  dispatch(adminLogout());
+  clearAllAuthStorage();
+  await persistor.purge();
 }

@@ -62,6 +62,7 @@ interface User {
     flip: FormCountInfo;
   };
   engagement_letter_signed: boolean;
+  estate_submitted_once: boolean;
 }
 
 const AdminDashboard = () => {
@@ -473,6 +474,7 @@ const AdminDashboard = () => {
                       <TableCell colSpan={2} align="center" sx={{ fontWeight: 600, color: '#1e293b', borderBottom: '1px solid rgba(224, 224, 224, 1)', borderRight: '1px solid rgba(224, 224, 224, 1)' }}>Rental Forms</TableCell>
                       <TableCell colSpan={2} align="center" sx={{ fontWeight: 600, color: '#1e293b', borderBottom: '1px solid rgba(224, 224, 224, 1)' }}>Flip Forms</TableCell>
                       <TableCell rowSpan={2} align="center" sx={{ fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>Engagement Ltr</TableCell>
+                      <TableCell rowSpan={2} align="center" sx={{ fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>Estate Planning</TableCell>
                       <TableCell rowSpan={2} sx={{ fontWeight: 600, color: '#1e293b' }}>Status</TableCell>
                       <TableCell rowSpan={2} align="center" sx={{ fontWeight: 600, color: '#1e293b' }}>Active</TableCell>
                     </TableRow>
@@ -617,6 +619,13 @@ const AdminDashboard = () => {
                             <Chip label="Signed" size="small" color="primary" variant="outlined" sx={{ fontWeight: 500, borderColor: '#3b82f6', color: '#3b82f6' }} />
                           ) : (
                             <Typography variant="caption" color="text.secondary">-</Typography>
+                          )}
+                        </TableCell>
+                        <TableCell align="center">
+                          {user.estate_submitted_once ? (
+                            <Chip label="Submitted" size="small" color="success" variant="outlined" sx={{ fontWeight: 500 }} />
+                          ) : (
+                            <Typography variant="caption" color="text.secondary">Not Submitted</Typography>
                           )}
                         </TableCell>
                         <TableCell>
