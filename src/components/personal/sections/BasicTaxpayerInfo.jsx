@@ -89,6 +89,45 @@ export const BasicTaxpayerInfo = ({ data, onChange }) => {
             onChange={(e) => handleChange('cellPhone', e.target.value)}
             fullWidth
           />
+          <TooltipWrapper content="Make sure this is the address where you can receive IRS correspondence.">
+            <TextField
+              label="Street Address"
+              value={data.streetAddress || ''}
+              onChange={(e) => handleChange('streetAddress', e.target.value)}
+              fullWidth
+              sx={{ gridColumn: { md: '1 / -1' } }}
+            />
+          </TooltipWrapper>
+          <TextField
+            label="City"
+            value={data.city || ''}
+            onChange={(e) => handleChange('city', e.target.value)}
+            fullWidth
+          />
+          <TextField
+            label="County"
+            value={data.county || ''}
+            onChange={(e) => handleChange('county', e.target.value)}
+            fullWidth
+          />
+          <TextField
+            label="State"
+            value={data.state || ''}
+            onChange={(e) => handleChange('state', e.target.value)}
+            fullWidth
+          />
+          <TextField
+            label="ZIP Code"
+            value={data.zipCode || ''}
+            onChange={(e) => handleChange('zipCode', e.target.value)}
+            fullWidth
+          />
+          <TextField
+            label="Home Phone"
+            value={data.homePhone || ''}
+            onChange={(e) => handleChange('homePhone', e.target.value)}
+            fullWidth
+          />
         </Box>
       </FormSection>
 
@@ -178,58 +217,6 @@ export const BasicTaxpayerInfo = ({ data, onChange }) => {
             <MenuItem value="qualifyingWidow">Qualifying Widow(er)</MenuItem>
           </Select>
         </FormControl>
-      </FormSection>
-
-      <FormSection title="Contact Information">
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-          <TooltipWrapper content="Make sure this is the address where you can receive IRS correspondence.">
-            <TextField
-              label="Street Address"
-              value={data.streetAddress || ''}
-              onChange={(e) => handleChange('streetAddress', e.target.value)}
-              fullWidth
-              sx={{ gridColumn: { md: '1 / -1' } }}
-            />
-          </TooltipWrapper>
-          <TextField
-            label="City"
-            value={data.city || ''}
-            onChange={(e) => handleChange('city', e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="County"
-            value={data.county || ''}
-            onChange={(e) => handleChange('county', e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="State"
-            value={data.state || ''}
-            onChange={(e) => handleChange('state', e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="ZIP Code"
-            value={data.zipCode || ''}
-            onChange={(e) => handleChange('zipCode', e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="Email Address"
-            type="email"
-            value={data.email || ''}
-            onChange={(e) => handleChange('email', e.target.value)}
-            fullWidth
-            sx={{ gridColumn: { md: '1 / -1' } }}
-          />
-          <TextField
-            label="Home Phone"
-            value={data.homePhone || ''}
-            onChange={(e) => handleChange('homePhone', e.target.value)}
-            fullWidth
-          />
-        </Box>
       </FormSection>
 
       <FormSection title="Additional Information">

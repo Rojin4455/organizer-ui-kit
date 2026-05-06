@@ -3,6 +3,9 @@ import {
   Box,
   TextField,
   Typography,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
   Table,
   TableBody,
   TableCell,
@@ -42,14 +45,6 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
     'Other medical and dental expenses a.',
     'Other medical and dental expenses b.',
     'Other medical and dental expenses c.',
-  ];
-
-  const taxPayments = [
-    'Real estate taxes paid on principal residence',
-    'Real estate taxes paid on additional homes or land (Not Rentals)',
-    'Auto registration fees based on the value of the vehicle',
-    'Other personal property taxes',
-    'Other taxes:',
   ];
 
   return (
@@ -96,358 +91,325 @@ export const TaxPaymentsInfo = ({ data, onChange }) => {
         </TableContainer>
 
         <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
-          TAX PAYMENTS
-        </Typography>
-        
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Please include money that you paid directly to the IRS, not money that was withheld from your normal earnings.
-        </Typography>
-
-        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
-          TAXES
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          This is outside of W-2 income or Standard amounts withheld.
-        </Typography>
-
-        <TableContainer component={Paper} sx={{ mb: 3 }}>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ width: '60%', fontWeight: 'bold' }}>Description</TableCell>
-                <TableCell sx={{ width: '40%', fontWeight: 'bold', textAlign: 'center' }}>
-                  CURRENT YEAR AMOUNT
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {taxPayments.map((tax, index) => (
-                <TableRow key={index}>
-                  <TableCell>
-                    {index + 1}. {tax}
-                  </TableCell>
-                  <TableCell>
-                    <TextField
-                      type="number"
-                      value={data[`taxPayment${index + 1}`] || ''}
-                      onChange={(e) => handleChange(`taxPayment${index + 1}`, e.target.value)}
-                      InputProps={{ startAdornment: '$' }}
-                      fullWidth
-                      size="small"
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
           CURRENT YEAR ESTIMATED TAX PAYMENT
         </Typography>
 
-        <TableContainer component={Paper} sx={{ mb: 4, boxShadow: 2 }}>
-          <Table sx={{ tableLayout: 'fixed', minWidth: '100%' }}>
-            <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-              <TableRow>
-                <TableCell sx={{ 
-                  width: '28%', 
-                  fontWeight: 'bold', 
-                  padding: '20px 16px',
-                  fontSize: '14px',
-                  borderBottom: '2px solid #e0e0e0'
-                }}>
-                  Quarter
-                </TableCell>
-                <TableCell sx={{ 
-                  width: '12%', 
-                  fontWeight: 'bold', 
-                  textAlign: 'center',
-                  padding: '20px 12px',
-                  fontSize: '13px',
-                  lineHeight: '1.3',
-                  borderBottom: '2px solid #e0e0e0'
-                }}>
-                  FEDERAL<br />DATE
-                </TableCell>
-                <TableCell sx={{ 
-                  width: '12%', 
-                  fontWeight: 'bold', 
-                  textAlign: 'center',
-                  padding: '20px 12px',
-                  fontSize: '13px',
-                  lineHeight: '1.3',
-                  borderBottom: '2px solid #e0e0e0'
-                }}>
-                  FEDERAL<br />AMOUNT
-                </TableCell>
-                <TableCell sx={{ 
-                  width: '12%', 
-                  fontWeight: 'bold', 
-                  textAlign: 'center',
-                  padding: '20px 12px',
-                  fontSize: '13px',
-                  lineHeight: '1.3',
-                  borderBottom: '2px solid #e0e0e0'
-                }}>
-                  STATE<br />DATE
-                </TableCell>
-                <TableCell sx={{ 
-                  width: '12%', 
-                  fontWeight: 'bold', 
-                  textAlign: 'center',
-                  padding: '20px 12px',
-                  fontSize: '13px',
-                  lineHeight: '1.3',
-                  borderBottom: '2px solid #e0e0e0'
-                }}>
-                  STATE<br />AMOUNT
-                </TableCell>
-                <TableCell sx={{ 
-                  width: '6%', 
-                  fontWeight: 'bold', 
-                  textAlign: 'center',
-                  padding: '20px 8px',
-                  fontSize: '13px',
-                  borderBottom: '2px solid #e0e0e0'
-                }}>
-                  ID
-                </TableCell>
-                <TableCell sx={{ 
-                  width: '9%', 
-                  fontWeight: 'bold', 
-                  textAlign: 'center',
-                  padding: '20px 12px',
-                  fontSize: '13px',
-                  lineHeight: '1.3',
-                  borderBottom: '2px solid #e0e0e0'
-                }}>
-                  LOCAL<br />DATE
-                </TableCell>
-                <TableCell sx={{ 
-                  width: '9%', 
-                  fontWeight: 'bold', 
-                  textAlign: 'center',
-                  padding: '20px 12px',
-                  fontSize: '13px',
-                  lineHeight: '1.3',
-                  borderBottom: '2px solid #e0e0e0'
-                }}>
-                  LOCAL<br />AMOUNT
-                </TableCell>
-                <TableCell sx={{ 
-                  width: '8%', 
-                  fontWeight: 'bold', 
-                  textAlign: 'center',
-                  padding: '20px 8px',
-                  fontSize: '13px',
-                  borderBottom: '2px solid #e0e0e0'
-                }}>
-                  ID
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {[
-                '6. Qtr 1 due by 04/15 of current year',
-                '7. Qtr 2 due by 06/15 of current year',
-                '8. Qtr 3 due by 09/15 of current year',
-                '9. Qtr 4 due by 01/15 of following year',
-                '10. Prior year overpayment applied to current year',
-              ].map((quarter, index) => (
-                <TableRow 
-                  key={index} 
-                  sx={{ 
-                    '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.02)' },
-                    '&:nth-of-type(even)': { backgroundColor: 'rgba(0, 0, 0, 0.01)' },
-                    height: '80px'
-                  }}
-                >
+        <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+          Did you make estimated IRS/state/local tax payments during the year?
+        </Typography>
+        <RadioGroup
+          row
+          value={data.hasEstimatedTaxPayments || ''}
+          onChange={(e) => handleChange('hasEstimatedTaxPayments', e.target.value)}
+          sx={{ mb: 2 }}
+        >
+          <FormControlLabel value="yes" control={<Radio size="small" />} label="Yes" />
+          <FormControlLabel value="no" control={<Radio size="small" />} label="No" />
+        </RadioGroup>
+
+        {data.hasEstimatedTaxPayments === 'yes' && (
+          <TableContainer component={Paper} sx={{ mb: 4, boxShadow: 2 }}>
+            <Table sx={{ tableLayout: 'fixed', minWidth: '100%' }}>
+              <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+                <TableRow>
                   <TableCell sx={{ 
-                    padding: '24px 16px', 
+                    width: '28%', 
+                    fontWeight: 'bold', 
+                    padding: '20px 16px',
                     fontSize: '14px',
-                    verticalAlign: 'middle',
-                    borderBottom: '1px solid #e8e8e8'
+                    borderBottom: '2px solid #e0e0e0'
                   }}>
-                    {quarter}
+                    Quarter
                   </TableCell>
-                  <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
-                    <TextField
-                      type="date"
-                      value={data[`federalDate${index + 1}`] || ''}
-                      onChange={(e) => handleChange(`federalDate${index + 1}`, e.target.value)}
-                      fullWidth
-                      InputLabelProps={{ shrink: true }}
-                      sx={{
-                        '& .MuiInputBase-root': {
-                          height: '48px',
-                          fontSize: '13px',
-                          backgroundColor: 'white',
-                          borderRadius: '6px'
-                        },
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: '#1976d2'
-                          }
-                        }
-                      }}
-                    />
+                  <TableCell sx={{ 
+                    width: '12%', 
+                    fontWeight: 'bold', 
+                    textAlign: 'center',
+                    padding: '20px 12px',
+                    fontSize: '13px',
+                    lineHeight: '1.3',
+                    borderBottom: '2px solid #e0e0e0'
+                  }}>
+                    FEDERAL<br />DATE
                   </TableCell>
-                  <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
-                    <TextField
-                      type="number"
-                      value={data[`federalAmount${index + 1}`] || ''}
-                      onChange={(e) => handleChange(`federalAmount${index + 1}`, e.target.value)}
-                      InputProps={{ startAdornment: '$' }}
-                      fullWidth
-                      sx={{
-                        '& .MuiInputBase-root': {
-                          height: '48px',
-                          fontSize: '13px',
-                          backgroundColor: 'white',
-                          borderRadius: '6px'
-                        },
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: '#1976d2'
-                          }
-                        }
-                      }}
-                    />
+                  <TableCell sx={{ 
+                    width: '12%', 
+                    fontWeight: 'bold', 
+                    textAlign: 'center',
+                    padding: '20px 12px',
+                    fontSize: '13px',
+                    lineHeight: '1.3',
+                    borderBottom: '2px solid #e0e0e0'
+                  }}>
+                    FEDERAL<br />AMOUNT
                   </TableCell>
-                  <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
-                    <TextField
-                      type="date"
-                      value={data[`stateDate${index + 1}`] || ''}
-                      onChange={(e) => handleChange(`stateDate${index + 1}`, e.target.value)}
-                      fullWidth
-                      InputLabelProps={{ shrink: true }}
-                      sx={{
-                        '& .MuiInputBase-root': {
-                          height: '48px',
-                          fontSize: '13px',
-                          backgroundColor: 'white',
-                          borderRadius: '6px'
-                        },
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: '#1976d2'
-                          }
-                        }
-                      }}
-                    />
+                  <TableCell sx={{ 
+                    width: '12%', 
+                    fontWeight: 'bold', 
+                    textAlign: 'center',
+                    padding: '20px 12px',
+                    fontSize: '13px',
+                    lineHeight: '1.3',
+                    borderBottom: '2px solid #e0e0e0'
+                  }}>
+                    STATE<br />DATE
                   </TableCell>
-                  <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
-                    <TextField
-                      type="number"
-                      value={data[`stateAmount${index + 1}`] || ''}
-                      onChange={(e) => handleChange(`stateAmount${index + 1}`, e.target.value)}
-                      InputProps={{ startAdornment: '$' }}
-                      fullWidth
-                      sx={{
-                        '& .MuiInputBase-root': {
-                          height: '48px',
-                          fontSize: '13px',
-                          backgroundColor: 'white',
-                          borderRadius: '6px'
-                        },
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: '#1976d2'
-                          }
-                        }
-                      }}
-                    />
+                  <TableCell sx={{ 
+                    width: '12%', 
+                    fontWeight: 'bold', 
+                    textAlign: 'center',
+                    padding: '20px 12px',
+                    fontSize: '13px',
+                    lineHeight: '1.3',
+                    borderBottom: '2px solid #e0e0e0'
+                  }}>
+                    STATE<br />AMOUNT
                   </TableCell>
-                  <TableCell sx={{ padding: '20px 8px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
-                    <TextField
-                      value={data[`stateId${index + 1}`] || ''}
-                      onChange={(e) => handleChange(`stateId${index + 1}`, e.target.value)}
-                      fullWidth
-                      sx={{
-                        '& .MuiInputBase-root': {
-                          height: '48px',
-                          fontSize: '13px',
-                          backgroundColor: 'white',
-                          borderRadius: '6px'
-                        },
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: '#1976d2'
-                          }
-                        }
-                      }}
-                    />
+                  <TableCell sx={{ 
+                    width: '6%', 
+                    fontWeight: 'bold', 
+                    textAlign: 'center',
+                    padding: '20px 8px',
+                    fontSize: '13px',
+                    borderBottom: '2px solid #e0e0e0'
+                  }}>
+                    ID
                   </TableCell>
-                  <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
-                    <TextField
-                      type="date"
-                      value={data[`localDate${index + 1}`] || ''}
-                      onChange={(e) => handleChange(`localDate${index + 1}`, e.target.value)}
-                      fullWidth
-                      InputLabelProps={{ shrink: true }}
-                      sx={{
-                        '& .MuiInputBase-root': {
-                          height: '48px',
-                          fontSize: '13px',
-                          backgroundColor: 'white',
-                          borderRadius: '6px'
-                        },
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: '#1976d2'
-                          }
-                        }
-                      }}
-                    />
+                  <TableCell sx={{ 
+                    width: '9%', 
+                    fontWeight: 'bold', 
+                    textAlign: 'center',
+                    padding: '20px 12px',
+                    fontSize: '13px',
+                    lineHeight: '1.3',
+                    borderBottom: '2px solid #e0e0e0'
+                  }}>
+                    LOCAL<br />DATE
                   </TableCell>
-                  <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
-                    <TextField
-                      type="number"
-                      value={data[`localAmount${index + 1}`] || ''}
-                      onChange={(e) => handleChange(`localAmount${index + 1}`, e.target.value)}
-                      InputProps={{ startAdornment: '$' }}
-                      fullWidth
-                      sx={{
-                        '& .MuiInputBase-root': {
-                          height: '48px',
-                          fontSize: '13px',
-                          backgroundColor: 'white',
-                          borderRadius: '6px'
-                        },
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: '#1976d2'
-                          }
-                        }
-                      }}
-                    />
+                  <TableCell sx={{ 
+                    width: '9%', 
+                    fontWeight: 'bold', 
+                    textAlign: 'center',
+                    padding: '20px 12px',
+                    fontSize: '13px',
+                    lineHeight: '1.3',
+                    borderBottom: '2px solid #e0e0e0'
+                  }}>
+                    LOCAL<br />AMOUNT
                   </TableCell>
-                  <TableCell sx={{ padding: '20px 8px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
-                    <TextField
-                      value={data[`localId${index + 1}`] || ''}
-                      onChange={(e) => handleChange(`localId${index + 1}`, e.target.value)}
-                      fullWidth
-                      sx={{
-                        '& .MuiInputBase-root': {
-                          height: '48px',
-                          fontSize: '13px',
-                          backgroundColor: 'white',
-                          borderRadius: '6px'
-                        },
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: '#1976d2'
-                          }
-                        }
-                      }}
-                    />
+                  <TableCell sx={{ 
+                    width: '8%', 
+                    fontWeight: 'bold', 
+                    textAlign: 'center',
+                    padding: '20px 8px',
+                    fontSize: '13px',
+                    borderBottom: '2px solid #e0e0e0'
+                  }}>
+                    ID
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {[
+                  '1. Qtr 2 due by 06/15 of current year',
+                  '2. Qtr 3 due by 09/15 of current year',
+                  '3. Qtr 4 due by 01/15 of following year',
+                  '4. Prior year overpayment applied to current year',
+                ].map((quarter, index) => (
+                  <TableRow 
+                    key={index} 
+                    sx={{ 
+                      '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.02)' },
+                      '&:nth-of-type(even)': { backgroundColor: 'rgba(0, 0, 0, 0.01)' },
+                      height: '80px'
+                    }}
+                  >
+                    <TableCell sx={{ 
+                      padding: '24px 16px', 
+                      fontSize: '14px',
+                      verticalAlign: 'middle',
+                      borderBottom: '1px solid #e8e8e8'
+                    }}>
+                      {quarter}
+                    </TableCell>
+                    <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
+                      <TextField
+                        type="date"
+                        value={data[`federalDate${index + 1}`] || ''}
+                        onChange={(e) => handleChange(`federalDate${index + 1}`, e.target.value)}
+                        fullWidth
+                        InputLabelProps={{ shrink: true }}
+                        sx={{
+                          '& .MuiInputBase-root': {
+                            height: '48px',
+                            fontSize: '13px',
+                            backgroundColor: 'white',
+                            borderRadius: '6px'
+                          },
+                          '& .MuiOutlinedInput-root': {
+                            '&:hover fieldset': {
+                              borderColor: '#1976d2'
+                            }
+                          }
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
+                      <TextField
+                        type="number"
+                        value={data[`federalAmount${index + 1}`] || ''}
+                        onChange={(e) => handleChange(`federalAmount${index + 1}`, e.target.value)}
+                        InputProps={{ startAdornment: '$' }}
+                        fullWidth
+                        sx={{
+                          '& .MuiInputBase-root': {
+                            height: '48px',
+                            fontSize: '13px',
+                            backgroundColor: 'white',
+                            borderRadius: '6px'
+                          },
+                          '& .MuiOutlinedInput-root': {
+                            '&:hover fieldset': {
+                              borderColor: '#1976d2'
+                            }
+                          }
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
+                      <TextField
+                        type="date"
+                        value={data[`stateDate${index + 1}`] || ''}
+                        onChange={(e) => handleChange(`stateDate${index + 1}`, e.target.value)}
+                        fullWidth
+                        InputLabelProps={{ shrink: true }}
+                        sx={{
+                          '& .MuiInputBase-root': {
+                            height: '48px',
+                            fontSize: '13px',
+                            backgroundColor: 'white',
+                            borderRadius: '6px'
+                          },
+                          '& .MuiOutlinedInput-root': {
+                            '&:hover fieldset': {
+                              borderColor: '#1976d2'
+                            }
+                          }
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
+                      <TextField
+                        type="number"
+                        value={data[`stateAmount${index + 1}`] || ''}
+                        onChange={(e) => handleChange(`stateAmount${index + 1}`, e.target.value)}
+                        InputProps={{ startAdornment: '$' }}
+                        fullWidth
+                        sx={{
+                          '& .MuiInputBase-root': {
+                            height: '48px',
+                            fontSize: '13px',
+                            backgroundColor: 'white',
+                            borderRadius: '6px'
+                          },
+                          '& .MuiOutlinedInput-root': {
+                            '&:hover fieldset': {
+                              borderColor: '#1976d2'
+                            }
+                          }
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ padding: '20px 8px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
+                      <TextField
+                        value={data[`stateId${index + 1}`] || ''}
+                        onChange={(e) => handleChange(`stateId${index + 1}`, e.target.value)}
+                        fullWidth
+                        sx={{
+                          '& .MuiInputBase-root': {
+                            height: '48px',
+                            fontSize: '13px',
+                            backgroundColor: 'white',
+                            borderRadius: '6px'
+                          },
+                          '& .MuiOutlinedInput-root': {
+                            '&:hover fieldset': {
+                              borderColor: '#1976d2'
+                            }
+                          }
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
+                      <TextField
+                        type="date"
+                        value={data[`localDate${index + 1}`] || ''}
+                        onChange={(e) => handleChange(`localDate${index + 1}`, e.target.value)}
+                        fullWidth
+                        InputLabelProps={{ shrink: true }}
+                        sx={{
+                          '& .MuiInputBase-root': {
+                            height: '48px',
+                            fontSize: '13px',
+                            backgroundColor: 'white',
+                            borderRadius: '6px'
+                          },
+                          '& .MuiOutlinedInput-root': {
+                            '&:hover fieldset': {
+                              borderColor: '#1976d2'
+                            }
+                          }
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ padding: '20px 12px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
+                      <TextField
+                        type="number"
+                        value={data[`localAmount${index + 1}`] || ''}
+                        onChange={(e) => handleChange(`localAmount${index + 1}`, e.target.value)}
+                        InputProps={{ startAdornment: '$' }}
+                        fullWidth
+                        sx={{
+                          '& .MuiInputBase-root': {
+                            height: '48px',
+                            fontSize: '13px',
+                            backgroundColor: 'white',
+                            borderRadius: '6px'
+                          },
+                          '& .MuiOutlinedInput-root': {
+                            '&:hover fieldset': {
+                              borderColor: '#1976d2'
+                            }
+                          }
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ padding: '20px 8px', verticalAlign: 'middle', borderBottom: '1px solid #e8e8e8' }}>
+                      <TextField
+                        value={data[`localId${index + 1}`] || ''}
+                        onChange={(e) => handleChange(`localId${index + 1}`, e.target.value)}
+                        fullWidth
+                        sx={{
+                          '& .MuiInputBase-root': {
+                            height: '48px',
+                            fontSize: '13px',
+                            backgroundColor: 'white',
+                            borderRadius: '6px'
+                          },
+                          '& .MuiOutlinedInput-root': {
+                            '&:hover fieldset': {
+                              borderColor: '#1976d2'
+                            }
+                          }
+                        }}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
 
         <Divider sx={{ my: 3 }} />
 

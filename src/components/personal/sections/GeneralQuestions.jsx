@@ -1,37 +1,22 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   Typography,
-  FormGroup,
   FormControlLabel,
-  Checkbox,
   RadioGroup,
   Radio,
   TextField,
   Grid,
-  Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
 } from '@mui/material';
 import { FormSection } from '../../shared/FormSection';
 import { TooltipWrapper } from '../../shared/TooltipWrapper';
 
 export const GeneralQuestions = ({ data = {}, onChange }) => {
-  const [businessOrganizerDialog, setBusinessOrganizerDialog] = useState(false);
-
   const handleChange = (field, value) => {
     onChange({
       ...data,
       [field]: value,
     });
-
-    // Show business organizer popup for investments question 2
-    if (field === 'startedBusiness' && value === 'yes') {
-      setBusinessOrganizerDialog(true);
-    }
   };
 
   const renderYesNoQuestion = (field, question, showDetails = false, detailsField = null, required = false) => (
@@ -77,14 +62,8 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             {renderYesNoQuestion(
-              'movedResidence',
-              '1. Did you move your residence more than 50 miles due to a change of employment?'
-            )}
-          </Grid>
-          <Grid item xs={12} md={6}>
-            {renderYesNoQuestion(
               'soldPrimaryResidence',
-              '2. Did you sell your primary residence in the current year?'
+              '1. Did you sell your primary residence in the current year?'
             )}
             {data.soldPrimaryResidence === 'yes' && (
               <Box sx={{ mt: 2 }}>
@@ -98,7 +77,7 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
                   sx={{ mb: 2 }}
                 />
                 <Typography variant="body2" color="text.secondary">
-                  Please upload the closing documents for this property sale.
+                  Please upload the closing documents for this property sale to SmartVault.
                 </Typography>
               </Box>
             )}
@@ -116,25 +95,21 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
           <Grid item xs={12} md={6}>
             {renderYesNoQuestion(
               'dependentsMustFile',
-              '3. Do you have dependents who must file?'
+              '2. Do you have dependents who must file?'
             )}
             {renderYesNoQuestion(
               'childrenUnder14WithInvestment',
-              '4. Do you have children under age 14 with investment income greater than $1,600?'
-            )}
-            {renderYesNoQuestion(
-              'dependentsNotUSCitizens',
-              '5. Are any of your dependents not U.S. citizens or residents?'
+              '3. Do you have children under age 14 with investment income greater than $1,600?'
             )}
           </Grid>
           <Grid item xs={12} md={6}>
             {renderYesNoQuestion(
               'providedOverHalfSupport',
-              '6. Did you provide over half the support for any other person during the current year?'
+              '4. Did you provide over half the support for any other person during the current year?'
             )}
             {renderYesNoQuestion(
               'adoptionExpenses',
-              '7. Did you incur adoption expenses during the current year?'
+              '5. Did you incur adoption expenses during the current year?'
             )}
           </Grid>
         </Grid>
@@ -150,11 +125,7 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
           <Grid item xs={12} md={6}>
             {renderYesNoQuestion(
               'disabilityPayments',
-              '8. Did you receive any disability payments in the current year?'
-            )}
-            {renderYesNoQuestion(
-              'soldPurchasedResidence',
-              '9. Did you sell and/or purchase a principal residence in the current year? (Attach copies of your purchase and/or sale escrow statements.)'
+              '6. Did you receive any disability payments in the current year?'
             )}
           </Grid>
         </Grid>
@@ -170,13 +141,13 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
           <Grid item xs={12}>
             {renderYesNoQuestion(
               'irsNotification',
-              '11. Were you notified by the Internal Revenue Service or state taxing authority of changes to a prior year\'s return? If yes, enclose agent\'s report or notice of change.',
+              '7. Were you notified by the Internal Revenue Service or state taxing authority of changes to a prior year\'s return? If yes, enclose agent\'s report or notice of change.',
               true,
               'irsNotificationDetails'
             )}
             {renderYesNoQuestion(
               'priorYearChanges',
-              '12. Were there changes to a prior year\'s income, deductions, credits, etc which would require filing an amended return?',
+              '8. Were there changes to a prior year\'s income, deductions, credits, etc which would require filing an amended return?',
               true,
               'priorYearChangesDetails'
             )}
@@ -194,15 +165,15 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
           <Grid item xs={12}>
             {renderYesNoQuestion(
               'foreignIncome',
-              '13. Did you have foreign income or pay any foreign taxes in the current year?'
+              '9. Did you have foreign income or pay any foreign taxes in the current year?'
             )}
             {renderYesNoQuestion(
               'foreignBankAccount',
-              '14. At any time during the tax year, did you have an interest in or a signature or other authority over a bank account, or other financial account in a foreign country?'
+              '10. At any time during the tax year, did you have an interest in or a signature or other authority over a bank account, or other financial account in a foreign country?'
             )}
             {renderYesNoQuestion(
               'foreignTrust',
-              '15. Were you the grantor of or transferor to a foreign trust which existed during the tax year, whether or not you have any beneficial interest in the trust?'
+              '11. Were you the grantor of or transferor to a foreign trust which existed during the tax year, whether or not you have any beneficial interest in the trust?'
             )}
           </Grid>
         </Grid>
@@ -218,7 +189,7 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
           <Grid item xs={12}>
             {renderYesNoQuestion(
               'giftsOverLimit',
-              '16. Did you or your spouse make gifts of over $14,000 to an individual or contribute to a prepaid tuition plan?'
+              '12. Did you or your spouse make gifts of over $14,000 to an individual or contribute to a prepaid tuition plan?'
             )}
             {data.giftsOverLimit === 'yes' && (
               <Box sx={{ mt: 2 }}>
@@ -262,7 +233,7 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
           <Grid item xs={12} md={6}>
             {renderYesNoQuestion(
               'electronicFiling',
-              '17. If your tax return is eligible for Electronic Filing, would you like to file electronically?'
+              '13. If your tax return is eligible for Electronic Filing, would you like to file electronically?'
             )}
           </Grid>
           <Grid item xs={12} md={6}>
@@ -270,7 +241,7 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
               <Box>
                 {renderYesNoQuestion(
                   'directDeposit',
-                  '18. The Internal Revenue Service is able to deposit many refunds directly into taxpayers\' accounts. If you receive a refund, would you like direct deposit?',
+                  '14. The Internal Revenue Service is able to deposit many refunds directly into taxpayers\' accounts. If you receive a refund, would you like direct deposit?',
                   false,
                   null,
                   true
@@ -343,47 +314,6 @@ export const GeneralQuestions = ({ data = {}, onChange }) => {
         </Grid>
       </FormSection>
 
-      {/* Investments/Business Section */}
-      <FormSection
-        title="Investments / Business"
-        isExpanded
-        sx={{ mb: 3 }}
-      >
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            {renderYesNoQuestion(
-              'stocksBonds',
-             '1. Did you buy or sell any stocks or bonds in the current year?'
-            )}
-          </Grid>
-          <Grid item xs={12} md={6}>
-            {renderYesNoQuestion(
-                   'startedBusiness',
-              '2. Did you start a business, purchase a rental property or farm, or acquire interests in partnerships or S corporations?'
-            )}
-          </Grid>
-        </Grid>
-      </FormSection>
-
-      {/* Business Organizer Dialog */}
-      <Dialog 
-        open={businessOrganizerDialog} 
-        onClose={() => setBusinessOrganizerDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Business Organizer Required</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Please make sure to fill out the Business Organizer form for your business, rental property, or farm interests.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setBusinessOrganizerDialog(false)} color="primary">
-            OK
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };

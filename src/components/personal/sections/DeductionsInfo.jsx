@@ -5,6 +5,8 @@ import {
   Typography,
   FormControlLabel,
   Checkbox,
+  RadioGroup,
+  Radio,
   Table,
   TableBody,
   TableCell,
@@ -13,6 +15,7 @@ import {
   Paper,
   TableContainer,
   Button,
+  Alert,
 } from '@mui/material';
 import { FormSection } from '../../shared/FormSection';
 
@@ -36,103 +39,138 @@ export const DeductionsInfo = ({ data, onChange }) => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <FormSection title="Charitable Contributions">
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={data.attachContributionStatements || false}
-              onChange={(e) => handleChange('attachContributionStatements', e.target.checked)}
-            />
-          }
-          label="Attach all copies of your Contribution Statements"
-        />
-        
-        <Box sx={{ mt: 2 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <Typography variant="h6">
-              Charitable Contributions Table
-            </Typography>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => setCharitableTableRows(prev => prev + 1)}
-              sx={{ ml: 2 }}
-            >
-              Add Record
-            </Button>
-          </Box>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Name of Donee Organization</TableCell>
-                  <TableCell>Current Year Amount</TableCell>
-                  <TableCell>Name of Donee Organization</TableCell>
-                  <TableCell>Current Year Amount</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {Array.from({ length: charitableTableRows }, (_, row) => (
-                  <TableRow key={row}>
-                    <TableCell>
-                      <TextField
-                        size="small"
-                        value={data.charitableOrganizations?.[row * 2]?.name || ''}
-                        onChange={(e) => handleArrayChange('charitableOrganizations', row * 2, 'name', e.target.value)}
-                        fullWidth
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        size="small"
-                        type="number"
-                        value={data.charitableOrganizations?.[row * 2]?.amount || ''}
-                        onChange={(e) => handleArrayChange('charitableOrganizations', row * 2, 'amount', e.target.value)}
-                        InputProps={{ startAdornment: '$' }}
-                        fullWidth
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        size="small"
-                        value={data.charitableOrganizations?.[row * 2 + 1]?.name || ''}
-                        onChange={(e) => handleArrayChange('charitableOrganizations', row * 2 + 1, 'name', e.target.value)}
-                        fullWidth
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        size="small"
-                        type="number"
-                        value={data.charitableOrganizations?.[row * 2 + 1]?.amount || ''}
-                        onChange={(e) => handleArrayChange('charitableOrganizations', row * 2 + 1, 'amount', e.target.value)}
-                        InputProps={{ startAdornment: '$' }}
-                        fullWidth
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
+        <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+          Did you make charitable contributions during the tax year?
+        </Typography>
+        <RadioGroup
+          row
+          value={data.hasCharitableContributions || ''}
+          onChange={(e) => handleChange('hasCharitableContributions', e.target.value)}
+        >
+          <FormControlLabel value="yes" control={<Radio size="small" />} label="Yes" />
+          <FormControlLabel value="no" control={<Radio size="small" />} label="No" />
+        </RadioGroup>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mt: 2 }}>
-          <TextField
-            label="Miles driven for charitable purposes"
-            type="number"
-            value={data.charitableMiles || ''}
-            onChange={(e) => handleChange('charitableMiles', e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="Parking fees, tolls, and local transportation"
-            type="number"
-            value={data.charitableParkingTolls || ''}
-            onChange={(e) => handleChange('charitableParkingTolls', e.target.value)}
-            InputProps={{ startAdornment: '$' }}
-            fullWidth
-          />
-        </Box>
+        {data.hasCharitableContributions === 'yes' && (
+          <>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={data.attachContributionStatements || false}
+                  onChange={(e) => handleChange('attachContributionStatements', e.target.checked)}
+                />
+              }
+              label="Attach all copies of your contribution statements"
+            />
+
+            <Box sx={{ mt: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="h6">
+                  Charitable Contributions Table
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setCharitableTableRows(prev => prev + 1)}
+                  sx={{ ml: 2 }}
+                >
+                  Add Record
+                </Button>
+              </Box>
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Name of Donee Organization</TableCell>
+                      <TableCell>Current Year Amount</TableCell>
+                      <TableCell>Name of Donee Organization</TableCell>
+                      <TableCell>Current Year Amount</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {Array.from({ length: charitableTableRows }, (_, row) => (
+                      <TableRow key={row}>
+                        <TableCell>
+                          <TextField
+                            size="small"
+                            value={data.charitableOrganizations?.[row * 2]?.name || ''}
+                            onChange={(e) => handleArrayChange('charitableOrganizations', row * 2, 'name', e.target.value)}
+                            fullWidth
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            size="small"
+                            type="number"
+                            value={data.charitableOrganizations?.[row * 2]?.amount || ''}
+                            onChange={(e) => handleArrayChange('charitableOrganizations', row * 2, 'amount', e.target.value)}
+                            InputProps={{ startAdornment: '$' }}
+                            fullWidth
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            size="small"
+                            value={data.charitableOrganizations?.[row * 2 + 1]?.name || ''}
+                            onChange={(e) => handleArrayChange('charitableOrganizations', row * 2 + 1, 'name', e.target.value)}
+                            fullWidth
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            size="small"
+                            type="number"
+                            value={data.charitableOrganizations?.[row * 2 + 1]?.amount || ''}
+                            onChange={(e) => handleArrayChange('charitableOrganizations', row * 2 + 1, 'amount', e.target.value)}
+                            InputProps={{ startAdornment: '$' }}
+                            fullWidth
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mt: 2 }}>
+              <TextField
+                label="Miles driven for charitable purposes"
+                type="number"
+                value={data.charitableMiles || ''}
+                onChange={(e) => handleChange('charitableMiles', e.target.value)}
+                fullWidth
+              />
+              <TextField
+                label="Parking fees, tolls, and local transportation"
+                type="number"
+                value={data.charitableParkingTolls || ''}
+                onChange={(e) => handleChange('charitableParkingTolls', e.target.value)}
+                InputProps={{ startAdornment: '$' }}
+                fullWidth
+              />
+            </Box>
+          </>
+        )}
+      </FormSection>
+
+      <FormSection title="Medical Expense Threshold">
+        <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+          Do your total medical expenses exceed 10.5% of your adjusted gross income (AGI)?
+        </Typography>
+        <RadioGroup
+          row
+          value={data.medicalExpensesOverThreshold || ''}
+          onChange={(e) => handleChange('medicalExpensesOverThreshold', e.target.value)}
+        >
+          <FormControlLabel value="yes" control={<Radio size="small" />} label="Yes" />
+          <FormControlLabel value="no" control={<Radio size="small" />} label="No" />
+        </RadioGroup>
+        {data.medicalExpensesOverThreshold === 'yes' && (
+          <Alert severity="info" sx={{ mt: 1 }}>
+            Please include detailed medical expense totals and supporting documentation in SmartVault.
+          </Alert>
+        )}
       </FormSection>
 
       <FormSection title="Non-Cash Contributions">

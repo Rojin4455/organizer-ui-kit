@@ -21,6 +21,32 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <Alert severity="info">
+        <Typography variant="body2">
+          Enter annual totals for each applicable line item. Please upload supporting statements and source documents in SmartVault for all reported income and expenses.
+        </Typography>
+      </Alert>
+
+      <FormSection title="QuickBooks Usage">
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={data.usesQuickbooks || false}
+              onChange={(e) => handleChange('usesQuickbooks', e.target.checked)}
+            />
+          }
+          label="Do you use QuickBooks?"
+        />
+        
+        {data.usesQuickbooks && (
+          <Alert severity="info" sx={{ mt: 2 }}>
+            <Typography variant="body2">
+              Since you use QuickBooks, you can skip the expense section below and simply upload your Profit & Loss Statement and Balance Sheet to SmartVault.
+            </Typography>
+          </Alert>
+        )}
+      </FormSection>
+
       <FormSection title="Income">
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
           <TextField
@@ -56,26 +82,6 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
             fullWidth
           />
         </Box>
-      </FormSection>
-
-      <FormSection title="QuickBooks Usage">
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={data.usesQuickbooks || false}
-              onChange={(e) => handleChange('usesQuickbooks', e.target.checked)}
-            />
-          }
-          label="Do you use QuickBooks?"
-        />
-        
-        {data.usesQuickbooks && (
-          <Alert severity="info" sx={{ mt: 2 }}>
-            <Typography variant="body2">
-              Since you use QuickBooks, you can skip the expense section below and simply upload your Profit & Loss Statement and Balance Sheet to SmartVault.
-            </Typography>
-          </Alert>
-        )}
       </FormSection>
 
       <FormSection title="Business Expenses">

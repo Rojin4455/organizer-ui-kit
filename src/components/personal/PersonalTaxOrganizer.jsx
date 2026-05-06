@@ -652,9 +652,9 @@ export const PersonalTaxOrganizer = ({
       }
     }
 
-    // General Questions - Question 18 (Direct Deposit) is required
+    // General Questions - Direct Deposit question is required
     if (!generalQuestions?.directDeposit || generalQuestions.directDeposit === '') {
-      errors.push({ section: 'General Questions', stepIndex: 2, field: 'Question 18: Direct Deposit', sectionId: 'general-questions' });
+      errors.push({ section: 'General Questions', stepIndex: 2, field: 'Direct Deposit preference', sectionId: 'general-questions' });
     }
 
     return errors;

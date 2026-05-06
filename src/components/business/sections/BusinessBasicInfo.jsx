@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Box, 
   TextField, 
@@ -10,7 +10,12 @@ import {
   Checkbox,
   FormGroup,
   Typography,
-  Alert
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -21,16 +26,14 @@ import { FormSection } from '../../shared/FormSection';
 import { TooltipWrapper } from '../../shared/TooltipWrapper';
 
 export const BusinessBasicInfo = ({ data, onChange }) => {
+  const [priorYearUploadDialogOpen, setPriorYearUploadDialogOpen] = useState(false);
+  const BUSINESS_DESCRIPTION_MAX_LENGTH = 300;
+
   const handleChange = (field, value) => {
     onChange({ ...data, [field]: value });
-  };
-
-  const handleBusinessDescriptionChange = (type, checked) => {
-    const currentDescriptions = data.businessDescriptions || {};
-    handleChange('businessDescriptions', {
-      ...currentDescriptions,
-      [type]: checked
-    });
+    if (field === 'firstYear' && value === 'no') {
+      setPriorYearUploadDialogOpen(true);
+    }
   };
 
   const handleEntityTypeChange = (type, checked) => {
@@ -84,56 +87,16 @@ export const BusinessBasicInfo = ({ data, onChange }) => {
 
             {/* Business Description */}
             <Box>
-              <FormControl component="fieldset" fullWidth>
-                <FormLabel component="legend">Business Description:</FormLabel>
-                <FormGroup row sx={{ mt: 1 }}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={data.businessDescriptions?.realEstate || false}
-                        onChange={(e) => handleBusinessDescriptionChange('realEstate', e.target.checked)}
-                      />
-                    }
-                    label="Real Estate"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={data.businessDescriptions?.eCommerce || false}
-                        onChange={(e) => handleBusinessDescriptionChange('eCommerce', e.target.checked)}
-                      />
-                    }
-                    label="E-Commerce"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={data.businessDescriptions?.stocks || false}
-                        onChange={(e) => handleBusinessDescriptionChange('stocks', e.target.checked)}
-                      />
-                    }
-                    label="Stocks"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={data.businessDescriptions?.other || false}
-                        onChange={(e) => handleBusinessDescriptionChange('other', e.target.checked)}
-                      />
-                    }
-                    label="Other"
-                  />
-                </FormGroup>
-                {data.businessDescriptions?.other && (
-                  <TextField
-                    label="Other Business Description"
-                    value={data.otherBusinessDescription || ''}
-                    onChange={(e) => handleChange('otherBusinessDescription', e.target.value)}
-                    fullWidth
-                    sx={{ mt: 2 }}
-                  />
-                )}
-              </FormControl>
+              <TextField
+                label="Business Description"
+                value={data.businessDescriptionText || ''}
+                onChange={(e) => handleChange('businessDescriptionText', e.target.value.slice(0, BUSINESS_DESCRIPTION_MAX_LENGTH))}
+                fullWidth
+                multiline
+                minRows={3}
+                inputProps={{ maxLength: BUSINESS_DESCRIPTION_MAX_LENGTH }}
+                helperText={`${(data.businessDescriptionText || '').length}/${BUSINESS_DESCRIPTION_MAX_LENGTH} characters`}
+              />
             </Box>
 
             {/* Business Address */}
@@ -256,6 +219,24 @@ export const BusinessBasicInfo = ({ data, onChange }) => {
           </Box>
         </FormSection>
       </Box>
+      <Dialog
+        open={priorYearUploadDialogOpen}
+        onClose={() => setPriorYearUploadDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Prior Year Returns Required</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            Since this is not your first year in business, please upload prior year business tax returns to SmartVault.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPriorYearUploadDialogOpen(false)} variant="contained">
+            Got it
+          </Button>
+        </DialogActions>
+      </Dialog>
     </LocalizationProvider>
   );
 };
