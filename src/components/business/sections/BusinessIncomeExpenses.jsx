@@ -3,6 +3,56 @@ import { Box, TextField, Typography, Table, TableBody, TableCell, TableContainer
 import { FormSection } from '../../shared/FormSection';
 
 export const BusinessIncomeExpenses = ({ data, onChange }) => {
+  const toNumber = (value) => {
+    if (value === null || value === undefined || value === '') return 0;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const formatCurrency = (value) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+
+  const incomeFields = ['grossReceipts', 'returnsAllowances', 'interestIncome', 'otherIncome'];
+  const expenseFields = [
+    'advertising',
+    'officeExpenses',
+    'bankFees',
+    'otherInterest',
+    'commissions',
+    'parkingTolls',
+    'computerPurchase',
+    'rentOtherBusiness',
+    'consultingTraining',
+    'rentVehiclesMachinery',
+    'duesSubscriptions',
+    'repairs',
+    'entityCreation',
+    'shippingPostage',
+    'taxesRealEstate',
+    'healthInsurancePremiums',
+    'taxesOther',
+    'insuranceOtherHealth',
+    'telephone',
+    'interestMortgage',
+    'totalMeals',
+    'internet',
+    'travel',
+    'legalProfessional',
+    'utilities',
+    'licenses',
+    'wages',
+    'merchantFees',
+    'webFees',
+    'software',
+    'wholesaleDropShipper',
+  ];
+
+  const totalIncome = incomeFields.reduce((sum, field) => sum + toNumber(data[field]), 0);
+  const totalExpenses =
+    expenseFields.reduce((sum, field) => sum + toNumber(data[field]), 0) +
+    (data.otherExpenses || []).reduce((sum, item) => sum + toNumber(item?.amount), 0);
+  const netAmount = totalIncome - totalExpenses;
+
   const handleChange = (field, value) => {
     onChange({ ...data, [field]: value });
   };
@@ -26,6 +76,41 @@ export const BusinessIncomeExpenses = ({ data, onChange }) => {
           Enter annual totals for each applicable line item. Please upload supporting statements and source documents in SmartVault for all reported income and expenses.
         </Typography>
       </Alert>
+
+      <Paper sx={{ p: 2, border: '1px solid #e5e7eb' }}>
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+          Income & Expense Totals
+        </Typography>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' }, gap: 2 }}>
+          <Box sx={{ p: 2, borderRadius: 1, backgroundColor: '#f8fafc' }}>
+            <Typography variant="body2" color="text.secondary">
+              Total Income
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              {formatCurrency(totalIncome)}
+            </Typography>
+          </Box>
+          <Box sx={{ p: 2, borderRadius: 1, backgroundColor: '#f8fafc' }}>
+            <Typography variant="body2" color="text.secondary">
+              Total Expenses
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              {formatCurrency(totalExpenses)}
+            </Typography>
+          </Box>
+          <Box sx={{ p: 2, borderRadius: 1, backgroundColor: netAmount >= 0 ? '#ecfdf5' : '#fef2f2' }}>
+            <Typography variant="body2" color="text.secondary">
+              Net (Income - Expenses)
+            </Typography>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, color: netAmount >= 0 ? '#166534' : '#991b1b' }}
+            >
+              {formatCurrency(netAmount)}
+            </Typography>
+          </Box>
+        </Box>
+      </Paper>
 
       <FormSection title="QuickBooks Usage">
         <FormControlLabel
